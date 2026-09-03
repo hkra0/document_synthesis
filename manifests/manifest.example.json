@@ -1,0 +1,51 @@
+{
+  "_comment_info": "公文排版与材料合成项目配置清单示例 (manifest.example.json)",
+  "_comment_usage": "如需定制封面、输出文件名、特殊行距或排除文件，可复制本文件，命名为 <项目名>.json 后放入 manifests/。项目专用配置也可命名为 manifest.json，放入对应 input 子目录。",
+
+  "schema_version": 1,
+  "project_name": "示例板块名称（如：某模块建设方案）",
+
+  "cover": {
+    "header_title": "XXXX项目/团队名称",
+    "sub_title": "202X年度考核支撑材料",
+    "main_title": "某模块建设支撑材料",
+    "author": "单位名称/编制部门",
+    "date": "202X年X月"
+  },
+
+  "output": {
+    "compiled_document": "示例板块_合成材料.docx",
+    "cover_toc": "示例板块_封面+目录.docx",
+    "toc_body": "示例板块_目录+正文.docx"
+  },
+
+  "source": {
+    "strategy": "directory_tree",
+    "_comment": "目录型材料使用 directory_tree；需人工精确声明大纲时使用 explicit_tree 并提供 tree（其中 docx_outline 节点可按规则提取 DOCX 正文标题）；单个黄色高亮标题 DOCX 使用 highlighted_docx。"
+  },
+
+  "ignore_nodes": [
+    "_comment_ignore_nodes: 在此列出要忽略的子文件夹名称或文件路径",
+    "旧版草稿目录",
+    "临时备份文件.docx"
+  ],
+
+  "node_overrides": {
+    "_comment_node_overrides: 可针对特定文件或标题匹配做局部调整": null,
+    "某管理细则.docx": {
+      "line_spacing_override": 530,
+      "_comment": "line_spacing_override 单位为 1/20 pt (例如 530 对应约 26.5pt 固定行距)"
+    },
+    "某现场照片.jpg": {
+      "title": "（2）实践调研现场照片",
+      "toc_title": "实践调研现场照片"
+    }
+  },
+
+  "tree_order": [
+    "_comment_tree_order: 可选。需要显式指定顶级大纲顺序时，按顺序填入子文件夹或文件名",
+    "1建设方案",
+    "2实施过程",
+    "3印证材料"
+  ]
+}

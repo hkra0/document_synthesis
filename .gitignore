@@ -1,0 +1,95 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and temporary directories
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.tmp
+*.temp
+.tmp*
+*~
+scratch/
+*.log
+.work/
+.qa/
+~$*
+
+# Environments
+.env
+.env.*
+!.env.example
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# Raw source materials input directory
+input/*
+!input/.gitkeep
+
+# Document templates and binary files
+templates/*.docx
+templates/*.doc
+templates/*.pdf
+!templates/.gitkeep
+
+# Generic binary document assets
+*.docx
+*.doc
+*.pdf
+*.pptx
+*.jpg
+*.jpeg
+*.png
+
+# Sanitized, reproducible demo assets
+!examples/
+!examples/**/
+!examples/**/*.docx
+
+# Output deliverables and build artifacts
+output/*
+!output/.gitkeep
+
+# Manifests and configs (ignore project manifests, track example only)
+manifests/*
+!manifests/manifest.example.json
+!manifests/.gitkeep
+*_manifest.json
+*.manifest.json
+
+# Local project profiles may contain organization-specific structure.
+profiles/*
+!profiles/README.md

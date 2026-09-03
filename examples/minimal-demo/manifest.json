@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "project_name": "Document Synthesis Demo",
+  "cover": {
+    "header_title": "Demo Materials",
+    "sub_title": "Workflow Verification",
+    "main_title": "Document Synthesis Demo",
+    "author": "Example Build",
+    "date": "Demo Edition",
+    "template": false
+  },
+  "output": {
+    "compiled_document": "demo_compiled_materials.docx",
+    "cover_toc": "demo_cover_toc.docx",
+    "toc_body": "demo_toc_body.docx"
+  },
+  "source": {
+    "strategy": "directory_tree"
+  },
+  "tree_order": [
+    "1_demo_overview.docx",
+    "2_demo_checklist.docx"
+  ]
+}
