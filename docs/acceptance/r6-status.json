@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "batch": "R6",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "scope": "offline implementation and contract verification; real Word/PDF evidence remains environment-gated",
+  "worktree_revision": {
+    "head": "54ea41722e51b78769bd47ae95c0adfaa80533d2",
+    "working_tree_changes_present": true,
+    "note": "哈希和测试结果针对当前工作区，不以 HEAD 单独代表受检代码。"
+  },
+  "commands": [
+    "python3 -m py_compile lib/content_integrity.py lib/docx_inspector.py lib/engine.py lib/delivery.py smoke_test.py",
+    "python3 -m unittest tests.test_content_integrity tests.test_effective_styles tests.test_smoke_outputs -v",
+        "python3 -W error::FutureWarning -m unittest discover -s tests -v",
+    "python3 synthesize.py --project examples/minimal-demo --plan",
+    "python3 -m json.tool docs/acceptance/r6-status.json",
+    "git diff --check"
+  ],
+  "results": {
+    "full_suite": {
+      "run": 225,
+      "passed": 222,
+      "expected_failures": 3,
+      "skipped": 2,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "r6_focus": {
+      "expected_inventory": "passed: PreparedBuild source order, parts/regions, generated text and legal ID remap evidence",
+      "text_multiset": "passed: strict node text counts; no arbitrary substring fallback",
+      "tables": "passed: topology, cell position/content and duplicate counts",
+      "media_and_formulas": "passed: instance multiplicity and reference targets",
+      "notes_links_fields": "passed: footnote/endnote definitions and references, hyperlink targets, field instructions/dependencies",
+      "effective_format": "passed: docDefaults/style/direct cascade, theme/toggle handling, per-run and paragraph evidence",
+      "pipeline_contract": "passed: engine and smoke share ExpectedInventory and strict verification",
+      "f08": "passed offline: removed footnote/reference is rejected",
+      "plan": "passed; read-only output",
+      "diff_check": "passed"
+    }
+  },
+  "contract_state": {
+    "F02": "verified offline: failed format/content checks remain hard publication failures",
+    "F08": "verified offline: deleted footnote/reference and missing definition content are detected",
+    "F09": "verified offline: role style aliases and actual style IDs are resolved",
+    "content_scope": "verified offline: content checks are projected to declared delivery part boundaries when available",
+    "allowed_changes": "verified offline: bookmark/rId/note/style/numbering IDs may remap only when semantic targets remain equal",
+    "W04": "blocked: real Word/PDF page, TOC and footer matrix remains environment-gated",
+    "W05": "blocked until R8 real Word/PDF run",
+    "W06": "blocked until R9 real Word/PDF run",
+    "R7_boundary": "sample correction, preview and reusable package workflow remain open"
+  },
+  "artifacts_sha256": {
+    "lib/content_integrity.py": "886d71b393fb8b06c219abd892026225eac548654c317d014faf74a1f5cb6014",
+    "lib/docx_inspector.py": "bde048e86155767a6a92ab65f245dccd0999162d6a323f15bc98024675221189",
+    "lib/engine.py": "b916579db2af74f5663ac73593110162174d1063dddc54303af9559fc66392e8",
+    "lib/delivery.py": "d943f4fb4c3f4bc0a60d999e44e0408c1cd84b3e827e27b29dc8dda61860a3e2",
+    "lib/composition.py": "532a09911ad0b139caac125aa7d4d4facdadd691e00ce0f017e4382f206c1654",
+    "smoke_test.py": "4845e097d848b07158603800aae4da476b46efa18e8b7679a9d419bab6a0278d",
+    "tests/test_content_integrity.py": "27354cf09e5a3272d34c28b04cdf18b3013202941a08ea99f5b4ec51235fbcaf",
+    "tests/test_smoke_outputs.py": "437af1aeb48199c69f52456969d768a96944af0723db527c62290db8be61fa86",
+    "tests/test_formatting_pipeline_contracts.py": "dd8d43725c81a2f119fe8095ef800a0e097ca863020155d1c04ab0dd1f7a99b8",
+        "docs/b1-b10-completion-plan.md": "9b085d65cffe0bee6736f897d86419c0eb8b874413fc091b1cda412a16352561",
+        "docs/formatting-progress.md": "a6e1cd579ca3eb7aadec05d341161f1536f50fe11f3641fc75973f53a1ce697c",
+        "docs/formatting-capabilities.md": "637ab450289e50b34790f755971319dfad3e9e8bb3f61bba430a19ac6a667e1b"
+  },
+  "next_batch": "R7",
+  "next_step": "补齐样例分析的字段级证据与人工校正/预览闭环：区分样式定义与实际使用、显示候选置信度和缺失项，编译时强制 decisions/report/source 哈希绑定，并验证格式包可复用于另一份目标稿件。"
+}

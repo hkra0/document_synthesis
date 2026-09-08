@@ -1,0 +1,29 @@
+{
+  "word_build_completed": true,
+  "pdf_pages": 1,
+  "pdf_page_mm": [
+    [
+      215.9,
+      279.4
+    ]
+  ],
+  "docx_sections_mm": [
+    {
+      "width": 215.9,
+      "height": 279.4,
+      "bottom_margin": 24.60625
+    }
+  ],
+  "pdf_text": [
+    "- 1 - \n第一章 引言 \n1.1 课题来源 \n这是待排版的学术论文稿件正文。该稿件原始排版尚未规范化，将通过由 \nsample.docx 提取并编译出的格式包统一重排。 \n"
+  ],
+  "qa": {
+    "content_integrity": "passed",
+    "format_verification": "passed",
+    "unverified_attributes": [
+      "hanging_indent",
+      "run_color",
+      "keep_with_next"
+    ]
+  }
+}

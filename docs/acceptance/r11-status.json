@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "batch": "R11",
+  "status": "verified",
+  "verified_at": "2026-09-06",
+  "scope": "文档、示例、格式学习发布闭环、v1/v2 迁移、继承格式核验和当前能力边界收尾",
+  "environment": {
+    "platform": "macOS 27.0 arm64",
+    "python": "3.14.0",
+    "microsoft_word": "16.112.3"
+  },
+  "commands": [
+    "python3 -m unittest tests.test_r11_release -q",
+    "python3 synthesize.py --analyze-format examples/custom-format-demo/sample.docx --analysis-dir output/custom-format-demo/review --replace-output",
+    "python3 synthesize.py --compile-format output/custom-format-demo/review/analysis.json --decisions examples/custom-format-demo/decisions.final.json --format-base preset:academic-basic@1.0.0 --format-id academic-demo --format-version 1.0.0 --format-out output/custom-format-demo/formats/academic-demo.json --replace-output",
+    "python3 synthesize.py --render-preview output/custom-format-demo/formats/academic-demo.json --preview-out output/custom-format-demo/preview.html --preview-meta output/custom-format-demo/preview-metadata.json --preview-engine html-css-approximate --replace-output",
+    "python3 synthesize.py --analyze-source examples/custom-format-demo/manuscript.docx --analysis-dir output/custom-format-demo/target-review --replace-output",
+    "python3 synthesize.py --compile-mapping output/custom-format-demo/target-review/analysis.json --decisions examples/custom-format-demo/manuscript-decisions.final.json --mapping-out output/custom-format-demo/review/manuscript-roles.json --replace-output",
+    "python3 synthesize.py --migrate-manifest examples/custom-format-demo/legacy-manifest-v1.json --manifest-out output/custom-format-demo/migrated/manifest-v2.json --replace-output",
+    "python3 synthesize.py --source examples/custom-format-demo/manuscript.docx --manifest examples/custom-format-demo/manifest.json --plan",
+    "python3 synthesize.py --source examples/custom-format-demo/manuscript.docx --manifest examples/custom-format-demo/manifest.json --doctor",
+    "python3 synthesize.py --source examples/custom-format-demo/manuscript.docx --manifest examples/custom-format-demo/manifest.json --output-dir output/custom-format-demo/deliverables",
+    "python3 smoke_test.py --source examples/custom-format-demo/manuscript.docx --manifest examples/custom-format-demo/manifest.json --output-dir output/custom-format-demo/deliverables",
+    "python3 -W error::FutureWarning -m unittest discover -s tests -q",
+    "git diff --check"
+  ],
+  "results": {
+    "r11_tests": {
+      "run": 6,
+      "passed": 6,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "example_workflow": {
+      "analyze_format": "passed",
+      "compile_format": "passed",
+      "preview": "passed",
+      "analyze_source": "passed",
+      "compile_mapping": "passed",
+      "migrate_manifest": "passed",
+      "plan": "passed",
+      "doctor": "passed",
+      "build": "passed",
+      "smoke": "passed",
+      "build_delivery_count": 1,
+      "build_page_assertions": "1/1"
+    },
+    "preview": {
+      "format_id": "academic-demo",
+      "format_version": "1.0.0",
+      "approximate": true,
+      "fictional_content": true,
+      "source_content_included": false
+    },
+    "migration": {
+      "schema_version": 2,
+      "input_unchanged": true,
+      "output_independent": true
+    },
+    "role_map": {
+      "assignments": 3,
+      "source_sha256": "46505dcd122c513102836eae0ef5666f77c5ae06bf34883c5b523bd6628e6e34",
+      "on_unmapped": "error"
+    },
+    "build_metadata": {
+      "schema_version": 3,
+      "content_integrity": "passed",
+      "format_verification": "passed",
+      "unverified_attributes": [],
+      "delivery_publishable": true,
+      "coverage": "per-delivery content, format, page and environment evidence"
+    },
+    "full_offline_suite": {
+      "run": 252,
+      "status": "OK",
+      "conditional_skips": 2,
+      "unexpected_failures": 0,
+      "errors": 0,
+      "future_warnings": 0
+    },
+    "documentation": {
+      "root_readme": "synced",
+      "development": "synced",
+      "capabilities": "synced",
+      "progress": "synced",
+      "formats_readme": "synced",
+      "plan": "synced",
+      "project_skill": "synced"
+    }
+  },
+  "artifacts_sha256": {
+    "lib/content_integrity.py": "be10c4e8442e8dd3cea7cae32a909214cabdbcbe501dd5174bd1300e2c4f55cb",
+    "tests/test_r11_release.py": "d75a59fc3982ef9ea96c07144b1c24326aa01ae946aa2de247a5bfd4757d0975",
+    "README.md": "4534bb93b62f5ba160e544d8d3c9cc29824a7b09ec5cef5ac43edb48ff98627b",
+    "DEVELOPMENT.md": "a2a0060ea1786748b14abfff90196f7c13af18b97b0230fe7724ae989d621469",
+    "formats/README.md": "5ee6c2e2de73ac9aa2bb43e4b58b966907fb684c750d64fa8bedd1947a0d3697",
+    "docs/b1-b10-completion-plan.md": "afd60805aeec28b6785fd28a13356a9ece08df8b908dec0fb8948753d63f54c4",
+    "docs/formatting-progress.md": "dfac05cfd11b6530ebb33e794a789ebcc3777ae11244f378cae5e5e0ac313e55",
+    "docs/formatting-capabilities.md": "68ec2b7217f5a545b033766bff633c2564c2ae1895484725fc1fc352d4a1402b",
+    "docs/acceptance/r10-status.json": "0197b0c156ef35b6eb111acca1b320cd3c5b2c88ae15529ee68f616c25d8a451",
+    "examples/custom-format-demo/README.md": "05e209a2c894405c819680d2dd230f07269b5c8ca043335ca757155e8b9ed1cc",
+    "examples/custom-format-demo/manifest.json": "aa727fbffce7b968a23f8d927c53376dc23621677e326faa90440e06fc528576",
+    "examples/custom-format-demo/decisions.final.json": "bb622b797a90900eae56f97e4ca57f44c31ca6720575d38dffd75883b8776a18",
+    "examples/custom-format-demo/manuscript-decisions.final.json": "d867c62feb5a3fd8dce825ce63c00f20d257467021635923f7989387cbed902b",
+    "examples/custom-format-demo/legacy-manifest-v1.json": "feb6ebaa1513163dc6f610c4cd71da2d89d25a1f0bc7abc1c7d5ebb2bdbf94d5"
+  },
+  "limitations": [
+    "格式学习与真实 Word/PDF 交付只在当前自定义示例、配置和本机 Word 环境范围内声明 supported，不外推为全部学校规范支持",
+    "不覆盖 OCR/PDF 样例学习、双栏期刊、参考文献著录转换、多样例融合或全部学校规范认证",
+    "预览是虚构内容的 HTML/CSS 近似预览，不替代真实 Word/PDF 页面证据；真实 Word 测试统一使用固定目录 <word-access-dir>，目录由运行时自动创建，已验证 NW01–NW12 无新增授权弹窗"
+  ],
+  "cleanup": {
+    "generated_output_removed": true,
+    "work_directories": 0,
+    "render_caches": 0,
+    "python_caches": 0,
+    "status_retained": true
+  },
+  "next_batch": null,
+  "next_step": "R0–R11 当前范围已完成；后续新增能力另建版本化验收批次。"
+}

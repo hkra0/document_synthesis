@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "batch": "R5",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "scope": "offline implementation and contract verification; real Word/PDF evidence remains environment-gated",
+  "worktree_revision": {
+    "head": "54ea41722e51b78769bd47ae95c0adfaa80533d2",
+    "working_tree_changes_present": true,
+    "note": "哈希和测试结果针对当前工作区，不以 HEAD 单独代表受检代码。"
+  },
+  "commands": [
+    "python3 -m py_compile lib/document_parts.py lib/package_importer.py lib/notes_merger.py lib/composition.py tests/test_source_regions.py tests/test_package_importer.py",
+    "python3 -m unittest tests.test_source_regions tests.test_package_importer tests.test_notes_and_fields tests.test_document_parts -v",
+    "python3 -m unittest discover -s tests -v",
+    "python3 synthesize.py --project examples/minimal-demo --plan",
+    "python3 -m json.tool docs/acceptance/r5-status.json",
+    "git diff --check"
+  ],
+  "results": {
+    "full_suite": {
+      "run": 217,
+      "passed": 213,
+      "expected_failures": 4,
+      "skipped": 2,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "r5_focus": {
+      "selection_and_import": "passed",
+      "selection_contracts": "passed: F01 image/style/relationship closure; F07 image-only coverage and invalid region",
+      "protected_boundaries": "passed: cross-block bookmarks and complex fields are rejected",
+      "unsupported_objects": "passed: unknown top-level objects are rejected with UNSUPPORTED_OBJECT",
+      "id_mapping": "passed: styles, numbering, bookmarks, relationships, media and referenced notes are mapped",
+      "relationship_closure": "passed: missing/type-mismatched/content-type-mismatched targets are rejected",
+      "fallbacks": "passed: invalid custom regions do not copy the full source document"
+    },
+    "plan": "passed; read-only output",
+    "diff_check": "passed"
+  },
+  "contract_state": {
+    "F01": "verified offline: selected image, custom style and relationship closure are preserved",
+    "F07": "verified offline: image-only substantive content is covered and invalid regions fail closed",
+    "selection": "verified offline: [start,end), overlap, exclude coverage, table boundaries and protected-object boundaries",
+    "import_result": "verified offline: ImportResult contains elements and serializable node/ID mappings without runtime document handles",
+    "notes": "verified offline: only referenced footnotes/endnotes are merged; internal note parts are cloned into the target package",
+    "W04": "blocked: real Word/PDF page, TOC and footer matrix remains environment-gated",
+    "W05": "blocked until R8 real Word/PDF run",
+    "W06": "blocked until R9 real Word/PDF run",
+    "R6_boundary": "delivery-range inventory and effective-format coverage remain open"
+  },
+  "artifacts_sha256": {
+    "lib/document_parts.py": "9c5966cfb84f919051c5c98e9e4df5956ca59704d96c833fb3b45aa940724d20",
+    "lib/package_importer.py": "86f44eb539677cbb91b4006a10780bb5f88aa6559eb5888caf00eacbb1c060cc",
+    "lib/notes_merger.py": "3436d9c6a5c0a4c8dadc7b8f71fd13d1d12c7489d7f14b6de6995acfbefd1eeb",
+    "lib/composition.py": "d8617d0943b6b7c02ca1c52b0ebe82b34f31c3f7f6487a09e31228ae2089f9ca",
+    "tests/test_source_regions.py": "f4cb856f0aa4651a1b2302300647a6c0db34433b83e2ea3daab6c35729a93c4f",
+    "tests/test_package_importer.py": "bdd8d1579c2ed0c30cb62633ca9568bb5ea7873e1e75ab6e38dfb6fef61bd23a",
+    "tests/test_notes_and_fields.py": "8778120cc8977ba27a0f91fd577a9e06ff37a5a93e24062a9f316f934e96d95c",
+    "tests/test_document_parts.py": "723d2387ff8d8037a610c5a9f48f8468a36840ce568f6fc16505435abcb9ed3f",
+    "tests/test_formatting_pipeline_contracts.py": "0cdfc9b14afa1d347b27df973c6996e9ce6143656b40ddd1d5e68d479b6b9220",
+    "tests/fixtures/formatting/r0_contracts.json": "5a9b2e9d7f322587896f4c576f67ca4cebec90e256125c75e2ffbb09e69c09dc",
+    "docs/b1-b10-completion-plan.md": "3b4f0519da3fd038934082cd7f5d8e652b0b688c6577dbb7ffc707626bccdb8c",
+    "docs/formatting-progress.md": "9bc9dd55c8904c665be87dc880d1dfbdf85b649ad9ce66ef7373c7b37ec1a975",
+    "docs/formatting-capabilities.md": "78281e61217775806896e0db649533c29503c58fc7b8aff30a0faf1d2b9fefbf"
+  },
+  "next_batch": "R6",
+  "next_step": "按 PreparedBuild 的实际交付 parts/regions 建立 ExpectedInventory，严格核验多重文本、表格拓扑、媒体实例、公式、脚注/尾注、链接、字段依赖和允许的 ID 重映射；再扩展 EffectiveStyleEvaluator 与混合 run 的交付范围覆盖。"
+}

@@ -1,0 +1,4 @@
+WARNING: <repo>/docs/acceptance/post-review/word-evidence/20260906/external-export-qa-main-rerun.pdf (object 6 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/post-review/word-evidence/20260906/external-export-qa-main-rerun.pdf (object 8 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/post-review/word-evidence/20260906/external-export-qa-main-rerun.pdf (object 10 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+qpdf: operation succeeded with warnings

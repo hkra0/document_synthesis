@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "batch": "R4",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "scope": "offline implementation and contract verification; real Word/PDF evidence remains environment-gated",
+  "worktree_revision": {
+    "head": "54ea41722e51b78769bd47ae95c0adfaa80533d2",
+    "working_tree_changes_present": true,
+    "note": "哈希和测试结果针对当前工作区，不以 HEAD 单独代表受检代码。"
+  },
+  "commands": [
+    "python3 -m py_compile lib/*.py tests/test_formatting_modes.py",
+    "python3 -m unittest tests.test_formatting_modes -v",
+    "python3 -m unittest tests.test_formatting_pipeline_contracts.R0KnownDefectContractTest.test_F04_multi_source_override_reaches_rendered_heading tests.test_formatting_pipeline_contracts.R0KnownDefectContractTest.test_F04_preserve_keeps_source_geometry_and_footer -v",
+    "python3 -m unittest discover -s tests -v",
+    "python3 synthesize.py --project examples/minimal-demo --plan",
+    "git diff --check"
+  ],
+  "results": {
+    "full_suite": {
+      "run": 206,
+      "passed": 197,
+      "expected_failures": 7,
+      "skipped": 2,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "r4_contracts": {
+      "F03": "passed: stale RoleMap rejected before rendering",
+      "F04_multi_source_override": "passed: source title override reaches rendered heading",
+      "F04_preserve_geometry_footer": "passed: preserve/source keeps source geometry and footer",
+      "page_spec": "passed: target paper, orientation, margins, header/footer distances and docGrid are applied",
+      "preserve": "passed: source formatting is not installed or mutated",
+      "mixed": "passed: unmapped protected paragraphs remain untouched"
+    },
+    "compile": "passed",
+    "plan": "passed; read-only output",
+    "diff_check": "passed"
+  },
+  "contract_state": {
+    "RenderContext": "verified offline across v3 single-source, recursive multi-source, DOCX/PDF/image/PPTX import and orientation restoration",
+    "preserve_source": "verified offline: source styles, direct formatting, geometry and simple header/footer stories are preserved",
+    "mixed_scope": "verified offline: role application is limited by source file and NodeRef node_range; protected nodes are not implicitly mapped to body",
+    "target_page_spec": "verified offline: apply_section_spec writes page geometry, header/footer distances and docGrid",
+    "generated_content": "verified offline: generated headings, TOC entries and footer use format-driven adapters",
+    "W04": "blocked: real Word/PDF page, TOC and footer matrix requires the dedicated Word environment",
+    "W05": "blocked until R8 real Word/PDF run",
+    "W06": "blocked until R9 real Word/PDF run",
+    "R5_boundary": "selection relationship closure, complex stories and cross-source note/resource remapping remain open"
+  },
+  "artifacts_sha256": {
+    "lib/layout.py": "ff66c634620f3fdadf15baabfb61c630a3516168666b0072a95fb7776d8d3528",
+    "lib/engine.py": "12363b57b006e0134721b1a85db94b3a558e2b0aa1954802d67d214cb8c1fbf8",
+    "lib/renderers.py": "ba873945b97e9e5c8c9522153efd4b9cccdec2bdcec0b63268f61d10b56adc7e",
+    "lib/style_applier.py": "5230c0fe1739fac9673f9abf993d1a028aea9602f47a3eeb2b7d6257b56b417d",
+    "lib/composition.py": "5f4586dc915b087e46f9eafb44f62fc6b4af1dff5972c41298ead9e495b83852",
+    "lib/highlighted_docx.py": "b1a08be6a5de26a8e860216511a2ee2feebfdbd99bbb297bcec3ecdc5ec5f266",
+    "lib/config.py": "fc08e32d271f6a4f359aa5d218e8ef3a011e758c00e533fabdad9ee81c26bbdc",
+    "tests/test_formatting_modes.py": "f3738a884143cedf169e5288c2761e57e8897ae784c508fc4bf2b05657641c73",
+    "tests/test_formatting_pipeline_contracts.py": "791ca3e0fe69729540605b2a71530b985d60af7687a095246a7c2638e122e78b",
+    "tests/fixtures/formatting/r0_contracts.json": "830323de80292a5101312a9d7b50e20b6580608a3ef965dd7b65b4b47e153a31",
+    "docs/b1-b10-completion-plan.md": "54a78b2a7c8056edbbe6758db4365b31975c2120b62ffe084a1a18780752d756",
+    "docs/formatting-progress.md": "b356cbb80490fb3aaea09d22346e4c592e5ae8871ea73dcbd9b63060f01732dd",
+    "docs/formatting-capabilities.md": "b93765e0e3eb16ea392821100f6ada022d343817d7f8a87fede7e552fadf831b"
+  },
+  "next_batch": "R5",
+  "next_step": "修复 [start, end) 原始选区语义并通过 PackageImporter 导入完整 OPC 关系闭包，先以 F01/F07 反例驱动，再扩展跨来源 styleId、numId、footnoteId、媒体、书签、超链接和字段关系映射。"
+}

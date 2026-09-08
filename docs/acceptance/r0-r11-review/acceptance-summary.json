@@ -1,0 +1,36 @@
+{
+  "date": "2026-09-06",
+  "verdict": "not_accepted",
+  "findings": {
+    "P1": [
+      "C01",
+      "C02",
+      "C03",
+      "C04"
+    ],
+    "P2": [
+      "C05",
+      "C06",
+      "C07",
+      "C08"
+    ]
+  },
+  "existing_suite": {
+    "tests_run": 252,
+    "result": "OK",
+    "skipped": 2
+  },
+  "independent_native_cli_builds": {
+    "count": 2,
+    "returned_success": 2,
+    "acceptance_defects_detected": true
+  },
+  "production_baseline_files": 80,
+  "production_baseline_unchanged": true,
+  "audit_report": "docs/r0-r11-acceptance-report.md",
+  "limitations": [
+    "Full opt-in Word test groups were not rerun; two independent native CLI paths were run.",
+    "Preserve/emphasis and gate fault injection are offline production-function probes.",
+    "PDF offset warnings remain unexplained; original PDFs preserved."
+  ]
+}

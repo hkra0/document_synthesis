@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "batch": "S4",
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "verified_at": "2026-09-08",
+  "closes": [
+    "D05"
+  ],
+  "commands": [
+    "python3 -m unittest tests.test_role_evaluation -v",
+    "python3 docs/acceptance/r7-evaluation/evaluate_unstructured_dataset.py",
+    "python3 docs/acceptance/r7-evaluation/evaluate_dataset.py --output docs/acceptance/r7-evaluation/metrics.json"
+  ],
+  "tests": {
+    "pure_metrics": {
+      "run": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    "metrics_schema_version": 2,
+    "manual_correction_count": null
+  },
+  "code_and_test_sha256": {
+    "lib/role_evaluation.py": "2f114e4f202b3e768550f6065c64269c03012a6213b4bd968ab3a52bf43ba177",
+    "tests/test_role_evaluation.py": "d22f6fa7bee663035f370c1837156f3b6e2b75a003439b470a1b643052ddc06f",
+    "docs/acceptance/r7-evaluation/evaluate_unstructured_dataset.py": "c797167d9db95097b0aedccc047562077bd65b5915cc273ff1b6b4c3b2880c5d",
+    "docs/acceptance/r7-evaluation/evaluate_dataset.py": "2479bc4b7a1892d294ab10720b49870a0d58dc893d4fbc22a48262c0535c1a21",
+    "docs/acceptance/r7-evaluation/metrics.json": "db842433e11b267bf0de988ff2906041a63dcbca756985329fa706a4cd2856bd",
+    "docs/acceptance/r7-evaluation/unstructured-metrics.json": "3597fde13f10cd2cc833ae69f12db9fc6a6ae1034f0bb572c1f5c484a758aba8"
+  },
+  "evidence": [
+    "一对一错手算 exact precision=0.5；正文误报进入 detection 分母；无真实点击日志时 manual_correction_count=null。"
+  ],
+  "word_access_directory": "<word-access-dir>",
+  "remaining_limits": [
+    "当前结论限定在匿名冻结集，未声称任意真实模板准确率。"
+  ]
+}

@@ -16,6 +16,9 @@ htmlcov/
 .tmp*
 *~
 scratch/
+修改/
+tmp_*.pdf
+.test_*
 *.log
 .work/
 .qa/

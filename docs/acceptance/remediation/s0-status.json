@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "batch": "S0",
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "verified_at": "2026-09-08",
+  "closes": [
+    "D01",
+    "D02",
+    "D03",
+    "D04",
+    "D05",
+    "D06"
+  ],
+  "commands": [
+    "python3 -m unittest tests.test_role_evaluation tests.test_remediation_contracts -q",
+    "python3 -m unittest tests.test_content_integrity tests.test_docx_inspector -q"
+  ],
+  "tests": {
+    "offline_contract_tests": {
+      "run": 23,
+      "passed": 23,
+      "failed": 0,
+      "errors": 0
+    }
+  },
+  "code_and_test_sha256": {
+    "tests/test_remediation_contracts.py": "3db0f8880f45741afca707fffd23aa89ef4b2c3f422e0f6a72bfe1988daf27d1",
+    "tests/test_role_evaluation.py": "d22f6fa7bee663035f370c1837156f3b6e2b75a003439b470a1b643052ddc06f",
+    "docs/acceptance/remediation/scenario-contracts.json": "26e9e29a6813bacbc5b6fbbdc805764e268a50fe3afe017aedebb916bf9d1809"
+  },
+  "evidence": [
+    "D01–D06 的历史探针结果已与当前成对测试逐项对照；scenario-contracts 的 verified 状态由历史失败观测、当前测试命令和真实 Word sidecar 共同支撑，不由测试名称自动推导。"
+  ],
+  "word_access_directory": "<word-access-dir>",
+  "remaining_limits": []
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 3,
+  "project_name": "AnonymousAcceptance",
+  "source": {
+    "strategy": "docx_document",
+    "file": "m2-fixtures/numbering-source.docx"
+  },
+  "format": {
+    "ref": "preset:academic-basic@1.0.0"
+  },
+  "formatting": {
+    "mode": "restyle"
+  },
+  "output": {
+    "documents": [
+      {
+        "id": "main",
+        "filename": "academic.docx",
+        "parts": [
+          "body"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "batch": "N6",
+  "status": "verified",
+  "verified_at": "2026-09-06",
+  "closes": [
+    "C06"
+  ],
+  "code_sha256": {
+    "lib/manifest_migration.py": "267f6283d32e5ddb5d930e029cb2c2a5cc49607a3e7a564c747e32a381b5a2c4"
+  },
+  "fixture_sha256": {},
+  "commands": [
+    "python3 -m unittest discover -s tests -p 'test_post_review_contracts.py' -q"
+  ],
+  "tests": {
+    "run": 1,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "word_cases": [],
+  "artifact_sha256": {
+    "tests/test_post_review_contracts.py": "a25ac3ead16fc811e4f006eac61f7dd6a6976455e6845487c761cc95012986eb"
+  },
+  "remaining_limits": []
+}

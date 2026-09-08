@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "batch": "S7",
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "verified_at": "2026-09-08",
+  "closes": [
+    "D06"
+  ],
+  "commands": [
+    "python3 -m unittest tests.test_delivery_pipeline.DeliveryPipelineTest.test_publish_failure_restores_all_deliveries_and_metadata -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_publication_gates.PublicationGateContractTest.test_real_cli_second_failure_keeps_previous_delivery_and_metadata -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_publication_gates.PublicationGateContractTest.test_real_word_gate_injection_after_staging_blocks_publication -v"
+  ],
+  "tests": {
+    "rollback_all_artifacts": {
+      "run": 1,
+      "passed": 1
+    },
+    "real_cli_second_failure": {
+      "run": 1,
+      "passed": 1
+    },
+    "real_gate_injection": {
+      "run": 1,
+      "passed": 1
+    }
+  },
+  "code_and_test_sha256": {
+    "lib/engine.py": "3feb07c8bc99095630b05737cb85f26ddb2e40e96f2c19fc05abbbaca1229175",
+    "lib/delivery.py": "fbdaac66f8a09193905fe61e778ea45ac450e716ce6a3a8c65fe92186ac941ef",
+    "tests/test_delivery_pipeline.py": "d04c92ceffb2716b8c338d83bd895b9fb7e62b0c8a89c401390e40bad930b88c",
+    "tests/test_publication_gates.py": "7d1d35a747f12a94d6153bb957e214830b825cde121725482f85ada28e86ee96",
+    "tests/test_post_review_word.py": "894d2c3980991af861668c3f33d3782a6ff2f1de89e0c616385825bee1356e58"
+  },
+  "evidence": [
+    "真实 CLI 首次成功、第二次过期 RoleMap 失败且旧 DOCX/metadata 哈希不变；真实 Word/PDF 完成后的 staging 损坏被生产格式门禁拒绝；发布中途第二替换失败可恢复全部 DOCX 与 metadata。"
+  ],
+  "word_access_directory": "<word-access-dir>",
+  "remaining_limits": []
+}

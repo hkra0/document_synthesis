@@ -1,0 +1,37 @@
+{
+  "fields": [
+    {
+      "field_id": "field-000001",
+      "story": "body",
+      "instruction": "PAGEREF _Toc_0002_b71faf",
+      "command": "PAGEREF",
+      "target": "_Toc_0002_b71faf",
+      "cached_value": "4",
+      "measurement": {
+        "physical_page": 4,
+        "printed_page": 4,
+        "observed_label": "4",
+        "label_required": true,
+        "expected_label": "4",
+        "label_verified": true,
+        "verification_status": "verified"
+      },
+      "status": "verified"
+    }
+  ],
+  "measured_targets": {
+    "_Toc_0002_b71faf": {
+      "physical_page": 4,
+      "printed_page": 4,
+      "observed_label": "4",
+      "label_required": true,
+      "expected_label": "4",
+      "label_verified": true,
+      "verification_status": "verified"
+    }
+  },
+  "pdf_reference_lines": [
+    "The second chapter starts on page 4"
+  ],
+  "pdf_text_exit": 0
+}

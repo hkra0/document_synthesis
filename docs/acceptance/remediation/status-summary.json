@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "batches": {
+    "S0": "verified",
+    "S1": "verified",
+    "S2": "verified",
+    "S3": "verified",
+    "S4": "verified",
+    "S5": "verified",
+    "S6": "verified",
+    "S7": "verified",
+    "S8": "verified"
+  },
+  "next_step": "S0–S8 当前退出条件已满足；后续仅在扩大模板、冻结集或 Word 环境范围时新增复验。"
+}

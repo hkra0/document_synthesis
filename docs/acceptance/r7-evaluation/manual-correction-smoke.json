@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "record_id": "r7-manual-correction-ui-smoke-20260906",
+  "status": "verified_workflow_smoke",
+  "verified_at": "2026-09-06",
+  "automation": "not_used",
+  "independent_human_baseline": true,
+  "baseline": {
+    "file": "docs/acceptance/r7-evaluation/unstructured-human-baseline.json",
+    "baseline_id": "r7-independent-manual-baseline-v1",
+    "target_heading_roles": ["heading.1", "heading.2", "heading.3", "heading.4", "heading.5"]
+  },
+  "source": {
+    "file": "docs/acceptance/r7-evaluation/unstructured-samples/公文-unstructured-01.docx",
+    "sha256": "5cb0ac1fc2ecb9229fafdd3bc72630e83d07900964f580af4d0522a39b780d8a",
+    "analysis_report_id": "sample-analysis-5cb0ac1f"
+  },
+  "review": {
+    "interface": "lib/format_review.py generated review.html",
+    "cluster_roles": {
+      "cluster-01": "body",
+      "cluster-02": "heading.1",
+      "cluster-03": "heading.2",
+      "cluster-04": "heading.3",
+      "cluster-05": "heading.4",
+      "cluster-06": "heading.5"
+    },
+    "missing_roles": {
+      "title": "reject",
+      "table.body": "reject"
+    },
+    "decision_sha256": "959b9dc9f91cbfbd58023d3a3e8949fdfc2a59b222724f4d5494ca6897a3f6b4",
+    "format_package_sha256": "efd08330cc46c7dead2b03df39a3ca1eb72e6f8f7d2b2a3d3e598af0b3736bc6"
+  },
+  "target": {
+    "file": "docs/acceptance/r7-evaluation/unstructured-samples/公文-unstructured-02.docx",
+    "sha256": "cd324b4df9751d50991e144c96876d6273028e59ea5711e2bda16e03eb50581e",
+    "analysis_report_id": "sample-analysis-cd324b4d",
+    "role_map_sha256": "b730a0ceb819a5d5ca5b335deef1040efdbd1ebea5b567ae98e9f0f91bca283f",
+    "assignment_count": 30,
+    "explicit_heading_assignment_count": 5,
+    "manual_decision_operations": 5,
+    "baseline_agreement": true
+  },
+  "commands": [
+    "python3 synthesize.py --analyze-format <source> --analysis-dir <smoke-dir>/analysis --replace-output",
+    "python3 synthesize.py --compile-format <smoke-dir>/analysis/analysis.json --decisions <smoke-dir>/decisions.manual.json --format-id r7-manual-correction-demo --format-version 1.0.0 --format-out <smoke-dir>/manual.format.json --replace-output",
+    "python3 synthesize.py --analyze-source <target> --analysis-dir <smoke-dir>/target --replace-output",
+    "python3 synthesize.py --compile-mapping <smoke-dir>/target/analysis.json --decisions <smoke-dir>/target/decisions.manual.json --mapping-out <smoke-dir>/target/manual.roles.json --replace-output",
+    "python3 synthesize.py --source <target> --manifest <smoke-dir>/manual-reuse-manifest.json --plan"
+  ],
+  "results": {
+    "format_package_compiled": true,
+    "target_role_map_compiled": true,
+    "target_plan_passed": true,
+    "target_plan_content_blocks": 30,
+    "target_plan_headings": 5
+  },
+  "limitations": [
+    "这是单份 agent/browser workflow smoke；独立冻结标签与目标角色基准见 unstructured-human-baseline.json。",
+    "临时决策、格式包和 RoleMap 产物已用 SHA-256 记录，原始临时目录不作为仓库交付物。",
+    "未执行 Word Automation，因此不证明 NW01–NW12，也不替代 PDF/视觉 QA。",
+    "该 smoke 只证明一条人工决策→格式包→目标映射→plan 路径；不外推为任意真实文档的准确率保证。"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "published": true,
+  "pdf_pages": 6,
+  "fields": [
+    {
+      "instruction": "PAGEREF _Toc_0002_b71faf",
+      "docx_cache": "1",
+      "measured_target": {
+        "physical_page": 4,
+        "printed_page": 4,
+        "observed_label": "4",
+        "label_required": true,
+        "expected_label": "4",
+        "label_verified": true,
+        "verification_status": "verified"
+      }
+    }
+  ],
+  "pdf_reference_text": [
+    "ment verifies page labels and stable cross references. This fictional study compares two \nlayout configurations. All statements are anonymous test material. The document verifies \npage labels and stable cross references.  \nThe second chapter starts on page 4 \n"
+  ]
+}

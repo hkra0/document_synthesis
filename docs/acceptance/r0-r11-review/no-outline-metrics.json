@@ -1,0 +1,278 @@
+{
+  "metrics_schema_version": 1,
+  "dataset_id": "r7-independent-anonymous-evaluation-v1",
+  "threshold": 0.98,
+  "dataset_counts": {
+    "documents": 20,
+    "categories": 4,
+    "heading_positives": 100,
+    "body_negatives": 500
+  },
+  "overall": {
+    "per_level": {
+      "heading.1": {
+        "support": 20,
+        "predicted": 0,
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 20,
+        "precision": null,
+        "recall": 0.0
+      },
+      "heading.2": {
+        "support": 20,
+        "predicted": 0,
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 20,
+        "precision": null,
+        "recall": 0.0
+      },
+      "heading.3": {
+        "support": 20,
+        "predicted": 0,
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 20,
+        "precision": null,
+        "recall": 0.0
+      },
+      "heading.4": {
+        "support": 20,
+        "predicted": 0,
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 20,
+        "precision": null,
+        "recall": 0.0
+      },
+      "heading.5": {
+        "support": 20,
+        "predicted": 0,
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 20,
+        "precision": null,
+        "recall": 0.0
+      }
+    },
+    "heading_accuracy": 0.0,
+    "body_as_heading_false_positives": 0,
+    "automatic_acceptance_coverage": 0.0,
+    "automatic_acceptance_precision": null,
+    "candidate_review_required_rate": 1.0,
+    "pending_decision_rate": 0.6666666666666666,
+    "manual_correction_count": 100
+  },
+  "by_category": {
+    "公文": {
+      "documents": 5,
+      "per_level": {
+        "heading.1": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.2": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.3": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.4": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.5": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        }
+      },
+      "body_as_heading_false_positives": 0
+    },
+    "报告": {
+      "documents": 5,
+      "per_level": {
+        "heading.1": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.2": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.3": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.4": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.5": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        }
+      },
+      "body_as_heading_false_positives": 0
+    },
+    "论文": {
+      "documents": 5,
+      "per_level": {
+        "heading.1": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.2": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.3": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.4": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.5": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        }
+      },
+      "body_as_heading_false_positives": 0
+    },
+    "手工格式": {
+      "documents": 5,
+      "per_level": {
+        "heading.1": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.2": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.3": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.4": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heading.5": {
+          "support": 5,
+          "predicted": 0,
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 5,
+          "precision": null,
+          "recall": 0.0
+        }
+      },
+      "body_as_heading_false_positives": 0
+    }
+  },
+  "limitations": [
+    "评估材料为程序生成的结构化虚构样例，不能代表真实学校模板或复杂版式噪声。",
+    "自动接受覆盖率与 precision 分开报告；低置信度候选仍要求人工确认。"
+  ],
+  "audit_transformation": "Copied existing synthetic evaluation samples; only labeled heading paragraphs were changed to Normal and their direct outlineLvl removed. Direct visual formatting, text, paragraph positions and original ground truth are unchanged."
+}

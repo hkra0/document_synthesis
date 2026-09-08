@@ -44,6 +44,23 @@ permission: Full Disk Access does not grant permission to control Word. Use the
 `--doctor` result before suggesting a build retry. Do not claim exact printed
 page numbers unless the Word export and page-level QA completed.
 
+## Format learning and release evidence
+
+The format-learning workflow also uses `synthesize.py` as its sole entrypoint:
+`--analyze-format` creates `analysis.json`, `review.html`, and a draft
+`decisions.example.json`; a compiler must receive explicit final decisions,
+never a draft with `pending` values. Preserve the report ID and source SHA-256
+when compiling a format package or a target RoleMap. Use `--render-preview` for
+fictional approximate previews and `--migrate-manifest` for non-destructive
+v1/v2 migration to a separate output file.
+
+Before release, keep a status record tying each claimed capability to its test
+ID, support level, and recent evidence. Run example commands in a fresh output
+directory, including `--plan`, `--doctor`, build, and `smoke_test.py`; remove
+`.work`, Office lock files, render caches, and Python caches afterward. Do not
+generalize a real Word result beyond its fixture, environment, and declared
+format boundary.
+
 ## Verify
 
 Run the focused unit suite after source-strategy, safety, or configuration-code

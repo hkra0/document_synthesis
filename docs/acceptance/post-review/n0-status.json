@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "batch": "N0",
+  "status": "verified",
+  "verified_at": "2026-09-06",
+  "closes": [
+    "C01",
+    "C02",
+    "C03",
+    "C04",
+    "C05",
+    "C06"
+  ],
+  "code_sha256": {
+    "tests/test_post_review_contracts.py": "a25ac3ead16fc811e4f006eac61f7dd6a6976455e6845487c761cc95012986eb"
+  },
+  "fixture_sha256": {},
+  "commands": [
+    "python3 -m unittest discover -s tests -p 'test_post_review_contracts.py' -q"
+  ],
+  "tests": {
+    "run": 26,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "word_cases": [],
+  "artifact_sha256": {
+    "tests/test_post_review_contracts.py": "a25ac3ead16fc811e4f006eac61f7dd6a6976455e6845487c761cc95012986eb"
+  },
+  "remaining_limits": [
+    "C08 的最终发布/Word 证据归入 N8，当前尚未关闭。"
+  ]
+}

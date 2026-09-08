@@ -1,0 +1,4 @@
+WARNING: <repo>/docs/acceptance/n0-n10-review/pageref.pdf (object 6 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/n0-n10-review/pageref.pdf (object 8 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/n0-n10-review/pageref.pdf (object 10 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+qpdf: operation succeeded with warnings

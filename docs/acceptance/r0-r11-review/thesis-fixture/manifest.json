@@ -1,0 +1,67 @@
+{
+  "schema_version": 3,
+  "project_name": "Anonymous Complete Thesis",
+  "source": {
+    "strategy": "docx_document",
+    "file": "source/thesis-source.docx"
+  },
+  "format": {
+    "ref": "preset:academic-basic@1.0.0"
+  },
+  "formatting": {
+    "mode": "restyle"
+  },
+  "layout": {
+    "page_sequences": {
+      "front": {
+        "format": "lowerRoman",
+        "restart": true,
+        "start": 1
+      },
+      "main": {
+        "format": "decimal",
+        "restart": true,
+        "start": 1
+      }
+    },
+    "parts": {
+      "cover": {
+        "kind": "cover",
+        "include_in_toc": false
+      },
+      "toc": {
+        "kind": "generated_toc",
+        "page_sequence": "front",
+        "include_in_toc": false
+      },
+      "body": {
+        "kind": "content",
+        "page_sequence": "main",
+        "section_type": "oddPage",
+        "include_in_toc": true
+      }
+    }
+  },
+  "cover": {
+    "main_title": "匿名学位论文样例",
+    "sub_title": "真实 Word 验收材料",
+    "author": "匿名",
+    "date": "2026"
+  },
+  "output": {
+    "documents": [
+      {
+        "id": "main",
+        "filename": "thesis-complete.docx",
+        "parts": [
+          "cover",
+          "toc",
+          "body"
+        ],
+        "toc": {
+          "links": "internal"
+        }
+      }
+    ]
+  }
+}

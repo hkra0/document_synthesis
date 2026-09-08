@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "batch": "R7",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "scope": "样例分析、人工决策、近似预览、manifest 迁移与格式包/RoleMap 复用",
+  "commands": [
+    "python3 -m unittest tests.test_r7_workflows -q",
+    "python3 docs/acceptance/r7-evaluation/generate_dataset.py",
+    "python3 docs/acceptance/r7-evaluation/evaluate_dataset.py",
+    "python3 synthesize.py --source examples/minimal-demo --plan",
+    "git diff --check"
+  ],
+  "results": {
+    "r7_tests": {
+      "run": 6,
+      "passed": 6,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "independent_evaluation": {
+      "documents": 20,
+      "categories": ["公文", "报告", "论文", "手工格式"],
+      "heading_positives": 100,
+      "body_negatives": 500,
+      "heading_accuracy": 1.0,
+      "per_level": {
+        "heading.1": {"support": 20, "predicted": 20, "true_positive": 20, "false_positive": 0, "false_negative": 0, "precision": 1.0, "recall": 1.0},
+        "heading.2": {"support": 20, "predicted": 20, "true_positive": 20, "false_positive": 0, "false_negative": 0, "precision": 1.0, "recall": 1.0},
+        "heading.3": {"support": 20, "predicted": 20, "true_positive": 20, "false_positive": 0, "false_negative": 0, "precision": 1.0, "recall": 1.0},
+        "heading.4": {"support": 20, "predicted": 20, "true_positive": 20, "false_positive": 0, "false_negative": 0, "precision": 1.0, "recall": 1.0},
+        "heading.5": {"support": 20, "predicted": 20, "true_positive": 20, "false_positive": 0, "false_negative": 0, "precision": 1.0, "recall": 1.0}
+      },
+      "body_as_heading_false_positives": 0,
+      "automatic_acceptance_coverage": 1.0,
+      "automatic_acceptance_precision": 1.0,
+      "candidate_review_required_rate": 0.2857142857142857,
+      "pending_decision_rate": 0.125,
+      "manual_correction_count": 0,
+      "evidence": "docs/acceptance/r7-evaluation/metrics.json"
+    },
+    "analysis_evidence": [
+      "sample_counts",
+      "style_inventory",
+      "field_evidence",
+      "unsupported_features",
+      "confidence_summary"
+    ],
+    "decisions": "pending roles are rejected at compile time; explicit inherit/reject decisions are accepted",
+    "preview": "fictional content, approximate engine, required role coverage, no source body",
+    "migration": "v1/v2 migration is non-destructive and writes a separate output",
+    "reuse": "compiled format and RoleMap are consumed by a second target document",
+    "plan": "passed",
+    "diff_check": "passed"
+  },
+  "artifacts_sha256": {
+    "lib/format_analysis.py": "fafef9d987b4fcd35570a641a0ae0dee7d2f9ec09fe2d70d06d8acb98a35d2ed",
+    "lib/format_review.py": "ccfd2d27bd0e18531163b24e8741f64f65bb11f7c8d1582074a6183097741470",
+    "lib/preview.py": "67a1b8d653cbc5784feb2d49e00b6f139d6181b5dcec7f950d26875336ade374",
+    "lib/manifest_migration.py": "4b7aa7f2aaa777f7a1fcbf704b3c7271051800218c451b06f87e57526b1c4160",
+    "tests/test_r7_workflows.py": "a6afe6c54bcc3e3f85adb81bbcf9ba169a2e55fd893d613f3fb1122d25e653cc",
+    "docs/acceptance/r7-evaluation/generate_dataset.py": "88dde4a5356067dcc3a63c1f9efb1cc00bdd3244d7862a87dffcdee047c1aff7",
+    "docs/acceptance/r7-evaluation/evaluate_dataset.py": "0a42d8a60704999e456a088a2fdda68fe92d16d257b9056617801b129ec49b57",
+    "docs/acceptance/r7-evaluation/dataset.json": "1701d2a03cb3ec4c9e2163b3000518bd4b622d7491e24f38de9fed556e61b1ba",
+    "docs/acceptance/r7-evaluation/metrics.json": "aed3e36468b5c4a70bdf63db50c7d64ecb21626df02323e3928bc40a43c39dc8"
+  },
+  "next_batch": "R8",
+  "next_step": "完成类型化 PageRecord、分节页码、真实 PDF 标签和 oddPage 物理页面验收。"
+}

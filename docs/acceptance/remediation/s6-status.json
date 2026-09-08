@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "batch": "S6",
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "verified_at": "2026-09-08",
+  "closes": [
+    "D06"
+  ],
+  "commands": [
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest discover -s tests -p 'test_remediation_word.py' -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest discover -s tests -p 'test_post_review_word.py' -v"
+  ],
+  "tests": {
+    "remediation_word": {
+      "run": 11,
+      "passed": 11,
+      "failed": 0
+    },
+    "NW01_NW12": {
+      "run": 12,
+      "passed": 12,
+      "failed": 0
+    }
+  },
+  "code_and_test_sha256": {
+    "tests/test_remediation_word.py": "431292d77e707f9dace7cccf8149b34979bb4ee74d86f5a89d7f915f9c2dd276",
+    "tests/test_post_review_word.py": "894d2c3980991af861668c3f33d3782a6ff2f1de89e0c616385825bee1356e58",
+    "lib/qa.py": "371262f6e101319f39ddd8b88c6c94abb9121f92cc7fd255385b99451bf2a0fe",
+    "lib/engine.py": "3feb07c8bc99095630b05737cb85f26ddb2e40e96f2c19fc05abbbaca1229175",
+    "lib/renderers.py": "a01c0b50b6bfc9b8058c77220d3bac873583540d9695a598b8e0470c750703f5",
+    "lib/content_integrity.py": "acd89737a8d7276ec93a1c582a4979964e50614ec3c73852fda53297428b7a1c"
+  },
+  "evidence": [
+    "固定目录真实 Word NW01–NW12=12/12；remediation_word=11/11；SW03 完整论文部件、SW04 横向节故事、SW05 多来源脚注/尾注关系、SW06 封面图片许可和 SW07 缺层级人工确认均已通过 Word→PDF/最终断言；均无授权弹窗。"
+  ],
+  "word_access_directory": "<word-access-dir>",
+  "remaining_limits": []
+}

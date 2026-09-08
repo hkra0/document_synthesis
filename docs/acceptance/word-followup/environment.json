@@ -1,0 +1,16 @@
+{
+  "python": "3.14.0",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "packages": {
+    "python-docx": "1.2.0",
+    "pymupdf": "1.28.2",
+    "pypdf": "6.14.2",
+    "Pillow": "12.1.0",
+    "lxml": "6.0.2",
+    "jsonschema": "4.26.0"
+  },
+  "word": {
+    "CFBundleShortVersionString": "16.112.3",
+    "CFBundleVersion": "16.112.26083020"
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "mixed_sizes": {
+    "unchanged": {
+      "passed": false,
+      "violations": [
+        "[body @ /w:document/w:body/w:p[1]] 字号 不匹配: 期望 12.0, 实际 24.0"
+      ],
+      "verified_count": 1,
+      "coverage": {
+        "expected_count": 1,
+        "mapped_count": 1,
+        "missing_count": 0,
+        "duplicate_count": 0
+      }
+    },
+    "corrupted": {
+      "passed": true,
+      "violations": [],
+      "verified_count": 1,
+      "coverage": {
+        "expected_count": 1,
+        "mapped_count": 1,
+        "missing_count": 0,
+        "duplicate_count": 0
+      }
+    }
+  },
+  "uniform": {
+    "unchanged": {
+      "passed": true,
+      "violations": [],
+      "verified_count": 1,
+      "coverage": {
+        "expected_count": 1,
+        "mapped_count": 1,
+        "missing_count": 0,
+        "duplicate_count": 0
+      }
+    },
+    "corrupted": {
+      "passed": true,
+      "violations": [],
+      "verified_count": 1,
+      "coverage": {
+        "expected_count": 1,
+        "mapped_count": 1,
+        "missing_count": 0,
+        "duplicate_count": 0
+      }
+    }
+  },
+  "duplicate_image": {
+    "source_instances": 1,
+    "actual_instances": 2,
+    "content_gate_accepted": true
+  },
+  "missing_level": {
+    "/w:document/w:body/w:p[1]": {
+      "selected_role": "heading.1",
+      "selected_score": 0.985
+    },
+    "/w:document/w:body/w:p[5]": {
+      "selected_role": "heading.2",
+      "selected_score": 0.985
+    }
+  },
+  "missing_level_metrics": {
+    "heading_candidate_coverage": 1.0,
+    "per_level": {
+      "heading.1": {
+        "support": 1,
+        "candidate_hits": 1,
+        "candidate_coverage": 1.0,
+        "selected_exact": 1,
+        "selected_exact_recall": 1.0,
+        "selected_as_heading": 1
+      },
+      "heading.3": {
+        "support": 1,
+        "candidate_hits": 1,
+        "candidate_coverage": 1.0,
+        "selected_exact": 0,
+        "selected_exact_recall": 0.0,
+        "selected_as_heading": 1
+      }
+    },
+    "body_as_heading_false_positives": 0,
+    "candidate_heading_false_positives": 0,
+    "candidate_block_precision": 1.0,
+    "candidate_count_max": 3,
+    "automatic_acceptance_coverage": 1.0,
+    "automatic_acceptance_precision": 1.0,
+    "automatic_acceptance_count": 2,
+    "automatic_acceptance_true_heading_count": 2,
+    "automatic_acceptance_threshold": 0.98,
+    "selected_score_range": {
+      "min": 0.9,
+      "max": 0.985
+    },
+    "automatic_threshold_reachable": true,
+    "candidate_count_limit": 3,
+    "candidate_count_within_limit": true,
+    "correction_operations_estimate": 1,
+    "manual_correction_count": 0,
+    "unresolved_count": 1
+  }
+}

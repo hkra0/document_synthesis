@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "batch": "N2",
+  "status": "verified",
+  "verified_at": "2026-09-06",
+  "closes": [
+    "C02"
+  ],
+  "code_sha256": {
+    "lib/config.py": "29c07799bc408a736b1f7515033a01f4f9ce3d429d8ae9b253d7996cdf8ef6d6",
+    "lib/composition.py": "1e7bc04e8c55dd7dacd1e352232b7c12b5f16919778cd7793fd9f38e8299b160",
+    "lib/build_plan.py": "24f83c924a3e6a51a54e90c53930ff15b54c0e21c1d22034c132f53713caa9a4",
+    "lib/verification_contracts.py": "9c21db70ac6821ac9346da4c46996d3d06cbc07e1d1478dee5ec2fd906ed5a51"
+  },
+  "fixture_sha256": {
+    "examples/custom-format-demo/academic-demo.format.json": "1a79ea0401ea94a9b748ed7800dfbfa306cdd13c076ffd7c671fea5c5b8dd979"
+  },
+  "commands": [
+    "python3 -m unittest discover -s tests -p 'test_post_review_contracts.py' -q",
+    "python3 synthesize.py --source examples/custom-format-demo/manuscript.docx --manifest examples/custom-format-demo/manifest.json --plan"
+  ],
+  "tests": {
+    "run": 7,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "word_cases": [
+    {
+      "id": "NW03",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 矩阵"
+    }
+  ],
+  "artifact_sha256": {
+    "tests/test_post_review_contracts.py": "a25ac3ead16fc811e4f006eac61f7dd6a6976455e6845487c761cc95012986eb"
+  },
+  "remaining_limits": [
+    "当前证据限于 NW03 匿名夹具，不扩展为任意模板封面支持。"
+  ]
+}

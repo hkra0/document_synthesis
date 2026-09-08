@@ -1,0 +1,45 @@
+{
+  "production_modified": false,
+  "pagination_test": {
+    "run": 7,
+    "passed": 7,
+    "skipped": 0,
+    "real_word_cases": 1
+  },
+  "m1_tests": {
+    "run": 3,
+    "passed": 3,
+    "skipped": 0,
+    "real_word_enabled": true
+  },
+  "academic": {
+    "pipeline_success": true,
+    "acceptance_passed": false,
+    "paper": "Letter instead of A4"
+  },
+  "m2_numbering": {
+    "word_export_passes": 2,
+    "published": false,
+    "failure": "page-level QA: orphan lines on physical pages 4 and 7",
+    "observed_labels": [
+      "i",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "body_first_physical_page": 2,
+    "odd_page_requested": true,
+    "visual_note": "Poppler pages 4 and 7 show only footer while text extraction reports two lines; MuPDF rendering of page 4 confirms two visible body lines. Renderer discrepancy remains unexplained."
+  },
+  "m2_pageref": {
+    "word_export_passes": 1,
+    "published": false,
+    "failure": "AttributeError: 'str' object has no attribute 'get'",
+    "site": "lib/field_updater.py:88",
+    "phase": "second assembly after first Word measurement"
+  },
+  "scope": "Full M2 thesis including all source-region/object features still cannot be accepted; these probes establish actual integration failures."
+}

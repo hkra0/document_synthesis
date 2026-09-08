@@ -1,0 +1,1 @@
+{"schema_version": 3, "project_name": "Independent N review", "source": {"strategy": "docx_document"}, "format": {"ref": "preset:academic-basic@1.0.0"}, "formatting": {"mode": "preserve", "page_policy": "source"}, "output": {"documents": [{"id": "main", "filename": "result.docx", "parts": ["body"]}]}}

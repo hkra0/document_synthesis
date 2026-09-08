@@ -1,0 +1,78 @@
+{
+  "published": false,
+  "failure": "page QA orphan lines on physical pages 4 and 7",
+  "pages": [
+    {
+      "physical_page": 1,
+      "size_mm": [
+        209.97,
+        297.01
+      ],
+      "text": "- i - \n目  录 \nChapter 1 Anonymous Study .......................................................... 1 \nChapter 2 Anonymous Study .......................................................... 4 \n"
+    },
+    {
+      "physical_page": 2,
+      "size_mm": [
+        215.9,
+        279.4
+      ],
+      "text": " \n- 1 - \nChapter 1 Anonymous Study \nChapter 1, observation 1. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 1, observation 2. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 1, observation 3. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \n"
+    },
+    {
+      "physical_page": 3,
+      "size_mm": [
+        215.9,
+        279.4
+      ],
+      "text": " \n- 2 - \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 1, observation 4. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 1, observation 5. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 1, observation 6. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \n"
+    },
+    {
+      "physical_page": 4,
+      "size_mm": [
+        215.9,
+        279.4
+      ],
+      "text": " \n- 3 - \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \n"
+    },
+    {
+      "physical_page": 5,
+      "size_mm": [
+        215.9,
+        279.4
+      ],
+      "text": " \n- 4 - \nChapter 2 Anonymous Study \nChapter 2, observation 1. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 2, observation 2. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 2, observation 3. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \n"
+    },
+    {
+      "physical_page": 6,
+      "size_mm": [
+        215.9,
+        279.4
+      ],
+      "text": " \n- 5 - \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 2, observation 4. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 2, observation 5. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \nChapter 2, observation 6. This fictional study compares two layout configurations. \nAll statements are anonymous test material. The document verifies page labels and stable \ncross references. This fictional study compares two layout configurations. All statements \nare anonymous test material. The document verifies page labels and stable cross \nreferences. This fictional study compares two layout configurations. All statements are \nanonymous test material. The document verifies page labels and stable cross references. \nThis fictional study compares two layout configurations. All statements are anonymous \ntest material. The document verifies page labels and stable cross references. This fictional \n"
+    },
+    {
+      "physical_page": 7,
+      "size_mm": [
+        215.9,
+        279.4
+      ],
+      "text": " \n- 6 - \nstudy compares two layout configurations. All statements are anonymous test material. \nThe document verifies page labels and stable cross references.  \n"
+    }
+  ],
+  "sections": [
+    {
+      "section_type": "ODD_PAGE (4)",
+      "pgNumType": {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}start": "1",
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fmt": "lowerRoman"
+      }
+    },
+    {
+      "section_type": "NEW_PAGE (2)",
+      "pgNumType": {
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}start": "1",
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fmt": "decimal"
+      }
+    }
+  ]
+}

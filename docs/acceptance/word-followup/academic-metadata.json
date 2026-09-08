@@ -1,0 +1,44 @@
+{
+  "generator": "document-synthesis",
+  "engine_version": "3.0.0",
+  "schema_version": 3,
+  "project_name": "AnonymousAcceptance",
+  "build_timestamp": "2026-09-05T09:02:45.370378+00:00",
+  "format": {
+    "id": "academic-basic",
+    "version": "1.0.0",
+    "capabilities": [
+      "styles.paragraph.v1",
+      "styles.character.v1",
+      "layout.single_column.v1",
+      "docx.single_source_preservation.v1"
+    ],
+    "source_sha256": "566d1cfd72cc48f3f21ab7f25afe2e61eaced76455a3f3afc86f177226305bfd"
+  },
+  "source_hashes": {
+    "<repo>/examples/custom-format-demo/manuscript.docx": "46505dcd122c513102836eae0ef5666f77c5ae06bf34883c5b523bd6628e6e34"
+  },
+  "deliveries": {
+    "main": {
+      "filename": "academic.docx",
+      "parts": [
+        "body"
+      ],
+      "sha256": "a1aaa8d9127e3ffcde139064dfa9d45d4192b365754e8ebe6f764549f6480cf3"
+    }
+  },
+  "environment": {
+    "python_version": "3.14.0",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "word_available": true
+  },
+  "qa": {
+    "content_integrity": "passed",
+    "format_verification": "passed",
+    "unverified_attributes": [
+      "hanging_indent",
+      "run_color",
+      "keep_with_next"
+    ]
+  }
+}

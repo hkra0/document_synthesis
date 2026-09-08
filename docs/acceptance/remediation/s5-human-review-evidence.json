@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "batch": "S5",
+  "status": "verified",
+  "evidence_type": "human_reviewer_attestation_and_cross_target_delivery",
+  "verified_at": "2026-09-08",
+  "source_review": {
+    "decision_file": "<downloads>/decisions (2).json",
+    "decision_sha256": "eece15a04d29a4fc8826ced6e65313d043a32de92915c6baf5954e2925888be4",
+    "report_id": "sample-analysis-cfbf6b41",
+    "source_sha256": "cfbf6b416ddacf4fa71ed7663969e4d36a12a53b91789149df7653744f0240ab",
+    "origin": "browser_ui",
+    "automation": false,
+    "reviewer_attested": true,
+    "started_at": "2026-09-08T05:08:04.124Z",
+    "completed_at": "2026-09-08T05:08:08.589Z",
+    "operation_count": 2,
+    "operations": [
+      {"sequence": 1, "operation": "set_missing_role", "target": "table.body", "from": "pending", "to": "inherit"},
+      {"sequence": 2, "operation": "set_missing_role", "target": "title", "from": "pending", "to": "inherit"}
+    ],
+    "analysis_sha256": "6ee447e498454b13b343c1bc9cbb54b50f6b39a9b3ffeb23d911eb02e38d8809",
+    "format_package_sha256": "61aad9a46cae4ac5724968e030dfc1b8939b91bc028c567b838e87eb808a0573",
+    "source_role_map_sha256": "5c7c147a6b1d52f408eb366c361278d4e18dbe456de5d309ee59bf4f991fa742"
+  },
+  "target_reuse": {
+    "source_file": "docs/acceptance/r7-evaluation/unstructured-hard-samples/报告-hard-cases.docx",
+    "report_id": "sample-analysis-b3b43103",
+    "source_sha256": "b3b43103477fbbba8d9bb5efa245120702c3e5050dd0fd98e88150ff61e0a147",
+    "analysis_sha256": "9e6ed9bc35f05fa348ffec2de7d0ca35e7c554bc851b524635de4e2286fed46c",
+    "decisions_origin": "imported",
+    "reviewer_attested": false,
+    "decisions_sha256": "55bc72ca2f4c8ced591f35afb8a6486810ce88f6a4888c8cba38b2d188dfea73",
+    "role_map_sha256": "e65adde9759a3b75b06d745ca93dfcd7d6d671a44ae1e2c1b80128a08e3f96f6",
+    "explicit_node_override": {"node": "/w:document/w:body/w:p[3]", "role": "heading.3"}
+  },
+  "real_word_delivery": {
+    "doctor": "passed",
+    "build": "passed",
+    "smoke_test": "passed",
+    "pages": 2,
+    "body_paragraphs": 12,
+    "verified_format_blocks": 12,
+    "content_integrity": "passed",
+    "format_verification": "passed",
+    "docx_sha256": "a8292e9b28a4008c997a13ea56d187c3f06eb252cb36c43e25a7764f49e5c033",
+    "pdf_sha256": "a6ea1116c3180434eb95f571a0a1db74a1db472f73dc42edd7f8be238a187b5c",
+    "metadata_sha256": "e6a7eb9c9a60c829c594368f15a6a46c2fbb8e7fbc2db8d5d44a302959ed8d37",
+    "docx_path": "<word-access-dir>/document-synthesis-review-handoff/target-release-evidence/human-reviewed-target.docx",
+    "pdf_path": "<word-access-dir>/document-synthesis-review-handoff/target-release-evidence/qa-main.pdf",
+    "metadata_path": "<word-access-dir>/document-synthesis-review-handoff/target-release-evidence/build-metadata.json",
+    "word_access_directory": "<word-access-dir>"
+  },
+  "scope_limits": [
+    "该真人操作日志证明一个匿名困难样例的浏览器审阅与跨目标交付闭环，不外推为所有模板的人工一致性保证。",
+    "20 份冻结集的 aggregate manual_correction_count 仍为 null；本轮不以单次真人操作补填该统计。"
+  ]
+}

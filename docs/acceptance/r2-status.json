@@ -1,0 +1,80 @@
+{
+  "batch": "R2",
+  "date": "2026-09-05",
+  "status": "verified",
+  "head": "54ea41722e51b78769bd47ae95c0adfaa80533d2",
+  "commands": [
+    {
+      "command": "python3 -m unittest tests.test_r2_contracts -v",
+      "result": "passed: 5 tests"
+    },
+    {
+      "command": "python3 -m unittest discover -s tests -v",
+      "result": "passed: 200 tests; expected_failures=10; skipped=2; errors=0; unexpected_failures=0"
+    },
+    {
+      "command": "python3 synthesize.py --project examples/minimal-demo --plan",
+      "result": "passed; read-only plan"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    },
+    {
+      "command": "/tmp/document_synthesis_r2_venv/bin/pip install -r requirements.txt",
+      "result": "passed in isolated Python 3.14.0 virtual environment"
+    },
+    {
+      "command": "/tmp/document_synthesis_r2_venv/bin/python synthesize.py --analyze-format examples/custom-format-demo/sample.docx --analysis-dir /tmp/document-synthesis-r2.bqqPMj/analysis3",
+      "result": "passed; analysis.json, review.html, decisions.example.json"
+    },
+    {
+      "command": "/tmp/document_synthesis_r2_venv/bin/python synthesize.py --compile-format ... --decisions ... --format-out ...",
+      "result": "passed; format package validated and written outside repository"
+    },
+    {
+      "command": "/tmp/document_synthesis_r2_venv/bin/python synthesize.py --compile-mapping ... --decisions ... --mapping-out ...",
+      "result": "passed; role-map-v1 validated and written outside repository"
+    },
+    {
+      "command": "/tmp/document_synthesis_r2_venv/bin/python synthesize.py --project examples/minimal-demo --plan",
+      "result": "passed; read-only plan"
+    }
+  ],
+  "environment": {
+    "python": "3.14.0",
+    "jsonschema": "4.26.0",
+    "requirements": "installed",
+    "real_word_pdf": "blocked; current shell cannot connect macOS graphical automation service"
+  },
+  "coverage": {
+    "schemas": [
+      "schemas/analysis-v1.schema.json",
+      "schemas/decisions-v1.schema.json",
+      "schemas/role-map-v1.schema.json"
+    ],
+    "role_map": "canonical NodeRef + role + provenance + confirmed",
+    "role_registry": "shared semantic registry; table is structure type and table.body is semantic role",
+    "provenance": "manifest and override leaf paths; declaring-file resolution for format.ref, role_map, template, source.file",
+    "safety": "null/false/0/empty-list semantics, unknown fields, JSON Pointer diagnostics, inheritance cycles, invalid geometry"
+  },
+  "file_sha256": {
+    "lib/contracts.py": "f9cef9ff0f104b2f122425d2fe0ab4ccc02a3108a21f9b948efd818104e914d1",
+    "lib/config.py": "6d439560291063b6613a1d48d4780c9808f3dc03ba8eb2306e7844e94454847e",
+    "lib/format_analysis.py": "02b69ff82bc4e2610bec6287f8b06e6935ccab69c680d071a822c4a40dc2583e",
+    "lib/format_resolver.py": "3a105246f586e7a7bc789c2f50cefe8285f4be65d955807cb4b6fa6e61c05eb4",
+    "lib/format_review.py": "f48fb78baa99ad9a109fba3e7f881e8e6d0ee91979590ef22dcf4db274de3912",
+    "lib/format_schema.py": "c83ef3e924fb5ab4cbc89753526e8795de4b31468e0b562b4f1e5bf4ff4bab07",
+    "lib/role_mapper.py": "2e7f6a438fc930351171c8e8135d4ad9799ea83f15a6a1617480df0a23c6243e",
+    "synthesize.py": "607bfba5ade0bbb9d709e4aa4f18f54c4f9ff5bc350a04ee869b5d94025cb29c",
+    "requirements.txt": "092cc18d2034756412dc9d779724e8e3768de27acd4712d2f84aa1cfced91a3d",
+    "schemas/analysis-v1.schema.json": "fa3a0e06bc1814cec5d9bc4779f79b4b95a47fbe03d1ee3448f61fef23e4ba95",
+    "schemas/decisions-v1.schema.json": "13e340c0d658db419b6483193a3f72ab9b2c8d53baffc4486fd64a0db85209cb",
+    "schemas/role-map-v1.schema.json": "75988a12a8d11020f057a64790f1e5570be3576b37004fbcc653a5cb7cb625f8",
+    "schemas/project-v3.schema.json": "d1cca55e04d5497a40851114a0dfcbec709d94cae88d1b4560a91b4b844a5593",
+    "schemas/format-v1.schema.json": "38c99e7cd3ec5c935408421986e4604e003a13f8dd9546d4868b4b553831f7bf",
+    "tests/test_r2_contracts.py": "6f0a39ea9106ac12fbf680571c095f728517238ac9db20d8057763d5b20c6f1d",
+    "tests/test_role_mapper.py": "e97f16b6483679c7c95d7f992f1fdcde870e66f1bcd7922a0b31672910f3eb4f"
+  },
+  "next_batch": "R3"
+}

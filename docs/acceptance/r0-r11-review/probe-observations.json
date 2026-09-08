@@ -1,0 +1,37 @@
+{
+  "preserve": {
+    "stage": "real render_body + real verifier, no Word",
+    "format_passed": false,
+    "verified_count": 0,
+    "violations": [
+      "[section 0] 页面尺寸 width_mm 不匹配: 期望 210.0mm, 实际 180.0mm",
+      "[section 0] 页面尺寸 height_mm 不匹配: 期望 297.0mm, 实际 240.0mm",
+      "[section 0] 页面边距 margin_top_mm 不匹配: 期望 25.0mm, 实际 25.4mm",
+      "[section 0] 页面边距 margin_bottom_mm 不匹配: 期望 25.0mm, 实际 25.4mm",
+      "[section 0] 页面边距 margin_left_mm 不匹配: 期望 25.0mm, 实际 31.8mm",
+      "[section 0] 页面边距 margin_right_mm 不匹配: 期望 25.0mm, 实际 31.8mm"
+    ]
+  },
+  "emphasis": {
+    "stage": "real render_body + real verifier, no Word",
+    "format_passed": false,
+    "verified_count": 5,
+    "violations": [
+      "[body @ /w:document/w:body/w:p[1]] 加粗状态 不匹配: 期望 False, 实际 True"
+    ]
+  },
+  "normal": {
+    "stage": "real render_body + real verifier, no Word",
+    "format_passed": true,
+    "verified_count": 5,
+    "violations": []
+  },
+  "removed_managed_style": {
+    "actual_first_run_pt": 70,
+    "accepted": true,
+    "verified_count": 4,
+    "total_blocks": 5
+  },
+  "reordered_duplicated_content_accepted": true,
+  "migration_overwrites_own_input": true
+}

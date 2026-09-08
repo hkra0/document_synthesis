@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "batch": "R8",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "scope": "PageRecord、分节页码序列、真实 PDF 标签核对、oddPage 物理页面与页级 QA",
+  "environment": {
+    "platform": "macOS 27.0 arm64",
+    "python": "3.14.0",
+    "microsoft_word": "16.112.3"
+  },
+  "commands": [
+    "python3 -m unittest tests.test_page_sequences tests.test_document_parts tests.test_delivery_pipeline tests.test_formatting_pipeline_contracts -q",
+    "TMPDIR=<repo>/output/r8-word-tmp DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest tests.test_word_formatting -v",
+    "git diff --check"
+  ],
+  "results": {
+    "offline_tests": {
+      "run": 54,
+      "passed": 54,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "real_word_tests": {
+      "W04": "passed",
+      "W05": "passed",
+      "W06": "passed"
+    },
+    "assertions": [
+      "A4 geometry is present in DOCX and Word-exported PDF",
+      "front lower-Roman label i and body Arabic label 1 are extracted from the same PDF",
+      "declared oddPage boundary is physically odd after local correction",
+      "only the corresponding intentional blank page enters the QA allowlist",
+      "label mismatch blocks publication"
+    ],
+    "diff_check": "passed"
+  },
+  "fixture_sha256": {
+    "docs/acceptance/word-followup/manifest.json": "1490c33941ceacb4d47ece044c9127dd759a05d1222f47474aee5263ab8b7743",
+    "docs/acceptance/word-followup/m2-fixtures/numbering-source.docx": "94f57578b7773c6a48dfeee4123886b1af4829d5246d4ce32bff2273be5f51d5",
+    "docs/acceptance/word-followup/m2-fixtures/numbering-manifest.json": "5fc8a047758e5168c3e760af74365f081f1861d6c42c4f022482bbd4cfddb3dd",
+    "docs/acceptance/word-followup/m2-fixtures/pageref-source.docx": "16c3645603c1c52ee0d4bca8a21a4250c76ddf3c137b479f2656bb281e33d50d",
+    "docs/acceptance/word-followup/m2-fixtures/pageref-manifest.json": "5fc8a047758e5168c3e760af74365f081f1861d6c42c4f022482bbd4cfddb3dd"
+  },
+  "artifacts_sha256": {
+    "lib/pagination_types.py": "309ed713445513ef7c044644ffbf2abbe6f4b14d982584b72b70427a97573e4e",
+    "lib/pagination.py": "beef637b70ecc88e670e7ab30cf7b56a9736955a496361f7b52c6cdb02711e33",
+    "lib/composition.py": "319f8139a94419c096d398c1a4de903ceacf16b457bd3876c3ac20e5b1614364",
+    "lib/delivery.py": "d3b16627014b573f31939b270695c5b0b69757105d746dfcff2512bb463bfa69",
+    "tests/test_page_sequences.py": "b92c578c31b51ec3a460c0f23621f518cd7fc676912ecaf698d59e21d0e745ff",
+    "tests/test_word_formatting.py": "377083603aafb8e6d7969a48f2bfee8fbf7fca853bded696896cf88f34bb8df2"
+  },
+  "next_batch": "R9",
+  "next_step": "完成类型化字段依赖、脚注/尾注闭包与真实 PAGEREF 收敛验收。"
+}

@@ -1,0 +1,110 @@
+{
+  "published": true,
+  "pdf_pages": 12,
+  "page_sizes_mm": [
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ],
+    [
+      209.97,
+      297.01
+    ]
+  ],
+  "expected_cover_title": "匿名学位论文样例",
+  "expected_cover_title_on_pdf_first_page": false,
+  "automatically_selected_template": "templates/封面+目录.docx",
+  "visual_review": {
+    "pages_inspected": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "cover": "unrelated legacy business cover; expected configured title absent",
+    "other_pages": "no obvious clipping or overlap observed; this does not certify the full M2 matrix"
+  },
+  "fixture_parts": [
+    "cover",
+    "toc",
+    "body"
+  ],
+  "fixture_has_source_regions": false,
+  "fields": [
+    {
+      "instruction": "SEQ Figure \\* ARABIC",
+      "cache": "1"
+    },
+    {
+      "instruction": "REF fig_caption",
+      "cache": "1"
+    },
+    {
+      "instruction": "SEQ Table \\* ARABIC",
+      "cache": "1"
+    },
+    {
+      "instruction": "PAGEREF _Toc_0005_a6f140",
+      "cache": "8"
+    }
+  ],
+  "environment": {
+    "python_version": "3.14.0",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "word_available": true,
+    "word_automation": {
+      "available": true,
+      "reason": "Automation 探针成功: Microsoft Word。"
+    },
+    "word_version": "16.112.3",
+    "word_build": "16.112.26083020"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": 3,
+  "project_name": "AnonymousM2Probe",
+  "source": {
+    "strategy": "docx_document"
+  },
+  "format": {
+    "ref": "preset:academic-basic@1.0.0"
+  },
+  "formatting": {
+    "mode": "restyle"
+  },
+  "layout": {
+    "page_sequences": {
+      "front": {
+        "format": "lowerRoman",
+        "start": 1
+      },
+      "main": {
+        "format": "decimal",
+        "start": 1
+      }
+    },
+    "parts": {
+      "toc": {
+        "kind": "generated_toc",
+        "page_sequence": "front"
+      },
+      "body": {
+        "kind": "content",
+        "page_sequence": "main",
+        "section_type": "oddPage"
+      }
+    }
+  },
+  "output": {
+    "documents": [
+      {
+        "id": "main",
+        "filename": "m2.docx",
+        "parts": [
+          "toc",
+          "body"
+        ]
+      }
+    ]
+  }
+}

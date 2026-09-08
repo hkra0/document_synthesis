@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "batch": "N9",
+  "status": "verified",
+  "verified_at": "2026-09-06",
+  "closes": [],
+  "code_sha256": {
+    "docs/acceptance/post-review/pdf-diagnostics/diagnose_pdfs.py": "a334655d1c01288c190b368029178e4a1c327443b349841f67f8d8422514ad76",
+    "docs/acceptance/post-review/pdf-diagnostics/README.md": "c8067654ab0529254f9e6d12c71fe2111020f3f82bcd8dd7623fc3ec67cada31"
+  },
+  "fixture_sha256": {
+    "docs/acceptance/r0-r11-review/thesis-complete.pdf": "3c21d24de21a1e567960ee7a0d1f6544bc2117ea8f021cce5a3bb6a4bad55e21",
+    "docs/acceptance/r0-r11-review/body-pageref.pdf": "d91baa8a92a71d6057cb06ac6aa4c71e8a6fc3d05430cf5ca842e47fc3fe3e2a",
+    "docs/acceptance/post-review/word-evidence/20260906/external-export-source.docx": "752aa4ae694254cd5c1008d278b9256b71324f5ed6ef159ec3d462aad42c6695"
+  },
+  "commands": [
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -c 'from lib.qa import export_docx_to_pdf; export_docx_to_pdf(<anonymous-source>, <rerun-pdf>)'",
+    "python3 docs/acceptance/post-review/pdf-diagnostics/diagnose_pdfs.py",
+    "qpdf --check <rerun-pdf>"
+  ],
+  "tests": {
+    "historical_diagnostics": {
+      "run": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "warning_classification": "quartz_orphan_zero_offset_xref"
+    },
+    "same_source_word_export": {
+      "run": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "pypdf_pages": 6,
+      "pymupdf_pages": 6,
+      "pypdf_warning_count": 3,
+      "warning_classification": "quartz_orphan_zero_offset_xref",
+      "orphan_xref_objects": [
+        6,
+        8,
+        10
+      ]
+    }
+  },
+  "word_cases": [],
+  "artifact_sha256": {
+    "docs/acceptance/post-review/pdf-diagnostics/summary.json": "e7da29a90d01c7145d29f23a86ab240e660772e6dc7f1fa6529d2db56b905882",
+    "docs/acceptance/post-review/word-evidence/20260906/external-export-qa-main.pdf": "add4238aea5ed5c6224c19c084cdb14bb5ddc81612b5234bf0826428eb2464a7",
+    "docs/acceptance/post-review/word-evidence/20260906/external-export-qa-main-rerun.pdf": "019cf005f6e8227b9479c070864c760414bc734705b8ded7fc405c54ddbb839d"
+  },
+  "remaining_limits": [
+    "已知 Quartz 模式的处理是非破坏性诊断分类，不改写原始 PDF；仅当 offset=0 对象不存在、无任何引用且 pypdf/PyMuPDF/Poppler 页数与页面框一致时视为非致命。其他结构异常仍保持 blocked。"
+  ]
+}

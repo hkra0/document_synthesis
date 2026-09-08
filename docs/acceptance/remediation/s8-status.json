@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "batch": "S8",
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "verified_at": "2026-09-08",
+  "closes": [],
+  "commands": [
+    "git diff --check",
+    "python3 -m unittest discover -s tests -q",
+    "python3 synthesize.py --source examples/minimal-demo/source --manifest examples/minimal-demo/manifest.json --plan",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 synthesize.py --doctor --source examples/minimal-demo/source --manifest examples/minimal-demo/manifest.json",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 synthesize.py --source examples/minimal-demo/source --manifest examples/minimal-demo/manifest.json --output-dir <word-access-dir>/document-synthesis-release-check-20260908-r2",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 smoke_test.py --source examples/minimal-demo/source --manifest examples/minimal-demo/manifest.json --output-dir <word-access-dir>/document-synthesis-release-check-20260908-r2",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest discover -s tests -p 'test_post_review_word.py' -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest discover -s tests -p 'test_remediation_word.py' -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest discover -s tests -p 'test_word_formatting.py' -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest discover -s tests -p 'test_m1_acceptance.py' -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest discover -s tests -p 'test_thesis_acceptance.py' -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_pagination.PaginationTest.test_real_word_repeated_titles_and_section_page_restart -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_publication_gates.PublicationGateContractTest.test_real_cli_second_failure_keeps_previous_delivery_and_metadata -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_publication_gates.PublicationGateContractTest.test_real_word_gate_injection_after_staging_blocks_publication -v"
+  ],
+  "tests": {
+    "offline": {
+      "run": 325,
+      "passed": 325,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 6
+    },
+    "real_word": {
+      "NW01_NW12": {
+        "run": 12,
+        "passed": 12
+      },
+      "remediation_word": {
+        "run": 11,
+        "passed": 11
+      },
+      "W04_W07": {
+        "run": 4,
+        "passed": 4
+      },
+      "M1": {
+        "run": 3,
+        "passed": 3
+      },
+      "thesis": {
+        "run": 1,
+        "passed": 1
+      },
+      "pagination": {
+        "run": 1,
+        "passed": 1
+      }
+    },
+    "status": "verified",
+    "reason": "S0–S7 退出证据已固定；S5 真人审阅、跨目标 RoleMap 和真实 Word 交付已闭环"
+  },
+  "code_and_test_sha256": {
+    "docs/post-n0-n10-remediation-plan.md": "3778f8c533abb0eeff6504b46cbe50270195352e71402d9fe068d47dfe983aa0",
+    "docs/acceptance/remediation/write_status.py": "eb365cbe1ab9b2afb0245524d3a6469e4e2d788682e422c9eac8d9a74d96d6de",
+    "docs/acceptance/remediation/s5-human-review-evidence.json": "876bcf10a85e2c881e4fc061c08d98ba664af204ad6d70254ebfea2be1b63db3"
+  },
+  "evidence": [
+    "离线套件 325/325 通过（6 项条件跳过）；NW01–NW12、remediation_word、W04–W07、M1、论文、分页和发布门禁索引均已固定。最小匿名示例已完成 plan→doctor→真实 Word build→smoke_test；S5 真人审阅与跨目标真实 Word 交付证据见 s5-human-review-evidence.json。"
+  ],
+  "word_access_directory": "<word-access-dir>",
+  "remaining_limits": [
+    "能力结论仍限定在声明的匿名夹具、冻结集和 Word 环境；新增模板或更大冻结集需要另行复验。"
+  ]
+}

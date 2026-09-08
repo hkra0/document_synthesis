@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "batch": "R1",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "worktree_revision": {
+    "head": "54ea41722e51b78769bd47ae95c0adfaa80533d2",
+    "working_tree_changes_present": true,
+    "note": "哈希和测试结果针对当前工作区，不以 HEAD 单独代表受检代码。"
+  },
+  "commands": [
+    "python3 -m unittest tests.test_formatting_pipeline_contracts.R0KnownDefectContractTest.test_F09_role_style_alias_is_resolved_for_format_verification tests.test_publication_gates -v",
+    "python3 -m unittest discover -s tests -v",
+    "python3 synthesize.py --project examples/minimal-demo --plan",
+    "python3 synthesize.py --project examples/minimal-demo --doctor",
+    "git diff --check"
+  ],
+  "results": {
+    "r1_focus": {
+      "run": 6,
+      "passed": 6,
+      "expected_failures": 0,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "full_suite": {
+      "run": 195,
+      "passed": 183,
+      "expected_failures": 10,
+      "skipped": 2,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "plan": "passed; read-only output",
+    "doctor": "blocked; shell context cannot connect macOS graphical automation service",
+    "diff_check": "passed"
+  },
+  "contract_state": {
+    "F02": "verified: failed format/content gates reject publication and preserve old result",
+    "F09": "verified for roles.style alias resolution; broader delivery-scope coverage remains in R6",
+    "W04": "offline page-geometry negative gate verified; real Word run remains blocked",
+    "W05": "blocked until R8 real Word/PDF run",
+    "W06": "blocked until R9 real Word/PDF run"
+  },
+  "artifacts_sha256": {
+    "lib/delivery.py": "d201d47d6f963c617252148bbdde9cd2258e86e9f7dac91457319be665507497",
+    "lib/engine.py": "15aea1c23249d4d1600cdb3f69f55f75a67af582649498296437d477f94062ec",
+    "lib/content_integrity.py": "4f4c2c535cf95fe62528dfc9c50c8608039b0d2abc188f91b2b91aad7dbde477",
+    "tests/test_publication_gates.py": "84a8813732f2d7b86420a77111ec68f1ce4aa17ba0501b3826851f1b46445247",
+    "tests/test_content_integrity.py": "81d72d8bdef7af78edf2d8d2c61c357f03ff043208cbc69b21b176ce936405a4",
+    "tests/test_formatting_pipeline_contracts.py": "fa1c0c4a042604d7bead645262e9dfd90e816c7567b3d0fc668dec970769825d"
+  },
+  "next_batch": "R2",
+  "next_step": "补齐 analysis/decisions/role-map Schema 与统一跨目录引用、版本、候选 ID 和源哈希校验，然后用干净环境验证 analyze/compile/plan。"
+}

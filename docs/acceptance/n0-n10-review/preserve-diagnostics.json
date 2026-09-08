@@ -1,0 +1,657 @@
+{
+  "status": "failed",
+  "error": {
+    "type": "BuildError",
+    "message": "交付门禁未通过:\n  - main (result.docx) / format_verification = failed: [body @ /w:document/w:body/w:p[1]] 字号 不匹配: 期望 12.0, 实际 24.0"
+  },
+  "qa": {
+    "content_integrity": "passed",
+    "format_verification": "failed",
+    "unverified_attributes": [],
+    "violations": [
+      "[body @ /w:document/w:body/w:p[1]] 字号 不匹配: 期望 12.0, 实际 24.0"
+    ],
+    "delivery_reports": {
+      "main": {
+        "delivery_id": "main",
+        "filename": "result.docx",
+        "publishable": false,
+        "checks": [
+          {
+            "name": "content_integrity",
+            "status": "passed",
+            "required": true,
+            "diagnostics": [
+              "清单范围: body"
+            ],
+            "evidence": {
+              "expected_inventory": {
+                "source_sha256": "abe08f0f073643ecad743970ae7597bf30c9521c63478c15896561a90580c55b",
+                "paragraph_total": 1,
+                "unique_paragraphs": 1,
+                "table_total": 0,
+                "media_total": 0,
+                "media_hashes": [],
+                "media_instance_total": 0,
+                "math_formula_total": 0,
+                "footnote_total": 0,
+                "footnote_definition_total": 0,
+                "endnote_total": 0,
+                "field_total": 0,
+                "field_dependency_total": 0,
+                "bookmark_total": 0,
+                "hyperlink_total": 0,
+                "source_order": [
+                  "<repo>/output/n0-n10-review/probes/mixed_sizes/source.docx"
+                ],
+                "source_regions": {
+                  "body": "entire_document"
+                },
+                "allowed_generated_text": {},
+                "replacements": {},
+                "allowed_id_remaps": {
+                  "bookmark_id": "allowed_if_name_and_range_semantics_preserved",
+                  "relationship_id": "allowed_if_target_and_type_preserved",
+                  "style_id": "allowed_if_role_and_effective_style_preserved",
+                  "numbering_id": "allowed_if_numbering_semantics_preserved",
+                  "note_id": "allowed_if_definition_content_and_reference_count_preserved"
+                },
+                "provenance": {
+                  "kind": "PreparedBuild",
+                  "delivery_id": "main",
+                  "parts": [
+                    "body"
+                  ]
+                },
+                "coverage": {
+                  "source_files": 1,
+                  "paragraph_instances": 1,
+                  "table_instances": 0,
+                  "media_instances": 0,
+                  "formula_instances": 0,
+                  "footnote_references": 0,
+                  "endnote_references": 0,
+                  "field_instructions": 0,
+                  "hyperlink_targets": 0
+                },
+                "content_parts": [
+                  "body"
+                ]
+              }
+            }
+          },
+          {
+            "name": "format_verification",
+            "status": "failed",
+            "required": true,
+            "diagnostics": [
+              "[body @ /w:document/w:body/w:p[1]] 字号 不匹配: 期望 12.0, 实际 24.0"
+            ],
+            "evidence": {
+              "passed": false,
+              "verified_count": 1,
+              "violation_count": 1,
+              "verified_roles": [
+                "body"
+              ],
+              "violations": [
+                "[body @ /w:document/w:body/w:p[1]] 字号 不匹配: 期望 12.0, 实际 24.0"
+              ],
+              "unverified_attributes": [],
+              "details": {
+                "total_blocks": 1,
+                "verified_blocks": 1,
+                "page_geometry": [
+                  {
+                    "section": 0,
+                    "expected": {
+                      "width_mm": 215.9,
+                      "height_mm": 279.4,
+                      "margin_top_mm": 25.4,
+                      "margin_bottom_mm": 25.4,
+                      "margin_left_mm": 31.8,
+                      "margin_right_mm": 31.8
+                    },
+                    "actual": {
+                      "width_mm": 215.9,
+                      "height_mm": 279.4,
+                      "margin_top_mm": 25.4,
+                      "margin_bottom_mm": 25.4,
+                      "margin_left_mm": 31.75,
+                      "margin_right_mm": 31.75
+                    }
+                  }
+                ],
+                "items": [
+                  {
+                    "role": "page",
+                    "attribute": "width_mm",
+                    "expected": 215.9,
+                    "actual": 215.9,
+                    "provenance": {
+                      "source": "ResolvedFormat.page",
+                      "section": 0
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "page",
+                    "attribute": "height_mm",
+                    "expected": 279.4,
+                    "actual": 279.4,
+                    "provenance": {
+                      "source": "ResolvedFormat.page",
+                      "section": 0
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "page",
+                    "attribute": "margin_top_mm",
+                    "expected": 25.4,
+                    "actual": 25.4,
+                    "provenance": {
+                      "source": "ResolvedFormat.page",
+                      "section": 0
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "page",
+                    "attribute": "margin_bottom_mm",
+                    "expected": 25.4,
+                    "actual": 25.4,
+                    "provenance": {
+                      "source": "ResolvedFormat.page",
+                      "section": 0
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "page",
+                    "attribute": "margin_left_mm",
+                    "expected": 31.8,
+                    "actual": 31.75,
+                    "provenance": {
+                      "source": "ResolvedFormat.page",
+                      "section": 0
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "page",
+                    "attribute": "margin_right_mm",
+                    "expected": 31.8,
+                    "actual": 31.75,
+                    "provenance": {
+                      "source": "ResolvedFormat.page",
+                      "section": 0
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[0:48].bold",
+                    "expected": false,
+                    "actual": false,
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[48:96].bold",
+                    "expected": false,
+                    "actual": false,
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[0:48].italic",
+                    "expected": false,
+                    "actual": false,
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[48:96].italic",
+                    "expected": false,
+                    "actual": false,
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[0].latin",
+                    "expected": "Arial",
+                    "actual": "Arial",
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[0].size_pt",
+                    "expected": 12.0,
+                    "actual": 12.0,
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[0].color",
+                    "expected": "auto",
+                    "actual": "auto",
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[1].latin",
+                    "expected": "Arial",
+                    "actual": "Arial",
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[1].size_pt",
+                    "expected": 12.0,
+                    "actual": 24.0,
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "run[1].color",
+                    "expected": "auto",
+                    "actual": "auto",
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "paragraph.space_after_pt",
+                    "expected": 10.0,
+                    "actual": 10.0,
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "paragraph.line_spacing",
+                    "expected": {
+                      "mode": "multiple",
+                      "value": 1.15
+                    },
+                    "actual": {
+                      "mode": "multiple",
+                      "value": 1.15
+                    },
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "paragraph.widow_control",
+                    "expected": true,
+                    "actual": true,
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  },
+                  {
+                    "role": "body",
+                    "attribute": "paragraph.snap_to_grid",
+                    "expected": true,
+                    "actual": true,
+                    "provenance": {
+                      "source": "ResolvedFormat",
+                      "node": {
+                        "source_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5"
+                      },
+                      "part_uri": "word/document.xml"
+                    },
+                    "coverage": "verified"
+                  }
+                ],
+                "coverage": {
+                  "roles": [
+                    "body"
+                  ],
+                  "properties": "effective_style_per_run_and_paragraph",
+                  "unverified_attributes": []
+                }
+              },
+              "verification_context": {
+                "contract_version": 1,
+                "delivery_id": "main",
+                "expected_delivery": {
+                  "delivery_id": "main",
+                  "parts": [
+                    "body"
+                  ],
+                  "ordered_nodes": [
+                    {
+                      "occurrence": {
+                        "source_sha256": "8decf08de4713535ad0d2fdbdb7360209db1b057cf4f24cea0fa4504deeb6726",
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "delivery_id": "main",
+                        "part_id": "body",
+                        "occurrence_index": 0,
+                        "source_order_index": 0,
+                        "occurrence_id": "8decf08de4713535ad0d2fdbdb7360209db1b057cf4f24cea0fa4504deeb6726|word/document.xml|/w:document/w:body/w:p[1]|main|body|0"
+                      },
+                      "role": "body",
+                      "story_type": "body",
+                      "structure_type": "paragraph",
+                      "semantic_summary": {
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5",
+                        "runs_count": 2,
+                        "protected_objects": [],
+                        "source_effective_run": {
+                          "east_asia": null,
+                          "latin": "Arial",
+                          "complex_script": null,
+                          "size_pt": 12.0,
+                          "bold": false,
+                          "italic": false,
+                          "color": "auto"
+                        },
+                        "source_effective_runs": [
+                          {
+                            "east_asia": null,
+                            "latin": "Arial",
+                            "complex_script": null,
+                            "size_pt": 12.0,
+                            "bold": false,
+                            "italic": false,
+                            "color": "auto"
+                          },
+                          {
+                            "east_asia": null,
+                            "latin": "Arial",
+                            "complex_script": null,
+                            "size_pt": 24.0,
+                            "bold": false,
+                            "italic": false,
+                            "color": "auto"
+                          }
+                        ],
+                        "source_effective_run_spans": [
+                          {
+                            "start": 0,
+                            "end": 48,
+                            "style": {
+                              "east_asia": null,
+                              "latin": "Arial",
+                              "complex_script": null,
+                              "size_pt": 12.0,
+                              "bold": false,
+                              "italic": false,
+                              "color": "auto"
+                            }
+                          },
+                          {
+                            "start": 48,
+                            "end": 96,
+                            "style": {
+                              "east_asia": null,
+                              "latin": "Arial",
+                              "complex_script": null,
+                              "size_pt": 24.0,
+                              "bold": false,
+                              "italic": false,
+                              "color": "auto"
+                            }
+                          }
+                        ],
+                        "source_inline_emphasis_spans": [
+                          {
+                            "start": 0,
+                            "end": 48,
+                            "bold": null,
+                            "italic": null
+                          },
+                          {
+                            "start": 48,
+                            "end": 96,
+                            "bold": null,
+                            "italic": null
+                          }
+                        ],
+                        "source_effective_paragraph": {
+                          "alignment": null,
+                          "first_line_indent": null,
+                          "hanging_indent": null,
+                          "left_indent": null,
+                          "right_indent": null,
+                          "space_before_pt": null,
+                          "space_after_pt": 10.0,
+                          "line_spacing": {
+                            "mode": "multiple",
+                            "value": 1.15
+                          },
+                          "keep_with_next": null,
+                          "keep_lines": null,
+                          "widow_control": true,
+                          "page_break_before": null,
+                          "snap_to_grid": true
+                        }
+                      },
+                      "managed_properties": [],
+                      "protected_properties": [
+                        "semantic_objects",
+                        "inline_emphasis",
+                        "source_effective_style"
+                      ],
+                      "provenance": "default"
+                    }
+                  ],
+                  "source_order": [
+                    "<repo>/output/n0-n10-review/probes/mixed_sizes/source.docx"
+                  ],
+                  "page_expectations": [
+                    {
+                      "width_mm": 215.9,
+                      "height_mm": 279.4,
+                      "orientation": "portrait",
+                      "margin_top_mm": 25.4,
+                      "margin_bottom_mm": 25.4,
+                      "margin_left_mm": 31.8,
+                      "margin_right_mm": 31.8,
+                      "header_distance_mm": 12.7,
+                      "footer_distance_mm": 12.7,
+                      "snap_to_grid": true
+                    }
+                  ],
+                  "generated_content": [],
+                  "field_dependencies": [],
+                  "policy_mode": "preserve",
+                  "page_policy": "source",
+                  "inline_emphasis": "preserve",
+                  "required_checks": [
+                    "content_integrity",
+                    "format_verification",
+                    "page_qa"
+                  ]
+                },
+                "output_node_map": {
+                  "locations": {
+                    "8decf08de4713535ad0d2fdbdb7360209db1b057cf4f24cea0fa4504deeb6726|word/document.xml|/w:document/w:body/w:p[1]|main|body|0": [
+                      {
+                        "part_uri": "word/document.xml",
+                        "element_path": "/w:document/w:body/w:p[1]",
+                        "text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5",
+                        "source_text_hash": "8537910c0aca5ae43c9efc1807c99fe87808e36959f13d02bac37d30796c26b5",
+                        "text_hash_matches": true,
+                        "text_range": {
+                          "start": 0,
+                          "end": 96
+                        },
+                        "structure_type": "paragraph",
+                        "story_type": "body",
+                        "output_index": 0,
+                        "provenance_marker": "_SynthSrc_1584436a5387dea2a439abd2eb76",
+                        "provenance_matches": true
+                      }
+                    ]
+                  },
+                  "transformations": [
+                    {
+                      "kind": "provenance_bookmark",
+                      "occurrence_id": "8decf08de4713535ad0d2fdbdb7360209db1b057cf4f24cea0fa4504deeb6726|word/document.xml|/w:document/w:body/w:p[1]|main|body|0",
+                      "bookmark_name": "_SynthSrc_1584436a5387dea2a439abd2eb76",
+                      "element_path": "/w:document/w:body/w:p[1]"
+                    }
+                  ],
+                  "missing_occurrences": [],
+                  "duplicate_occurrences": []
+                },
+                "source_hashes": {
+                  "<repo>/output/n0-n10-review/probes/mixed_sizes/source.docx": "8decf08de4713535ad0d2fdbdb7360209db1b057cf4f24cea0fa4504deeb6726"
+                },
+                "format_hash": "1327edb58ae8c7ca2c4cdb987c9a35ba7603b286783f1c82eb0a8c054b26da1b",
+                "config_hash": "dd1265d79d9973f0f338068e16821f777fea6b9b9870c72d97166738b5969cab",
+                "format_source_hashes": {
+                  "<repo>/formats/presets/academic-basic/1.0.0.json": "900ad669cda738539ba2fd4da7956986609f22a6d32b17fa6c1765cd1219fd28"
+                },
+                "delivery_sha256": "2ae8a1764275aa2ff8ddb88734b3b825fa33f72f85181db234434637c3b8c8b7",
+                "coverage": {
+                  "expected_count": 1,
+                  "mapped_count": 1,
+                  "missing_count": 0,
+                  "duplicate_count": 0
+                }
+              }
+            }
+          }
+        ],
+        "source_nodes": [
+          "<repo>/output/n0-n10-review/probes/mixed_sizes/source.docx"
+        ],
+        "unverified_attributes": []
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "batch": "S3",
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "verified_at": "2026-09-08",
+  "closes": [
+    "D03"
+  ],
+  "commands": [
+    "python3 -m unittest tests.test_content_integrity tests.test_remediation_contracts -q",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_remediation_word.RemediationWordTest.test_SW05_real_word_multi_source_notes_relationship_matrix_is_closed -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_remediation_word.RemediationWordTest.test_SW06_real_word_object_instances_and_extra_image_are_checked -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_remediation_word.RemediationWordTest.test_SW06_real_word_generated_cover_image_has_finite_license -v"
+  ],
+  "tests": {
+    "offline": {
+      "passed": true
+    },
+    "object_mapping_and_license": {
+      "run": 3,
+      "passed": 3,
+      "failed": 0
+    }
+  },
+  "code_and_test_sha256": {
+    "lib/content_integrity.py": "acd89737a8d7276ec93a1c582a4979964e50614ec3c73852fda53297428b7a1c",
+    "tests/test_content_integrity.py": "ae1d0a00b996c07fdf6e39c764e67c99e7c95c18b2e6b8eea5cec98a4348eb9b",
+    "tests/test_remediation_contracts.py": "3db0f8880f45741afca707fffd23aa89ef4b2c3f422e0f6a72bfe1988daf27d1",
+    "tests/test_remediation_word.py": "431292d77e707f9dace7cccf8149b34979bb4ee74d86f5a89d7f915f9c2dd276"
+  },
+  "evidence": [
+    "ObjectOccurrence 记录来源哈希、part/story、宿主与局部序号；多来源 SW05 真实交付验证 4 个 source occurrence→output anchor 映射；SW06 真实交付验证正文/封面同资源分部件映射及有限次数许可；重复、缺失、同名宿主移动和额外图片均有负向断言。"
+  ],
+  "word_access_directory": "<word-access-dir>",
+  "remaining_limits": []
+}

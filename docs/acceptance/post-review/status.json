@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "plan": "docs/post-r0-r11-optimization-plan.md",
+  "generated_at": "2026-09-06",
+  "status": "verified",
+  "summary": "N0–N10 的当前验收证据已齐备；N7 独立匿名冻结集达到自动接受门槛，N8 真实 Word 矩阵与 N9 PDF 警告诊断已验证。",
+  "batches": {
+    "N0": "verified",
+    "N1": "verified",
+    "N2": "verified",
+    "N3": "verified",
+    "N4": "verified",
+    "N5": "verified",
+    "N6": "verified",
+    "N7": "verified",
+    "N8": "verified",
+    "N9": "verified",
+    "N10": "verified"
+  },
+  "execution_policy": {
+    "automation": "real_word_used",
+    "word_claims": "verified_for_N8_and_N9"
+  },
+  "blocking_conditions": [],
+  "next_step": "当前冻结验收范围已放行；后续扩大真实文档或学校规范范围时，新增独立冻结集并重新校准 N7，继续使用固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 运行 Word 验收。"
+}

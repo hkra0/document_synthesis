@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "batch": "R3",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "worktree_revision": {
+    "head": "54ea41722e51b78769bd47ae95c0adfaa80533d2",
+    "working_tree_changes_present": true,
+    "note": "哈希和测试结果针对当前工作区，不以 HEAD 单独代表受检代码。"
+  },
+  "commands": [
+    "python3 -m unittest tests.test_r3_build_plan -v",
+    "python3 -m unittest discover -s tests -v",
+    "python3 synthesize.py --project examples/minimal-demo --plan",
+    "python3 -c 'json.dumps(UnifiedSynthesizer.plan(...))'",
+    "git diff --check"
+  ],
+  "results": {
+    "r3_focus": {
+      "run": 3,
+      "passed": 3,
+      "expected_failures": 0,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "full_suite": {
+      "run": 203,
+      "passed": 192,
+      "expected_failures": 9,
+      "skipped": 2,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "plan": "passed; read-only output",
+    "plan_serialization": "passed; json.dumps(public plan) succeeded and source_body_omitted=true",
+    "diff_check": "passed"
+  },
+  "contract_state": {
+    "F03": "verified: stale canonical RoleMap rejected before output/run directory creation",
+    "role_map": "verified offline: source SHA-256, part URI, element path, story type and text hash are checked",
+    "build_plan": "verified: plan and synthesize share PreparedBuild; render_body rechecks inputs",
+    "navigation": "verified offline: explicit heading.2 controls SynthHeading2 and duplicate titles receive unique bookmarks",
+    "source_body": "verified offline: public plan omits source_text/raw_text/visible_text/title_text",
+    "W04": "real Word/PDF run remains blocked by current shell graphics automation boundary",
+    "W05": "blocked until R8 real Word/PDF run",
+    "W06": "blocked until R9 real Word/PDF run"
+  },
+  "artifacts_sha256": {
+    "lib/build_plan.py": "9c0a96ab3ac573ef1b3725a61d734a4464ee301f893cfd3ade486c9624a60dbf",
+    "lib/engine.py": "a14d82421c20f92098021fe24a3b06a5c138e612e74d96c1e52cfd87cd5e5e35",
+    "lib/source_strategies.py": "042adf37f176161ada4ae18fe27f1ff5e7340d159feeab82072baae55bdb271a",
+    "lib/role_mapper.py": "e08ded40d0956aa6f20c2d9709586ed5e2bc4947d8be08b034d6f97f2071af36",
+    "lib/docx_inspector.py": "36e5537730f6b6bd9fee0b0448fe104e83c4bbd80012da140ff68c2388da12d3",
+    "lib/format_resolver.py": "14c1b9de4e0f4aff9f3dc12dffa031e17c82e672e95b76d5f7d49bb9e5e78f66",
+    "lib/format_schema.py": "4e1fd39b1d7c69e04289635ea8a8a77dc8e54213eb7acc004091b277b94079a7",
+    "schemas/role-map-v1.schema.json": "748e619ef1f12b89f6871ebbcd3776e1d41d6129223909c1682312b3f07128a9",
+    "smoke_test.py": "b6ee66c0d8695043058d8a88da29d65a4e131be936a4b3b2e0bed431f8857ac7",
+    "tests/test_r3_build_plan.py": "a416443a2bd43a6f6198d082c4b6f4b850dbcf02bc6ff9d54b334210dc60531a",
+    "tests/test_formatting_pipeline_contracts.py": "3c5de5bc73b84a4b84fdb46f42d0340dd813ba57aab63a4eebbf54f46ab44d83",
+    "tests/test_delivery_pipeline.py": "838e8a8f5e99a7d1c174bc2b1ca0b7db8fc03d4281fbe0c3f295f4be16eee947",
+    "tests/test_output_config.py": "2540b849c70da878a3e7b431ba4ee47b4a3f63c7b28647d6db85d37a71f1fd32",
+    "docs/b1-b10-completion-plan.md": "2cd63b1b15f42a99b57ca9dedcf0484c80f103a549deaacab550017403360b7f",
+    "docs/formatting-progress.md": "1f2f1485df658a42500a2e5aac586ae57be65817bd47022df1c7b613c5177eb5",
+    "docs/formatting-capabilities.md": "79f4f5f3c0e7af4ddfb4bdf0fbf61b83c215700a74839b0d63cacdbca2b03852"
+  },
+  "next_batch": "R4",
+  "next_step": "统一 RenderContext 的样式、页面和多来源执行路径，先补 preserve/mixed 与 F04 的可失败回归，再处理真实 Word/PDF 证据。"
+}

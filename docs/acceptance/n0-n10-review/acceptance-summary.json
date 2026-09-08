@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-06",
+  "verdict": "not_accepted",
+  "findings": {
+    "P1": [
+      "D01",
+      "D02"
+    ],
+    "P2": [
+      "D03",
+      "D04",
+      "D05",
+      "D06"
+    ]
+  },
+  "offline_tests": {
+    "run": 286,
+    "skipped": 3,
+    "result": "OK",
+    "seconds": 47.93
+  },
+  "word_tests": {
+    "run": 12,
+    "skipped": 0,
+    "result": "OK",
+    "seconds": 95.991
+  },
+  "independent_native_cli": {
+    "pageref": {
+      "exit": 0,
+      "docx_cache": "4",
+      "measured_target": "4",
+      "pdf_reference": "4"
+    },
+    "valid_preserve_mixed_sizes": {
+      "exit": 1,
+      "reason": "incorrect format rejection"
+    }
+  },
+  "source_hashes_unchanged": 82,
+  "production_modified": false,
+  "visual_review": "Inspected the single-page rejected preserve PDF; valid mixed-size spans and original header/footer are visible."
+}

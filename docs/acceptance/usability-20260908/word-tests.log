@@ -1,0 +1,17 @@
+test_SW01_real_word_corrupted_logical_span_is_rejected_by_final_gate (test_remediation_word.RemediationWordTest.test_SW01_real_word_corrupted_logical_span_is_rejected_by_final_gate)
+A real CLI output must fail when one protected span is damaged. ... ok
+test_SW01_real_word_preserves_logical_inline_spans_and_pdf_text (test_remediation_word.RemediationWordTest.test_SW01_real_word_preserves_logical_inline_spans_and_pdf_text) ... ok
+test_SW02_real_word_preserves_default_first_even_story_bindings (test_remediation_word.RemediationWordTest.test_SW02_real_word_preserves_default_first_even_story_bindings) ... ok
+test_SW02_real_word_two_section_shared_and_unlinked_bindings (test_remediation_word.RemediationWordTest.test_SW02_real_word_two_section_shared_and_unlinked_bindings) ... ok
+test_SW02_real_word_wrong_story_relationship_is_rejected (test_remediation_word.RemediationWordTest.test_SW02_real_word_wrong_story_relationship_is_rejected) ... ok
+test_SW03_real_word_complete_thesis_parts_have_fixture_and_pdf_evidence (test_remediation_word.RemediationWordTest.test_SW03_real_word_complete_thesis_parts_have_fixture_and_pdf_evidence) ... ok
+test_SW04_real_word_landscape_section_and_story_geometry_are_bound (test_remediation_word.RemediationWordTest.test_SW04_real_word_landscape_section_and_story_geometry_are_bound) ... ok
+test_SW05_real_word_multi_source_notes_relationship_matrix_is_closed (test_remediation_word.RemediationWordTest.test_SW05_real_word_multi_source_notes_relationship_matrix_is_closed) ... ok
+test_SW06_real_word_generated_cover_image_has_finite_license (test_remediation_word.RemediationWordTest.test_SW06_real_word_generated_cover_image_has_finite_license) ... ok
+test_SW06_real_word_object_instances_and_extra_image_are_checked (test_remediation_word.RemediationWordTest.test_SW06_real_word_object_instances_and_extra_image_are_checked) ... ok
+test_SW07_real_word_pending_missing_level_requires_manual_target_confirmation (test_remediation_word.RemediationWordTest.test_SW07_real_word_pending_missing_level_requires_manual_target_confirmation) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 42.824s
+
+OK

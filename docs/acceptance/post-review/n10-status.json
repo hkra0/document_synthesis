@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "batch": "N10",
+  "status": "verified",
+  "verified_at": "2026-09-06",
+  "closes": [],
+  "code_sha256": {
+    "README.md": "2a33291255cc06deb67c101cfd7e452c8e3010a7fbe32095bfe66b5ca41b88f5",
+    "DEVELOPMENT.md": "7cdd96959b2b9f952d2cf3e19de21ff36841682d8b37c9f7231fb6f5257e03fe",
+    "docs/formatting-progress.md": "e7db8c577921a0000e0d09282672b49175ccab57dcd12d9a41c7f7e2da690542",
+    "lib/format_analysis.py": "d31dfbdf122e2a957aff51e58c80bc3cd2df27f2fef6d8df9540d3d917c38bce",
+    "lib/role_candidates.py": "fbd4a6804f4f89611a9579c92ced3ca253afcb4b8a0ff91d89bda1197b783f2c",
+    "lib/contracts.py": "736583627c2ccf3f3926032755554bc65ef7c71cdf88171eb32a28d3a7fb33f3",
+    "lib/build_plan.py": "24f83c924a3e6a51a54e90c53930ff15b54c0e21c1d22034c132f53713caa9a4",
+    "lib/engine.py": "3feb07c8bc99095630b05737cb85f26ddb2e40e96f2c19fc05abbbaca1229175",
+    "lib/field_updater.py": "5aea37614d805c252c139170b5fb2357e16b38b99c8496392c764f4392f7ad0c",
+    "lib/content_integrity.py": "acd89737a8d7276ec93a1c582a4979964e50614ec3c73852fda53297428b7a1c",
+    "lib/verification_contracts.py": "9c21db70ac6821ac9346da4c46996d3d06cbc07e1d1478dee5ec2fd906ed5a51",
+    "lib/docx_inspector.py": "e298edde5a41a1c304806b778071535543471ca51bbafbe1e1156202a9a1764b",
+    "lib/format_review.py": "07159a0cfdd539d2916fb1415b4dcb9377e2f8fddf4f277f880c857203af6530",
+    "smoke_test.py": "c39acbea515ddd6501bcbfaf3ad24e132cfaa24ccc1dd938c826c7b4fa466601",
+    "lib/composition.py": "1e7bc04e8c55dd7dacd1e352232b7c12b5f16919778cd7793fd9f38e8299b160",
+    "lib/document_parts.py": "2da58945e97b20894e1de83c55bcd68a3c9ca7fc1a30595fe3cc70ae5f6c0f14",
+    "tests/test_post_review_word.py": "894d2c3980991af861668c3f33d3782a6ff2f1de89e0c616385825bee1356e58",
+    "docs/acceptance/post-review/write_status.py": "769b5527080b7ccddc285397d65c7dcc72fdce142c4b0e3745fa5d9429188eb0",
+    "docs/acceptance/post-review/pdf-diagnostics/diagnose_pdfs.py": "a334655d1c01288c190b368029178e4a1c327443b349841f67f8d8422514ad76"
+  },
+  "fixture_sha256": {
+    "examples/custom-format-demo/academic-demo.format.json": "1a79ea0401ea94a9b748ed7800dfbfa306cdd13c076ffd7c671fea5c5b8dd979",
+    "examples/custom-format-demo/manuscript-roles.json": "6e02bf2caf53ca79e21f4d87ef65ff022e27ddbdf77e2389ccc9ab25b250b209"
+  },
+  "commands": [
+    "python3 synthesize.py --analyze-format examples/custom-format-demo/sample.docx --analysis-dir <fresh-dir>/sample --replace-output",
+    "python3 synthesize.py --compile-format <fresh-dir>/sample/analysis.json --decisions examples/custom-format-demo/decisions.final.json --format-out <fresh-dir>/academic-demo.format.json --replace-output",
+    "python3 synthesize.py --analyze-source examples/custom-format-demo/manuscript.docx --analysis-dir <fresh-dir>/target --replace-output",
+    "python3 synthesize.py --compile-mapping <fresh-dir>/target/analysis.json --decisions examples/custom-format-demo/manuscript-decisions.final.json --mapping-out <fresh-dir>/manuscript-roles.json --replace-output",
+    "python3 synthesize.py --render-preview <fresh-dir>/academic-demo.format.json --preview-out <fresh-dir>/preview.html --preview-meta <fresh-dir>/preview.json --replace-output",
+    "python3 synthesize.py --migrate-manifest examples/custom-format-demo/legacy-manifest-v1.json --manifest-out <fresh-dir>/manifest.v2.json --replace-output",
+    "python3 synthesize.py --source examples/custom-format-demo/manuscript.docx --manifest examples/custom-format-demo/manifest.json --plan",
+    "python3 docs/acceptance/post-review/pdf-diagnostics/diagnose_pdfs.py",
+    "python3 -m unittest discover -s tests -p 'test_smoke_outputs.py' -q",
+    "python3 -m venv <fresh-venv>",
+    "<fresh-venv>/bin/python -m pip install -r requirements.txt",
+    "<fresh-venv>/bin/python -W error::FutureWarning -m unittest discover -s tests -q",
+    "python3 -W error::FutureWarning -m unittest discover -s tests -q",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> TMPDIR=<word-access-dir>/document-synthesis-nwdebug.K6jPYu DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest discover -s tests -p 'test_post_review_word.py' -v",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> TMPDIR=<word-access-dir>/document-synthesis-nwdebug.K6jPYu DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest tests.test_post_review_word.PostReviewWordMatrixTest.test_NW02_toc_and_reference_document_use_final_labels -v",
+    "git diff --check"
+  ],
+  "tests": {
+    "run": 286,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 3,
+    "clean_venv": {
+      "run": 286,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 3
+    }
+  },
+  "word_cases": [
+    {
+      "id": "NW01–NW12",
+      "status": "passed",
+      "evidence": "acceptance/post-review/n8-status.json"
+    }
+  ],
+  "artifact_sha256": {
+    "docs/acceptance/post-review/pdf-diagnostics/summary.json": "e7da29a90d01c7145d29f23a86ab240e660772e6dc7f1fa6529d2db56b905882",
+    "docs/acceptance/r7-evaluation/unstructured-metrics.json": "3597fde13f10cd2cc833ae69f12db9fc6a6ae1034f0bb572c1f5c484a758aba8",
+    "docs/acceptance/post-review/offline-verification.json": "dbee0f5d26b6a9cb20ac70f69d684bfabbc4d6725b463ee6d152249a87d4b8d3",
+    "docs/acceptance/r7-evaluation/manual-correction-smoke.json": "f029cf7d24c9632b46202c70c8cb0b486e54572d6f9419b4d2aa22fb69da5912"
+  },
+  "remaining_limits": [
+    "离线 CLI 链路、真实 Word NW01–NW12 证据、固定目录授权机制与本轮文档状态已同步。",
+    "N7 冻结集自动识别门槛已通过；结论限定于独立匿名冻结集，不扩大为任意文档的通用准确率声明。N9 已将可重复的 Quartz orphan xref 模式分类为非致命。"
+  ]
+}

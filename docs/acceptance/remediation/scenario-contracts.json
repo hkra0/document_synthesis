@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "initialized_at": "2026-09-07",
+  "scenarios": [
+    {
+      "id": "S0-D01-T01",
+      "defect": "D01",
+      "preconditions": ["preserve mode", "one paragraph with 12pt and 24pt logical spans"],
+      "fixture_assertions": ["two source runs remain distinct", "source and output hashes recorded"],
+      "command": "python3 -m unittest tests.test_remediation_contracts.RemediationContractTest.test_S0_D01_mixed_inline_sizes_are_preserved -v",
+      "artifact_assertions": ["format report includes both logical size intervals", "unchanged output passes"],
+      "required": true,
+      "status": "verified",
+      "evidence": {
+        "historical_probe": {
+          "file": "docs/acceptance/n0-n10-review/probe-observations.json",
+          "case": "mixed_sizes",
+          "unchanged_passed": false,
+          "corrupted_passed": true
+        },
+        "current_test": "tests.test_remediation_contracts.RemediationContractTest.test_S0_D01_mixed_inline_sizes_are_preserved"
+      }
+    },
+    {
+      "id": "S0-D01-T02",
+      "defect": "D01",
+      "preconditions": ["same source as S0-D01-T01"],
+      "fixture_assertions": ["only the second logical span size is changed"],
+      "command": "python3 -m unittest tests.test_remediation_contracts.RemediationContractTest.test_S0_D01_corrupted_second_inline_size_is_rejected -v",
+      "artifact_assertions": ["final format gate rejects the corrupted span"],
+      "required": true,
+      "status": "verified",
+      "evidence": {
+        "historical_probe": {
+          "file": "docs/acceptance/n0-n10-review/probe-observations.json",
+          "case": "mixed_sizes",
+          "corrupted_passed": true
+        },
+        "current_test": "tests.test_remediation_contracts.RemediationContractTest.test_S0_D01_corrupted_second_inline_size_is_rejected"
+      }
+    },
+    {
+      "id": "S0-D02-T01",
+      "defect": "D02",
+      "preconditions": ["preserve mode", "default header/footer stories and explicit distances"],
+      "fixture_assertions": ["header and footer parts are present", "header distance is non-default"],
+      "command": "python3 -m unittest tests.test_remediation_contracts.RemediationContractTest.test_S0_D02_header_content_is_a_protected_story -v",
+      "artifact_assertions": ["changed header text is rejected"],
+      "required": true,
+      "status": "verified",
+      "evidence": {
+        "historical_probe": {
+          "file": "docs/acceptance/n0-n10-review/probe-observations.json",
+          "case": "uniform",
+          "unchanged_passed": true,
+          "corrupted_passed": true
+        },
+        "current_test": "tests.test_remediation_contracts.RemediationContractTest.test_S0_D02_header_content_is_a_protected_story"
+      }
+    },
+    {
+      "id": "S0-D02-T02",
+      "defect": "D02",
+      "preconditions": ["same story fixture as S0-D02-T01"],
+      "fixture_assertions": ["only header distance is changed"],
+      "command": "python3 -m unittest tests.test_remediation_contracts.RemediationContractTest.test_S0_D02_header_distance_is_a_protected_geometry -v",
+      "artifact_assertions": ["changed header distance is rejected"],
+      "required": true,
+      "status": "verified",
+      "evidence": {
+        "historical_probe": {
+          "file": "docs/acceptance/n0-n10-review/probe-observations.json",
+          "case": "uniform",
+          "corrupted_passed": true
+        },
+        "current_test": "tests.test_remediation_contracts.RemediationContractTest.test_S0_D02_header_distance_is_a_protected_geometry"
+      }
+    },
+    {
+      "id": "S0-D03-T01",
+      "defect": "D03",
+      "preconditions": ["one source image instance", "valid relationship and docPr id"],
+      "fixture_assertions": ["corrupted document has one extra drawing instance"],
+      "command": "python3 -m unittest tests.test_remediation_contracts.RemediationContractTest.test_S0_D03_extra_image_instance_is_rejected -v",
+      "artifact_assertions": ["extra instance is diagnosed and rejected"],
+      "required": true,
+      "status": "verified",
+      "evidence": {
+        "historical_probe": {
+          "file": "docs/acceptance/n0-n10-review/probe-observations.json",
+          "case": "duplicate_image",
+          "source_instances": 1,
+          "actual_instances": 2,
+          "content_gate_accepted": true
+        },
+        "current_test": "tests.test_remediation_contracts.RemediationContractTest.test_S0_D03_extra_image_instance_is_rejected"
+      }
+    },
+    {
+      "id": "S0-D04-T01",
+      "defect": "D04",
+      "preconditions": ["Normal paragraphs", "1. Introduction", "1.1.1. Detailed protocol", "no outlineLvl"],
+      "fixture_assertions": ["manual expectation for second heading is heading.3"],
+      "command": "python3 -m unittest tests.test_remediation_contracts.RemediationContractTest.test_S0_D04_missing_intermediate_level_is_not_compressed -v",
+      "artifact_assertions": ["heading.3 remains a candidate", "heading.2 is not auto-selected"],
+      "required": true,
+      "status": "verified",
+      "evidence": {
+        "historical_probe": {
+          "file": "docs/acceptance/n0-n10-review/probe-observations.json",
+          "case": "missing_level",
+          "expected_level": "heading.3",
+          "observed_level": "heading.2"
+        },
+        "current_test": "tests.test_remediation_contracts.RemediationContractTest.test_S0_D04_missing_intermediate_level_is_not_compressed"
+      }
+    },
+    {
+      "id": "S0-D05-T01",
+      "defect": "D05",
+      "preconditions": ["fixed labels and predictions", "one exact role error"],
+      "fixture_assertions": ["accepted set includes both labelled headings"],
+      "command": "python3 -m unittest tests.test_role_evaluation -v",
+      "artifact_assertions": ["exact_role_auto_precision is 0.5", "detection precision is separate"],
+      "required": true,
+      "status": "verified",
+      "evidence": {
+        "historical_probe": {
+          "file": "docs/acceptance/n0-n10-review/probe-observations.json",
+          "case": "missing_level_metrics",
+          "legacy_automatic_acceptance_precision": 1.0,
+          "corrected_exact_role_precision": 0.5
+        },
+        "current_test": "tests.test_role_evaluation"
+      }
+    },
+    {
+      "id": "S0-D06-T01",
+      "defect": "D06",
+      "preconditions": ["scenario contract schema exists", "Word cases require fixed access directory"],
+      "fixture_assertions": ["NW06/NW08/NW09 facts are checked before Word"],
+      "command": "python3 -m unittest tests.test_remediation_contracts -v",
+      "artifact_assertions": ["missing fixture facts cannot be marked verified"],
+      "required": true,
+      "status": "verified",
+      "evidence": {
+        "historical_probe": {
+          "file": "docs/n0-n10-acceptance-report.md",
+          "finding": "D06 remained incomplete despite the old 12-item Word test count"
+        },
+        "current_tests": [
+          "tests.test_remediation_word",
+          "tests.test_post_review_word",
+          "docs/acceptance/remediation/s6-status.json"
+        ]
+      }
+    }
+  ]
+}

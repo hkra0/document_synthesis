@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "batch": "R0",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "worktree_revision": {
+    "head": "54ea41722e51b78769bd47ae95c0adfaa80533d2",
+    "working_tree_changes_present": true,
+    "note": "哈希和测试结果针对当前工作区，不以 HEAD 单独代表受检代码。"
+  },
+  "commands": [
+    "python3 -m unittest tests.test_formatting_pipeline_contracts tests.test_publication_gates tests.test_word_formatting -v",
+    "python3 -m unittest discover -s tests -v",
+    "git diff --check"
+  ],
+  "results": {
+    "focused_tests": {
+      "run": 19,
+      "passed": 4,
+      "expected_failures": 15,
+      "blocked": 1,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "full_suite": {
+      "run": 194,
+      "passed": 177,
+      "expected_failures": 15,
+      "blocked": 1,
+      "existing_conditional_skip": 1,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "diff_check": "passed"
+  },
+  "contract_state": {
+    "F01": "reproduces expected failure; R5",
+    "F02": "reproduces expected failure; R1/R6",
+    "F03": "reproduces expected failure; R3",
+    "F04": "reproduces expected failure; R4",
+    "F05": "reproduces expected failure; R8",
+    "F06": "reproduces expected failure; R9",
+    "F07": "reproduces expected failure; R5",
+    "F08": "reproduces expected failure; R6/R9",
+    "F09": "reproduces expected failure; R6",
+    "F10": "test layers explicitly separated",
+    "W04": "blocked until explicit Word run; expected A4 and publication gate",
+    "W05": "blocked until explicit Word run; expected page labels and page-level QA",
+    "W06": "blocked until explicit Word run; expected bounded PAGEREF convergence"
+  },
+  "artifacts_sha256": {
+    "tests/test_formatting_pipeline_contracts.py": "1c3190e8a3a840629937b11d85cf4e94fa9ac355505a02245526c46f32dcd82e",
+    "tests/test_publication_gates.py": "d52ee0c1391539ee36efc9edfdfa0312b11547045d3ec44d7a95751a56b06c6f",
+    "tests/test_word_formatting.py": "3de555ae74e667e136ac6a8753112225dea8754443e949dd480646f5626ba993",
+    "tests/test_thesis_acceptance.py": "2c5b59f62e84fd18018be550c56e262906f8c93420a885ff6c6602113dd47a0d",
+    "tests/fixtures/formatting/r0_contracts.json": "4c749a619cf5fcaf57a0d8c6b3c835d0595172e379abdb0dc6c7f27d3e58059f",
+    "docs/formatting-progress.md": "74e4e67687b76182bac8b8246a466d8d35b4395f4be6c7b2be58442bb7d74a9e",
+    "docs/formatting-capabilities.md": "da1d3c7b4cee268471203a02c171583bbb5058dd56917cb6c37b35bcd7e1f83d"
+  },
+  "next_batch": "R1",
+  "next_step": "先实现 CheckResult/not_run 与 required 门禁，确保 F02/W04 的错误格式、自定义未验证交付和发布事务失败均不能替换旧成果。"
+}

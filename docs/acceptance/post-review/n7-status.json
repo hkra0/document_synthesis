@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "batch": "N7",
+  "status": "verified",
+  "verified_at": "2026-09-06",
+  "closes": [
+    "C07"
+  ],
+  "code_sha256": {
+    "lib/format_analysis.py": "d31dfbdf122e2a957aff51e58c80bc3cd2df27f2fef6d8df9540d3d917c38bce",
+    "lib/role_candidates.py": "fbd4a6804f4f89611a9579c92ced3ca253afcb4b8a0ff91d89bda1197b783f2c",
+    "lib/format_review.py": "07159a0cfdd539d2916fb1415b4dcb9377e2f8fddf4f277f880c857203af6530",
+    "lib/contracts.py": "736583627c2ccf3f3926032755554bc65ef7c71cdf88171eb32a28d3a7fb33f3",
+    "docs/acceptance/r7-evaluation/evaluate_unstructured_dataset.py": "c797167d9db95097b0aedccc047562077bd65b5915cc273ff1b6b4c3b2880c5d",
+    "docs/acceptance/r7-evaluation/generate_unstructured_dataset.py": "d7924678c9c67e1772c3c03ea10368ad767d873268156cfbcf9a214bee4641d2",
+    "docs/acceptance/r7-evaluation/write_unstructured_baseline.py": "355f4c184b6094a3d3eb286de159272d30595715310b1a88228d7207c753c7d2",
+    "tests/test_format_analysis.py": "2c1e4d8f02406ceee64ccefb77c16ad139be4d5d08e4aa3dbe4b19da4a3c1ea6",
+    "tests/test_format_review.py": "921a70e4413eb7fb01a6c491f17bbed1bc916faab84ad0a2fb058b1748dd52be",
+    "tests/test_r7_workflows.py": "0f083029180a9dbd28c3a64fb9a84eea2e22c6c675e63e9893e35265c9c6e6e8"
+  },
+  "fixture_sha256": {
+    "docs/acceptance/r7-evaluation/unstructured-dataset.json": "cea6de75a7e0781d1479b5142542cdb2bbcf8a6641116fc469d04c7e31fee884",
+    "docs/acceptance/r7-evaluation/unstructured-human-baseline.json": "a5807ecadd3242c4f0e02d11156572ff8c40d4cbf373328dc97e82b627f5e9a9"
+  },
+  "commands": [
+    "python3 docs/acceptance/r7-evaluation/generate_unstructured_dataset.py",
+    "python3 docs/acceptance/r7-evaluation/write_unstructured_baseline.py",
+    "python3 docs/acceptance/r7-evaluation/evaluate_unstructured_dataset.py",
+    "python3 docs/acceptance/r7-evaluation/evaluate_dataset.py --output docs/acceptance/r7-evaluation/metrics.json",
+    "python3 -W error::FutureWarning -m unittest tests.test_format_analysis tests.test_r7_workflows tests.test_format_review -q"
+  ],
+  "tests": {
+    "run": 17,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "word_cases": [],
+  "artifact_sha256": {
+    "docs/acceptance/r7-evaluation/unstructured-metrics.json": "3597fde13f10cd2cc833ae69f12db9fc6a6ae1034f0bb572c1f5c484a758aba8",
+    "docs/acceptance/r7-evaluation/metrics.json": "db842433e11b267bf0de988ff2906041a63dcbca756985329fa706a4cd2856bd",
+    "docs/acceptance/r7-evaluation/manual-correction-smoke.json": "f029cf7d24c9632b46202c70c8cb0b486e54572d6f9419b4d2aa22fb69da5912"
+  },
+  "remaining_limits": [
+    "冻结匿名无大纲集包含 20 份文档、100 个标题正例和 500 个正文负例；标题候选覆盖率 100%、候选块 precision 1.0、自动接受覆盖率 100%、自动接受 precision 1.0，正文误报 0，已达到 98% precision/50% coverage 门槛。",
+    "冻结标签由独立人工可见段落基线生成器绑定并声明 algorithm_output_used=false；手工决策→格式包→目标 RoleMap→生产 --plan 的 workflow smoke 也已保留。结论仅适用于该匿名冻结集，不外推为任意真实文档的准确率保证。"
+  ]
+}

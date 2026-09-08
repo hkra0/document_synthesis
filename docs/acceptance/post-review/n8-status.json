@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "batch": "N8",
+  "status": "verified",
+  "verified_at": "2026-09-06",
+  "closes": [
+    "C08"
+  ],
+  "code_sha256": {
+    "tests/test_post_review_word.py": "894d2c3980991af861668c3f33d3782a6ff2f1de89e0c616385825bee1356e58",
+    "lib/engine.py": "3feb07c8bc99095630b05737cb85f26ddb2e40e96f2c19fc05abbbaca1229175",
+    "lib/delivery.py": "fbdaac66f8a09193905fe61e778ea45ac450e716ce6a3a8c65fe92186ac941ef",
+    "lib/qa.py": "371262f6e101319f39ddd8b88c6c94abb9121f92cc7fd255385b99451bf2a0fe",
+    "lib/pagination.py": "b93d041686d65dfbc0b72a8f7ef8ecd209a9150d0bfe610830cb84517d002a3b",
+    "lib/docx_inspector.py": "e298edde5a41a1c304806b778071535543471ca51bbafbe1e1156202a9a1764b",
+    "lib/role_mapper.py": "f34e740625658f7a872c5e9b17e20fb331bcd1588780c70b664ed5a839391acb",
+    "lib/format_analysis.py": "d31dfbdf122e2a957aff51e58c80bc3cd2df27f2fef6d8df9540d3d917c38bce",
+    "lib/composition.py": "1e7bc04e8c55dd7dacd1e352232b7c12b5f16919778cd7793fd9f38e8299b160",
+    "lib/scanner.py": "77dcd4941d98e0b56f1380d12a5811d2abff913d06c15eb27d31c5a434dec4f6",
+    "lib/content_integrity.py": "acd89737a8d7276ec93a1c582a4979964e50614ec3c73852fda53297428b7a1c",
+    "lib/verification_contracts.py": "9c21db70ac6821ac9346da4c46996d3d06cbc07e1d1478dee5ec2fd906ed5a51",
+    "lib/renderers.py": "a01c0b50b6bfc9b8058c77220d3bac873583540d9695a598b8e0470c750703f5"
+  },
+  "fixture_sha256": {
+    "docs/acceptance/word-followup/m2-fixtures/numbering-source.docx": "94f57578b7773c6a48dfeee4123886b1af4829d5246d4ce32bff2273be5f51d5"
+  },
+  "commands": [
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> TMPDIR=<word-access-dir>/document-synthesis-nwdebug.K6jPYu DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest discover -s tests -p 'test_post_review_word.py' -v",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> TMPDIR=<word-access-dir>/document-synthesis-nwdebug.K6jPYu DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest tests.test_post_review_word.PostReviewWordMatrixTest.test_NW02_toc_and_reference_document_use_final_labels -v"
+  ],
+  "tests": {
+    "full_matrix": {
+      "run": 12,
+      "passed": 12,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 72.668,
+      "prior_run": {
+        "run": 12,
+        "passed": 11,
+        "failed": 1,
+        "errors": 0,
+        "skipped": 0,
+        "failure": "NW02 的一次 Microsoft Word→PDF 导出超时；固定 Word Automation 目录后复跑通过。"
+      }
+    },
+    "NW02_recheck": {
+      "run": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 296.557
+    }
+  },
+  "word_cases": [
+    {
+      "id": "NW01",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW02",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW03",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW04",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW05",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW06",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW07",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW08",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW09",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW10",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW11",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    },
+    {
+      "id": "NW12",
+      "status": "passed",
+      "evidence": "真实 Word NW01–NW12 固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 矩阵；12/12 通过，无新授权弹窗。"
+    }
+  ],
+  "artifact_sha256": {
+    "docs/acceptance/post-review/word-evidence/20260906/nw09-notes.docx": "037ce62d21ad8e9c4045c8be871ef5bea166d7f4449f6d39c78cd6d297a7ed4b",
+    "docs/acceptance/post-review/word-evidence/20260906/nw09-qa-main.pdf": "fd1ab72945410dc62e872e150a62fde48378cc42302b43f9def826c78d0ed938",
+    "docs/acceptance/post-review/word-evidence/20260906/external-export-source.docx": "752aa4ae694254cd5c1008d278b9256b71324f5ed6ef159ec3d462aad42c6695",
+    "docs/acceptance/post-review/word-evidence/20260906/nw09-build-metadata.json": "a05f8fe3db6e8ac78dbf2802c107951bd656575a8d89b5adca35aa099be9bec2",
+    "docs/acceptance/post-review/word-evidence/20260906/external-export-qa-main.pdf": "add4238aea5ed5c6224c19c084cdb14bb5ddc81612b5234bf0826428eb2464a7"
+  },
+  "remaining_limits": [
+    "固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 后完整矩阵 12/12 通过；随机临时目录版本的一次 NW02 导出超时仅作为历史观察保留。",
+    "PDF 解析器的 Quartz wrong pointing object 警告由 N9 单独诊断；N8 不扩大为所有 PDF 结构的无条件兼容声明。"
+  ]
+}

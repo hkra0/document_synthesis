@@ -1,0 +1,716 @@
+{
+  "input": "<repo>/docs/acceptance/n0-n10-review/pageref.pdf",
+  "input_sha256": "e9903ca46e581d5cc0d62cbe9c14ad3052ef1cb38bcfd21a17ecd6420d39776f",
+  "input_size": 58715,
+  "parsers": {
+    "pypdf": "6.14.2",
+    "pymupdf": "1.28.2",
+    "pdfinfo": {
+      "command": [
+        "pdfinfo",
+        "<repo>/docs/acceptance/n0-n10-review/pageref.pdf"
+      ],
+      "returncode": 0,
+      "stdout": "pageref.pdfinfo.txt",
+      "stderr": "pageref.pdfinfo-stderr.txt"
+    },
+    "pdftotext": {
+      "command": [
+        "pdftotext",
+        "-enc",
+        "UTF-8",
+        "<repo>/docs/acceptance/n0-n10-review/pageref.pdf",
+        "-"
+      ],
+      "returncode": 0,
+      "stdout": "pageref.pdftotext.txt",
+      "stderr": "pageref.pdftotext-stderr.txt"
+    }
+  },
+  "pypdf": {
+    "pages": 6,
+    "boxes": [
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ]
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ]
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ]
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ]
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ]
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ]
+      }
+    ],
+    "page_text": [
+      {
+        "length": 2082,
+        "normalized_length": 2078,
+        "normalized_sha256": "50d52f80f8406b3b857a918c84a3397d022685d90e4b4a652d04ac927bd98548"
+      },
+      {
+        "length": 2185,
+        "normalized_length": 2180,
+        "normalized_sha256": "ee1cc78091c6a25a01a8e1526de7a95b90822b9c76a7a5043e69765957fc0b93"
+      },
+      {
+        "length": 850,
+        "normalized_length": 847,
+        "normalized_sha256": "e187a93293e8868250d1aefa3d0798171eef3d4c4d8db4249abe820aa29ce991"
+      },
+      {
+        "length": 2082,
+        "normalized_length": 2078,
+        "normalized_sha256": "bb8434676a69b9cc7e687419dbd0fd33ef72232de1c6fa08b02df4d9c63d4b56"
+      },
+      {
+        "length": 2185,
+        "normalized_length": 2180,
+        "normalized_sha256": "ae0d9a52f246975cd1575fc44c443714aaedb31aecb1a1446f6069798db51bb1"
+      },
+      {
+        "length": 886,
+        "normalized_length": 883,
+        "normalized_sha256": "4c2625f23619c0cfd8642d66a054d5b95bb8cef0763df781700d8b79347015df"
+      }
+    ],
+    "page_labels": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "bookmarks": [],
+    "stderr_file": "pageref.pypdf-stderr.txt",
+    "stderr_nonempty": true
+  },
+  "pymupdf": {
+    "pages": 6,
+    "boxes": [
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "text": {
+          "length": 2107,
+          "normalized_length": 2078,
+          "normalized_sha256": "50d52f80f8406b3b857a918c84a3397d022685d90e4b4a652d04ac927bd98548"
+        }
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "text": {
+          "length": 2211,
+          "normalized_length": 2180,
+          "normalized_sha256": "ee1cc78091c6a25a01a8e1526de7a95b90822b9c76a7a5043e69765957fc0b93"
+        }
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "text": {
+          "length": 860,
+          "normalized_length": 847,
+          "normalized_sha256": "e187a93293e8868250d1aefa3d0798171eef3d4c4d8db4249abe820aa29ce991"
+        }
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "text": {
+          "length": 2107,
+          "normalized_length": 2078,
+          "normalized_sha256": "bb8434676a69b9cc7e687419dbd0fd33ef72232de1c6fa08b02df4d9c63d4b56"
+        }
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "text": {
+          "length": 2211,
+          "normalized_length": 2180,
+          "normalized_sha256": "ae0d9a52f246975cd1575fc44c443714aaedb31aecb1a1446f6069798db51bb1"
+        }
+      },
+      {
+        "media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "text": {
+          "length": 897,
+          "normalized_length": 883,
+          "normalized_sha256": "4c2625f23619c0cfd8642d66a054d5b95bb8cef0763df781700d8b79347015df"
+        }
+      }
+    ]
+  },
+  "poppler": {
+    "pdfinfo": {
+      "pages": "6",
+      "page_size": "595.2 x 841.92 pts (A4)"
+    },
+    "page_text": [
+      {
+        "length": 2080,
+        "normalized_length": 2078,
+        "normalized_sha256": "c7fffb3aa05a3160c27a0a1c2c520f079f352a5a9bda0796d28707e3cf905795"
+      },
+      {
+        "length": 2182,
+        "normalized_length": 2180,
+        "normalized_sha256": "f0c93cc285771eefaba7babb8c8c86811510c83197c27ab388a76a81bf7b3676"
+      },
+      {
+        "length": 850,
+        "normalized_length": 847,
+        "normalized_sha256": "27360075f34f9872ee28a7da4cedbddcf2a8aa8e90014bf74e70b86a06e8032d"
+      },
+      {
+        "length": 2080,
+        "normalized_length": 2078,
+        "normalized_sha256": "052372d3df1bcbad86f30835731baf7f6fea776f369a3859be15991ef7407a9d"
+      },
+      {
+        "length": 2182,
+        "normalized_length": 2180,
+        "normalized_sha256": "22c8c9f018421654a479140f5de155a92dc44e4509e4e0069052834620657af0"
+      },
+      {
+        "length": 886,
+        "normalized_length": 883,
+        "normalized_sha256": "69578a14b972c39bee19b1cef9cf854100bce4aded3fb298a9304cc7b46ea1d5"
+      }
+    ]
+  },
+  "qpdf": {
+    "command": [
+      "/opt/homebrew/bin/qpdf",
+      "--check",
+      "<repo>/docs/acceptance/n0-n10-review/pageref.pdf"
+    ],
+    "returncode": 3,
+    "stdout": "pageref.qpdf-stdout.txt",
+    "stderr": "pageref.qpdf-stderr.txt"
+  },
+  "xref": {
+    "xref_entry_count": 39,
+    "declared_object_ids": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      7,
+      9,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38
+    ],
+    "zero_offset_in_use_object_ids": [
+      6,
+      8,
+      10
+    ],
+    "zero_offset_missing_object_ids": [
+      6,
+      8,
+      10
+    ],
+    "zero_offset_missing_object_references": {
+      "6": 0,
+      "8": 0,
+      "10": 0
+    },
+    "orphan_zero_offset_object_ids": [
+      6,
+      8,
+      10
+    ],
+    "referenced_missing_object_ids": []
+  },
+  "warning_diagnosis": {
+    "pypdf_warning_object_ids": [
+      6,
+      8,
+      10
+    ],
+    "classification": "quartz_orphan_zero_offset_xref",
+    "fatal_for_page_semantics": false,
+    "basis": "所有 pypdf wrong pointing object 均对应文件中不存在且无任何间接引用的 offset=0 xref 行；pypdf、PyMuPDF、Poppler 页数及页面框一致。"
+  },
+  "comparison": {
+    "page_count_equal": true,
+    "poppler_page_count_equal": true,
+    "box_count_equal": true,
+    "page_boxes_equal_within_0_01pt": true,
+    "text_pages_with_content": 6,
+    "page_text": [
+      {
+        "page": 1,
+        "pypdf": {
+          "length": 2082,
+          "normalized_length": 2078,
+          "normalized_sha256": "50d52f80f8406b3b857a918c84a3397d022685d90e4b4a652d04ac927bd98548"
+        },
+        "pymupdf": {
+          "length": 2107,
+          "normalized_length": 2078,
+          "normalized_sha256": "50d52f80f8406b3b857a918c84a3397d022685d90e4b4a652d04ac927bd98548"
+        },
+        "pdftotext": {
+          "length": 2080,
+          "normalized_length": 2078,
+          "normalized_sha256": "c7fffb3aa05a3160c27a0a1c2c520f079f352a5a9bda0796d28707e3cf905795"
+        },
+        "pypdf_pdftotext_normalized_equal": false,
+        "pymupdf_pdftotext_normalized_equal": false
+      },
+      {
+        "page": 2,
+        "pypdf": {
+          "length": 2185,
+          "normalized_length": 2180,
+          "normalized_sha256": "ee1cc78091c6a25a01a8e1526de7a95b90822b9c76a7a5043e69765957fc0b93"
+        },
+        "pymupdf": {
+          "length": 2211,
+          "normalized_length": 2180,
+          "normalized_sha256": "ee1cc78091c6a25a01a8e1526de7a95b90822b9c76a7a5043e69765957fc0b93"
+        },
+        "pdftotext": {
+          "length": 2182,
+          "normalized_length": 2180,
+          "normalized_sha256": "f0c93cc285771eefaba7babb8c8c86811510c83197c27ab388a76a81bf7b3676"
+        },
+        "pypdf_pdftotext_normalized_equal": false,
+        "pymupdf_pdftotext_normalized_equal": false
+      },
+      {
+        "page": 3,
+        "pypdf": {
+          "length": 850,
+          "normalized_length": 847,
+          "normalized_sha256": "e187a93293e8868250d1aefa3d0798171eef3d4c4d8db4249abe820aa29ce991"
+        },
+        "pymupdf": {
+          "length": 860,
+          "normalized_length": 847,
+          "normalized_sha256": "e187a93293e8868250d1aefa3d0798171eef3d4c4d8db4249abe820aa29ce991"
+        },
+        "pdftotext": {
+          "length": 850,
+          "normalized_length": 847,
+          "normalized_sha256": "27360075f34f9872ee28a7da4cedbddcf2a8aa8e90014bf74e70b86a06e8032d"
+        },
+        "pypdf_pdftotext_normalized_equal": false,
+        "pymupdf_pdftotext_normalized_equal": false
+      },
+      {
+        "page": 4,
+        "pypdf": {
+          "length": 2082,
+          "normalized_length": 2078,
+          "normalized_sha256": "bb8434676a69b9cc7e687419dbd0fd33ef72232de1c6fa08b02df4d9c63d4b56"
+        },
+        "pymupdf": {
+          "length": 2107,
+          "normalized_length": 2078,
+          "normalized_sha256": "bb8434676a69b9cc7e687419dbd0fd33ef72232de1c6fa08b02df4d9c63d4b56"
+        },
+        "pdftotext": {
+          "length": 2080,
+          "normalized_length": 2078,
+          "normalized_sha256": "052372d3df1bcbad86f30835731baf7f6fea776f369a3859be15991ef7407a9d"
+        },
+        "pypdf_pdftotext_normalized_equal": false,
+        "pymupdf_pdftotext_normalized_equal": false
+      },
+      {
+        "page": 5,
+        "pypdf": {
+          "length": 2185,
+          "normalized_length": 2180,
+          "normalized_sha256": "ae0d9a52f246975cd1575fc44c443714aaedb31aecb1a1446f6069798db51bb1"
+        },
+        "pymupdf": {
+          "length": 2211,
+          "normalized_length": 2180,
+          "normalized_sha256": "ae0d9a52f246975cd1575fc44c443714aaedb31aecb1a1446f6069798db51bb1"
+        },
+        "pdftotext": {
+          "length": 2182,
+          "normalized_length": 2180,
+          "normalized_sha256": "22c8c9f018421654a479140f5de155a92dc44e4509e4e0069052834620657af0"
+        },
+        "pypdf_pdftotext_normalized_equal": false,
+        "pymupdf_pdftotext_normalized_equal": false
+      },
+      {
+        "page": 6,
+        "pypdf": {
+          "length": 886,
+          "normalized_length": 883,
+          "normalized_sha256": "4c2625f23619c0cfd8642d66a054d5b95bb8cef0763df781700d8b79347015df"
+        },
+        "pymupdf": {
+          "length": 897,
+          "normalized_length": 883,
+          "normalized_sha256": "4c2625f23619c0cfd8642d66a054d5b95bb8cef0763df781700d8b79347015df"
+        },
+        "pdftotext": {
+          "length": 886,
+          "normalized_length": 883,
+          "normalized_sha256": "69578a14b972c39bee19b1cef9cf854100bce4aded3fb298a9304cc7b46ea1d5"
+        },
+        "pypdf_pdftotext_normalized_equal": false,
+        "pymupdf_pdftotext_normalized_equal": false
+      }
+    ],
+    "page_boxes": [
+      {
+        "page": 1,
+        "media_box_equal": true,
+        "crop_box_equal": true,
+        "pypdf_media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pypdf_crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pymupdf_media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "pymupdf_crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ]
+      },
+      {
+        "page": 2,
+        "media_box_equal": true,
+        "crop_box_equal": true,
+        "pypdf_media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pypdf_crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pymupdf_media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "pymupdf_crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ]
+      },
+      {
+        "page": 3,
+        "media_box_equal": true,
+        "crop_box_equal": true,
+        "pypdf_media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pypdf_crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pymupdf_media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "pymupdf_crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ]
+      },
+      {
+        "page": 4,
+        "media_box_equal": true,
+        "crop_box_equal": true,
+        "pypdf_media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pypdf_crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pymupdf_media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "pymupdf_crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ]
+      },
+      {
+        "page": 5,
+        "media_box_equal": true,
+        "crop_box_equal": true,
+        "pypdf_media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pypdf_crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pymupdf_media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "pymupdf_crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ]
+      },
+      {
+        "page": 6,
+        "media_box_equal": true,
+        "crop_box_equal": true,
+        "pypdf_media_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pypdf_crop_box": [
+          0.0,
+          0.0,
+          595.2,
+          841.92
+        ],
+        "pymupdf_media_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ],
+        "pymupdf_crop_box": [
+          0.0,
+          0.0,
+          595.2000122070312,
+          841.9199829101562
+        ]
+      }
+    ],
+    "labels": {
+      "pypdf": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    "bookmarks": []
+  }
+}

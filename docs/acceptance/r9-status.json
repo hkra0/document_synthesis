@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "batch": "R9",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "scope": "脚注/尾注关系闭包、受控字段更新、依赖排序与类型化 PAGEREF",
+  "commands": [
+    "python3 -m unittest tests.test_r9_fields_and_notes tests.test_notes_and_fields -q",
+    "TMPDIR=<repo>/output/r8-word-tmp DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest tests.test_word_formatting -v",
+    "git diff --check"
+  ],
+  "results": {
+    "offline_tests": {
+      "run": 15,
+      "passed": 15,
+      "unexpected_failures": 0,
+      "errors": 0
+    },
+    "real_word": {
+      "W06": "passed: bounded PAGEREF convergence and publication"
+    },
+    "field_contracts": [
+      "SEQ ROMAN/roman/ALPHABETIC/alphabetic/ARABIC",
+      "SEQ reset and continue",
+      "simple and complex fields",
+      "exact same-paragraph and cross-paragraph bookmark ranges",
+      "forward REF dependency chain",
+      "typed PAGEREF rejects string-only page maps",
+      "unknown field cache is preserved",
+      "dependency cycles produce a structured error"
+    ],
+    "notes_contracts": [
+      "endnote IDs are remapped without collisions",
+      "separator and continuation entries are preserved",
+      "note relationship closure is retained"
+    ],
+    "diff_check": "passed"
+  },
+  "artifacts_sha256": {
+    "lib/field_updater.py": "0c4b35ee47b0643d94968440248e986cf6cd35f1cb681de3e20ddb419a3f0184",
+    "lib/notes_merger.py": "3436d9c6a5c0a4c8dadc7b8f71fd13d1d12c7489d7f14b6de6995acfbefd1eeb",
+    "lib/delivery.py": "d3b16627014b573f31939b270695c5b0b69757105d746dfcff2512bb463bfa69",
+    "tests/test_r9_fields_and_notes.py": "d88c57cd9040992efdbe64cfc6ff4fbd418e8949600dd27ed5261047811555df"
+  },
+  "next_batch": "R10",
+  "next_step": "运行完整离线套件与 M1/W04–W07 集成矩阵，固定 PDF/DOCX/配置哈希和故障事务证据。"
+}

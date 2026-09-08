@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "batch": "R10",
+  "status": "verified",
+  "verified_at": "2026-09-05",
+  "scope": "M1、W04–W07、M2 完整匿名论文真实 Word/PDF、装配级与发布元数据的当前集成验收范围",
+  "environment": {
+    "platform": "macOS 27.0 arm64",
+    "python": "3.14.0",
+    "microsoft_word": "16.112.3"
+  },
+  "commands": [
+    "python3 -W error::FutureWarning -m unittest discover -s tests -q",
+    "TMPDIR=<repo>/output/r8-word-tmp DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest tests.test_m1_acceptance -q",
+    "TMPDIR=<repo>/output/r8-word-tmp DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest tests.test_word_formatting -v",
+    "python3 -m unittest tests.test_thesis_acceptance -q",
+    "git diff --check"
+  ],
+  "results": {
+    "full_offline_suite": {
+      "run": 246,
+      "status": "OK",
+      "conditional_skips": 2,
+      "unexpected_failures": 0,
+      "errors": 0,
+      "future_warnings": 0
+    },
+    "m1_real_word": {
+      "run": 3,
+      "passed": 3,
+      "status": "OK"
+    },
+    "word_matrix": {
+      "W04": "OK",
+      "W05": "OK",
+      "W06": "OK",
+      "W07": "OK"
+    },
+    "m2_assembly": {
+      "run": 1,
+      "passed": 1,
+      "status": "OK",
+      "word_export": false
+    },
+    "complete_anonymous_thesis": {
+      "run": 1,
+      "passed": 1,
+      "status": "OK",
+      "word_export": true,
+      "pdf_export": true,
+      "checks": [
+        "cover, declaration, Chinese abstract, English abstract, contents, two chapters, references and appendix",
+        "front lower-Roman and body Arabic page labels",
+        "footnote/endnote relationships",
+        "native list numbering, table, image and OMML",
+        "SEQ Figure/Table, REF and PAGEREF field structure",
+        "content, format, page and publication gates"
+      ]
+    },
+    "publication_evidence": [
+      "DOCX hash",
+      "Word-exported PDF hash",
+      "configuration and override hashes",
+      "PageRecord expected/observed labels",
+      "QA summary",
+      "Word/Python/platform environment"
+    ],
+    "diff_check": "passed"
+  },
+  "artifacts_sha256": {
+    "lib/engine.py": "a2fd9f36f1c4651e9f283bbf77f0a0f2315dbfaf9896c1e21702221db01baca2",
+    "lib/delivery.py": "d3b16627014b573f31939b270695c5b0b69757105d746dfcff2512bb463bfa69",
+    "lib/style_applier.py": "cd2dfe5566c1d6fd2d40711355f444996af2131a098d3062faa44f7b93331f27",
+    "lib/content_integrity.py": "d7fc07cf9eda87abbeffc1c3da3aaf3820f9b5082f2c16095b512f653efba136",
+    "tests/test_m1_acceptance.py": "c45d60d841affdb6b64a62481d0fdf98139df2ec1e231c6d5eef4b1d0a2c7db9",
+    "tests/test_thesis_acceptance.py": "2c5b59f62e84fd18018be550c56e262906f8c93420a885ff6c6602113dd47a0d",
+    "tests/test_build_metadata.py": "c207fc8574aab547563bf10960a87d6110eb57281afb747a498e60058bc8a692",
+    "tests/test_word_formatting.py": "377083603aafb8e6d7969a48f2bfee8fbf7fca853bded696896cf88f34bb8df2",
+    "docs/acceptance/create_complete_thesis_fixture.py": "07d21a3caca15e536da29e9345853bc1d4c578dbc68e916d926814bb9bbe3f67"
+  },
+  "limitations": [
+    "R11 文档、示例、能力声明的最终发布收尾已完成；后续新增能力需另建版本化验收",
+    "不覆盖 OCR/PDF 样例学习、双栏期刊、参考文献著录转换、多样例融合或全部学校规范认证"
+  ],
+  "next_batch": null,
+  "next_step": "R0–R11 当前范围已完成；新增能力需建立新的版本化验收批次。"
+}

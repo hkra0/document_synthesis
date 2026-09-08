@@ -1,0 +1,133 @@
+[1/3] 合成可复用正文: Independent N review
+[1/3] 合成可复用正文: Independent N review
+{
+  "mixed_sizes": {
+    "unchanged": {
+      "passed": true,
+      "violations": [],
+      "verified_count": 1,
+      "coverage": {
+        "expected_count": 1,
+        "mapped_count": 1,
+        "missing_count": 0,
+        "duplicate_count": 0
+      }
+    },
+    "corrupted": {
+      "passed": false,
+      "violations": [
+        "[body @ /w:document/w:body/w:p[1]] 字号 不匹配: 期望 24.0, 实际 12.0"
+      ],
+      "verified_count": 1,
+      "coverage": {
+        "expected_count": 1,
+        "mapped_count": 1,
+        "missing_count": 0,
+        "duplicate_count": 0
+      }
+    }
+  },
+  "uniform": {
+    "unchanged": {
+      "passed": true,
+      "violations": [],
+      "verified_count": 1,
+      "coverage": {
+        "expected_count": 1,
+        "mapped_count": 1,
+        "missing_count": 0,
+        "duplicate_count": 0
+      }
+    },
+    "corrupted": {
+      "passed": false,
+      "violations": [
+        "[section 0] header story 文字不匹配: 期望 ['EXPECTED ANONYMOUS HEADER'], 实际 ['WRONG HEADER']",
+        "[section 0] header story latin 区间不匹配: 0:25",
+        "[section 0] header story size_pt 区间不匹配: 0:25",
+        "[section 0] header story bold 区间不匹配: 0:25",
+        "[section 0] header story italic 区间不匹配: 0:25",
+        "[section 0] header story color 区间不匹配: 0:25",
+        "[section 0] header 距离不匹配: 期望 12.7, 实际 40.0",
+        "[section 0] footer story 文字不匹配: 期望 ['EXPECTED ANONYMOUS FOOTER'], 实际 ['WRONG FOOTER']",
+        "[section 0] footer story latin 区间不匹配: 0:25",
+        "[section 0] footer story size_pt 区间不匹配: 0:25",
+        "[section 0] footer story bold 区间不匹配: 0:25",
+        "[section 0] footer story italic 区间不匹配: 0:25",
+        "[section 0] footer story color 区间不匹配: 0:25",
+        "[section 0] footer 距离不匹配: 期望 12.7, 实际 40.0"
+      ],
+      "verified_count": 1,
+      "coverage": {
+        "expected_count": 1,
+        "mapped_count": 1,
+        "missing_count": 0,
+        "duplicate_count": 0
+      }
+    }
+  },
+  "duplicate_image": {
+    "source_instances": 1,
+    "actual_instances": 2,
+    "content_gate_accepted": {
+      "accepted": false,
+      "exception": "ContentIntegrityError",
+      "reason": "交付物嵌入媒体实例不匹配: missing=0, extra=1; missing=[], extra=['de69d035c3d0e96e1aad4dd23c981389923c7a4aa5c0f4a820077b2bfdf99d91']"
+    }
+  },
+  "missing_level": {
+    "/w:document/w:body/w:p[1]": {
+      "selected_role": "heading.1",
+      "selected_score": 0.985
+    },
+    "/w:document/w:body/w:p[5]": {
+      "selected_role": "heading.3",
+      "selected_score": 0.5452
+    }
+  },
+  "missing_level_metrics": {
+    "heading_candidate_coverage": 1.0,
+    "per_level": {
+      "heading.1": {
+        "support": 1,
+        "candidate_hits": 1,
+        "candidate_coverage": 1.0,
+        "selected_exact": 1,
+        "selected_exact_recall": 1.0,
+        "selected_as_heading": 1
+      },
+      "heading.3": {
+        "support": 1,
+        "candidate_hits": 1,
+        "candidate_coverage": 1.0,
+        "selected_exact": 1,
+        "selected_exact_recall": 1.0,
+        "selected_as_heading": 1
+      }
+    },
+    "body_as_heading_false_positives": 0,
+    "candidate_heading_false_positives": 0,
+    "candidate_block_precision": 1.0,
+    "candidate_count_max": 3,
+    "heading_detection_precision": 1.0,
+    "exact_role_auto_precision": 1.0,
+    "automatic_acceptance_coverage": 0.5,
+    "correct_auto_coverage": 0.5,
+    "candidate_exact_role_coverage": 1.0,
+    "automatic_acceptance_precision": 1.0,
+    "automatic_acceptance_precision_semantics": "legacy_alias_of_exact_role_auto_precision",
+    "automatic_acceptance_count": 1,
+    "automatic_acceptance_true_heading_count": 1,
+    "automatic_acceptance_threshold": 0.98,
+    "selected_score_range": {
+      "min": 0.5452,
+      "max": 0.985
+    },
+    "automatic_threshold_reachable": true,
+    "candidate_count_limit": 3,
+    "candidate_count_within_limit": true,
+    "correction_operations_estimate": 0,
+    "manual_correction_count": null,
+    "unresolved_count": 0
+  }
+}

@@ -1,0 +1,17 @@
+Producer:        macOS Version 27.0 (Build 26A5425a) Quartz PDFContext
+CreationDate:    Sun Sep  6 09:01:16 2026 +08
+ModDate:         Sun Sep  6 09:01:16 2026 +08
+Custom Metadata: no
+Metadata Stream: no
+Tagged:          no
+UserProperties:  no
+Suspects:        no
+Form:            none
+JavaScript:      no
+Pages:           6
+Encrypted:       no
+Page size:       595.2 x 841.92 pts (A4)
+Page rot:        0
+File size:       58715 bytes
+Optimized:       no
+PDF version:     1.3

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "batch": "S1",
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "verified_at": "2026-09-08",
+  "closes": [
+    "D01"
+  ],
+  "commands": [
+    "python3 -m unittest tests.test_role_evaluation tests.test_remediation_contracts -q",
+    "python3 -m unittest tests.test_content_integrity tests.test_docx_inspector -q",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_remediation_word.RemediationWordTest.test_SW01_real_word_preserves_logical_inline_spans_and_pdf_text -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_remediation_word.RemediationWordTest.test_SW01_real_word_corrupted_logical_span_is_rejected_by_final_gate -v"
+  ],
+  "tests": {
+    "offline": {
+      "passed": true
+    },
+    "SW01_real": {
+      "run": 2,
+      "passed": 2,
+      "failed": 0
+    }
+  },
+  "code_and_test_sha256": {
+    "lib/docx_inspector.py": "e298edde5a41a1c304806b778071535543471ca51bbafbe1e1156202a9a1764b",
+    "lib/content_integrity.py": "acd89737a8d7276ec93a1c582a4979964e50614ec3c73852fda53297428b7a1c",
+    "lib/verification_contracts.py": "9c21db70ac6821ac9346da4c46996d3d06cbc07e1d1478dee5ec2fd906ed5a51",
+    "tests/test_remediation_contracts.py": "3db0f8880f45741afca707fffd23aa89ef4b2c3f422e0f6a72bfe1988daf27d1",
+    "tests/test_remediation_word.py": "431292d77e707f9dace7cccf8149b34979bb4ee74d86f5a89d7f915f9c2dd276"
+  },
+  "evidence": [
+    "S1-T01–T07 离线契约通过；SW01 真实 Word→PDF 正常对照通过；同一真实 CLI 成果损坏第二逻辑区间后由最终格式门禁以字号诊断拒绝。"
+  ],
+  "word_access_directory": "<word-access-dir>",
+  "remaining_limits": []
+}

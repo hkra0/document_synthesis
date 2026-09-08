@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "batch": "S5",
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "verified_at": "2026-09-08",
+  "closes": [
+    "D04"
+  ],
+  "commands": [
+    "python3 docs/acceptance/r7-evaluation/generate_hard_cases.py",
+    "python3 synthesize.py --analyze-format docs/acceptance/r7-evaluation/unstructured-hard-samples/公文-hard-cases.docx --analysis-dir <fresh-review-dir> --replace-output",
+    "node -e \"extract <fresh-review-dir>/review.html script and parse it with vm.Script\"",
+    "python3 -m unittest tests.test_role_candidates tests.test_r7_workflows tests.test_remediation_contracts tests.test_format_analysis tests.test_format_review -q",
+    "python3 synthesize.py --compile-format <fresh-review-dir>/analysis.json --decisions '<downloads>/decisions (2).json' --format-base preset:academic-basic@1.0.0 --format-id r7-human-reviewed-format --format-version 1.0.0 --format-out <fresh-review-dir>/attested-output/r7-human-reviewed-format.json --replace-output",
+    "python3 synthesize.py --compile-mapping <fresh-review-dir>/analysis.json --decisions '<downloads>/decisions (2).json' --mapping-out <fresh-review-dir>/attested-output/r7-human-reviewed.roles.json --replace-output",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 synthesize.py --doctor --source docs/acceptance/r7-evaluation/unstructured-hard-samples/报告-hard-cases.docx --manifest <fresh-review-dir>/target-review/manifest.json",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 synthesize.py --source docs/acceptance/r7-evaluation/unstructured-hard-samples/报告-hard-cases.docx --manifest <fresh-review-dir>/target-review/manifest.json --output-dir <fresh-review-dir>/target-release",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 smoke_test.py --source docs/acceptance/r7-evaluation/unstructured-hard-samples/报告-hard-cases.docx --manifest <fresh-review-dir>/target-review/manifest.json --output-dir <fresh-review-dir>/target-release"
+  ],
+  "tests": {
+    "offline": {
+      "passed": true
+    },
+    "frozen_baseline": {
+      "documents": 20,
+      "categories": 4,
+      "documents_per_category": 5,
+      "heading_positives": 100,
+      "body_negatives": 500
+    },
+    "hard_case_fixtures": {
+      "documents": 4,
+      "case_types": 6
+    },
+    "manual_reuse_workflow": {
+      "run": 1,
+      "passed": 1
+    },
+    "human_review": {
+      "run": 1,
+      "passed": 1,
+      "reviewer_attested": true,
+      "operation_count": 2
+    },
+    "target_real_word_delivery": {
+      "run": 1,
+      "passed": 1,
+      "pages": 2,
+      "verified_blocks": 12
+    }
+  },
+  "code_and_test_sha256": {
+    "lib/role_candidates.py": "fbd4a6804f4f89611a9579c92ced3ca253afcb4b8a0ff91d89bda1197b783f2c",
+    "lib/contracts.py": "736583627c2ccf3f3926032755554bc65ef7c71cdf88171eb32a28d3a7fb33f3",
+    "lib/format_review.py": "07159a0cfdd539d2916fb1415b4dcb9377e2f8fddf4f277f880c857203af6530",
+    "schemas/decisions-v1.schema.json": "68ae12a94c2ad48f071f911f723f6a1dd8d4820ff22eb83fac290ec3b0d8b220",
+    "tests/test_role_candidates.py": "7775b331f7642092b279291ea9b2f5464de7595a1e6514548c016c5201f21f11",
+    "tests/test_r7_workflows.py": "0f083029180a9dbd28c3a64fb9a84eea2e22c6c675e63e9893e35265c9c6e6e8",
+    "tests/test_format_review.py": "921a70e4413eb7fb01a6c491f17bbed1bc916faab84ad0a2fb058b1748dd52be",
+    "tests/test_remediation_contracts.py": "3db0f8880f45741afca707fffd23aa89ef4b2c3f422e0f6a72bfe1988daf27d1",
+    "docs/acceptance/r7-evaluation/generate_hard_cases.py": "90ea5e32b73f1a4a48effcfcac57eda8a9d557d3cd1dfaa88f095b089296527d",
+    "docs/acceptance/r7-evaluation/unstructured-hard-cases.json": "fba4298a9053cc79e18b59e4399b8660f463f6631dc9ee669e2a66693dbe1403",
+    "docs/acceptance/remediation/s5-human-review-evidence.json": "876bcf10a85e2c881e4fc061c08d98ba664af204ad6d70254ebfea2be1b63db3"
+  },
+  "evidence": [
+    "主冻结集实际包含四类各 5 份、100 个标题正例和 500 个正文负例；额外四类匿名 DOCX 困难夹具覆盖缺失中间层级、同层异字号、日期/版本号、正文编号、短粗体正文和题注。真实浏览器审阅导出已绑定 report_id/source_sha256，2 个操作的 reviewer_attested=true 文件成功编译格式包；格式包在另一份匿名困难目标上生成 RoleMap，并通过真实 Word build/smoke。完整哈希见 s5-human-review-evidence.json。"
+  ],
+  "word_access_directory": "<word-access-dir>",
+  "remaining_limits": [
+    "20 份冻结集的 aggregate manual_correction_count 仍为 null；本轮只证明一份匿名困难样例的真人审阅与跨目标交付闭环，不将单次操作外推为冻结集人工一致性。"
+  ]
+}

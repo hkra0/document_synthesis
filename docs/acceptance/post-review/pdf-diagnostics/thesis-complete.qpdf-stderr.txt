@@ -1,0 +1,16 @@
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 6 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 8 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 10 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 12 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 22 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 24 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 26 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 30 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 49 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 51 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 53 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 55 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 80 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 83 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+WARNING: <repo>/docs/acceptance/r0-r11-review/thesis-complete.pdf (object 91 0): object has offset 0 - a common error handled correctly by qpdf and most other applications
+qpdf: operation succeeded with warnings

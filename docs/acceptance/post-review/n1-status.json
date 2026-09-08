@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "batch": "N1",
+  "status": "verified",
+  "verified_at": "2026-09-06",
+  "closes": [
+    "C01"
+  ],
+  "code_sha256": {
+    "lib/field_updater.py": "5aea37614d805c252c139170b5fb2357e16b38b99c8496392c764f4392f7ad0c",
+    "lib/delivery.py": "fbdaac66f8a09193905fe61e778ea45ac450e716ce6a3a8c65fe92186ac941ef"
+  },
+  "fixture_sha256": {},
+  "commands": [
+    "python3 -m unittest discover -s tests -p 'test_post_review_contracts.py' -q",
+    "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> TMPDIR=<word-access-dir>/document-synthesis-nwdebug.K6jPYu DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest discover -s tests -p 'test_post_review_word.py' -v"
+  ],
+  "tests": {
+    "run": 3,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "word_cases": [
+    {
+      "id": "NW01",
+      "status": "passed",
+      "evidence": "固定目录真实 Word NW01–NW12 矩阵"
+    },
+    {
+      "id": "NW02",
+      "status": "passed",
+      "evidence": "固定目录真实 Word 矩阵；12/12 通过"
+    },
+    {
+      "id": "NW10",
+      "status": "passed",
+      "evidence": "固定目录真实 Word NW01–NW12 矩阵"
+    }
+  ],
+  "artifact_sha256": {
+    "lib/field_updater.py": "5aea37614d805c252c139170b5fb2357e16b38b99c8496392c764f4392f7ad0c",
+    "lib/delivery.py": "fbdaac66f8a09193905fe61e778ea45ac450e716ce6a3a8c65fe92186ac941ef"
+  },
+  "remaining_limits": [
+    "固定 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR 后 NW01–NW12 矩阵 12/12 通过；随机临时目录版本的一次 NW02 超时作为历史观察保留。"
+  ]
+}

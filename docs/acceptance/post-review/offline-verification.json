@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-09-06",
+  "scope": "post-review offline continuation",
+  "automation_policy": "offline_plus_real_word_followup",
+  "workflow": [
+    {
+      "step": "analyze-format",
+      "status": "passed",
+      "command": "python3 synthesize.py --analyze-format examples/custom-format-demo/sample.docx --analysis-dir <fresh-dir>/sample --replace-output"
+    },
+    {
+      "step": "compile-format",
+      "status": "passed",
+      "command": "python3 synthesize.py --compile-format <fresh-dir>/sample/analysis.json --decisions examples/custom-format-demo/decisions.final.json --format-out <fresh-dir>/academic-demo.format.json --replace-output"
+    },
+    {
+      "step": "analyze-source",
+      "status": "passed",
+      "command": "python3 synthesize.py --analyze-source examples/custom-format-demo/manuscript.docx --analysis-dir <fresh-dir>/target --replace-output"
+    },
+    {
+      "step": "compile-mapping",
+      "status": "passed",
+      "command": "python3 synthesize.py --compile-mapping <fresh-dir>/target/analysis.json --decisions examples/custom-format-demo/manuscript-decisions.final.json --mapping-out <fresh-dir>/manuscript-roles.json --replace-output"
+    },
+    {
+      "step": "render-preview",
+      "status": "passed",
+      "command": "python3 synthesize.py --render-preview <fresh-dir>/academic-demo.format.json --preview-out <fresh-dir>/preview.html --preview-meta <fresh-dir>/preview.json --replace-output"
+    },
+    {
+      "step": "migrate-manifest",
+      "status": "passed",
+      "command": "python3 synthesize.py --migrate-manifest examples/custom-format-demo/legacy-manifest-v1.json --manifest-out <fresh-dir>/manifest.v2.json --replace-output"
+    },
+    {
+      "step": "plan",
+      "status": "passed",
+      "command": "python3 synthesize.py --source examples/custom-format-demo/manuscript.docx --manifest examples/custom-format-demo/manifest.json --plan"
+    },
+    {
+      "step": "format-review-ui-contract",
+      "status": "passed",
+      "command": "python3 -m unittest discover -s tests -p 'test_format_review.py' -q"
+    },
+    {
+      "step": "format-analysis-candidate-contract",
+      "status": "passed",
+      "command": "python3 -m unittest discover -s tests -p 'test_format_analysis.py' -q"
+    },
+    {
+      "step": "smoke-metadata-contract",
+      "status": "passed",
+      "command": "python3 -m unittest discover -s tests -p 'test_smoke_outputs.py' -q"
+    },
+    {
+      "step": "clean-venv-install-and-suite",
+      "status": "passed",
+      "command": "python3 -m venv <fresh-venv> && <fresh-venv>/bin/python -m pip install -r requirements.txt && <fresh-venv>/bin/python -W error::FutureWarning -m unittest discover -s tests -q",
+      "environment": {
+        "python": "3.14.0",
+        "packages": {
+          "python-docx": "1.2.0",
+          "pymupdf": "1.28.2",
+          "pypdf": "6.17.0",
+          "Pillow": "12.3.0",
+          "numpy": "2.5.2",
+          "lxml": "6.1.3",
+          "jsonschema": "4.26.0"
+        }
+      }
+    },
+    {
+      "step": "pdf-diagnostics",
+      "status": "passed",
+      "command": "python3 docs/acceptance/post-review/pdf-diagnostics/diagnose_pdfs.py",
+      "evidence": "post-review/pdf-diagnostics/summary.json；external-export-qa-main-rerun.pdf",
+      "reason": "同源真实 Word→PDF 导出已完成；Quartz wrong pointing object 警告被重复确认是未引用、文件中不存在的 offset=0 xref 行，三种解析器页数和页面框一致。原始 stderr 保留，其他结构异常仍阻断。"
+    },
+    {
+      "step": "real-word-post-review-matrix",
+      "status": "passed",
+      "command": "DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> TMPDIR=<word-access-dir>/document-synthesis-nwdebug.K6jPYu DOCUMENT_SYNTHESIS_WORD_TEST=1 python3 -m unittest discover -s tests -p 'test_post_review_word.py' -v",
+      "evidence": "acceptance/post-review/n8-status.json"
+    }
+  ],
+  "tests": {
+    "post_review_contracts": {"run": 26, "failed": 0, "errors": 0, "skipped": 0},
+    "format_review_ui": {"run": 5, "failed": 0, "errors": 0, "skipped": 0},
+    "format_analysis_candidate_contract": {"run": 3, "failed": 0, "errors": 0, "skipped": 0},
+    "smoke_metadata_contract": {"run": 10, "failed": 0, "errors": 0, "skipped": 0},
+    "full_suite": {"run": 286, "failed": 0, "errors": 0, "skipped": 3},
+    "real_word_matrix": {"run": 12, "passed": 12, "failed": 0, "errors": 0, "skipped": 0, "duration_seconds": 72.668, "prior_run": {"passed": 11, "failed": 1, "failure": "NW02 一次 Word→PDF 导出超时；固定 Word Automation 目录后复跑通过。"}}
+  },
+  "clean_venv_suite": {"run": 286, "failed": 0, "errors": 0, "skipped": 3},
+  "offline_evidence": {
+    "unstructured_evaluation": "docs/acceptance/r7-evaluation/unstructured-metrics.json",
+    "manual_correction_smoke": "docs/acceptance/r7-evaluation/manual-correction-smoke.json",
+    "unstructured_human_baseline": "docs/acceptance/r7-evaluation/unstructured-human-baseline.json",
+    "format_review_ui_contract": "tests/test_format_review.py",
+    "config_contract_guard": "lib/build_plan.py",
+    "pdf_diagnostics": "docs/acceptance/post-review/pdf-diagnostics/summary.json",
+    "release_status": "docs/acceptance/post-review/status.json"
+  },
+  "unstructured_metric_snapshot": {
+    "documents": 20,
+    "heading_positives": 100,
+    "body_negatives": 500,
+    "candidate_coverage": 1.0,
+    "candidate_block_precision": 1.0,
+    "candidate_heading_false_positives": 0,
+    "selected_body_as_heading_false_positives": 0,
+    "automatic_acceptance_coverage": 1.0,
+    "automatic_acceptance_precision": 1.0,
+    "correction_operations_estimate": 0,
+    "automatic_acceptance_threshold": 0.98,
+    "selected_score_range": {"min": 0.8, "max": 0.985},
+    "automatic_threshold_reachable": true,
+    "manual_correction_count": 0,
+    "unresolved_count": 0
+  },
+  "limitations": [
+    "随机临时目录版本曾出现一次 NW02 导出超时；固定 Word Automation 目录复跑 NW01–NW12 为 12/12 通过，详见 n8-status.json。",
+    "同源真实 Word→PDF 导出可被三种 PDF 工具读到 6 页；Quartz orphan xref 模式已确认不影响当前页面语义，N9 已通过诊断分类。"
+  ]
+}

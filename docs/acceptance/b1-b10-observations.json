@@ -1,0 +1,102 @@
+{
+  "mapping": {
+    "stale_map_rejected": false,
+    "expected_style_if_mapping_used": "SynthHeading2",
+    "actual_style": "SynthBody",
+    "heading_nodes": 0
+  },
+  "preserve": {
+    "source_style": "Normal",
+    "actual_style": "SynthBody",
+    "source_bottom_mm": 30,
+    "actual_bottom_mm": 24.606,
+    "source_footer": "ORIGINAL FOOTER",
+    "actual_footer_text": "-  -"
+  },
+  "directory": {
+    "expected_heading_pt": 37,
+    "actual_heading_pt": 16.0
+  },
+  "region": {
+    "image_rid": "rId9",
+    "actual_relation_type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
+    "actual_target": "footer1.xml",
+    "media_parts": [],
+    "source_style_exists": false,
+    "structure_validator_accepted": true
+  },
+  "unassigned_image_accepted": true,
+  "invalid_region_at_assembly": {
+    "assembly_called_directly": true,
+    "invalid_boundary_accepted": true,
+    "source_paragraphs": 5,
+    "actual_paragraphs": 5
+  },
+  "page_validation": {
+    "synthetic_measurement": true,
+    "expected_start": 1,
+    "invalid_map_accepted": true,
+    "map": {
+      "_Synth_body": {
+        "physical_page": 1,
+        "printed_page": 7,
+        "observed_label": "999",
+        "expected_label": "VII",
+        "label_verified": false
+      },
+      "_Audit_heading": {
+        "physical_page": 2,
+        "printed_page": 9,
+        "observed_label": "999",
+        "expected_label": "IX",
+        "label_verified": false
+      }
+    }
+  },
+  "seq": {
+    "ROMAN": "TypeError: int_to_roman() got an unexpected keyword argument 'lower'",
+    "ALPHABETIC": "TypeError: int_to_letters() got an unexpected keyword argument 'lower'"
+  },
+  "ref": {
+    "expected": "1",
+    "actual": "Figure 0 Caption outside bookmark"
+  },
+  "pageref_with_delivery_guess": "AttributeError: 'str' object has no attribute 'get'",
+  "removed_note_accepted_by_integrity": true,
+  "format_gate": {
+    "delivery_stage_mocked": true,
+    "published": true,
+    "qa": {
+      "content_integrity": "passed",
+      "format_verification": "warnings",
+      "unverified_attributes": [
+        "hanging_indent",
+        "run_color",
+        "keep_with_next"
+      ],
+      "violations": [
+        "[body @ /w:document/w:body/w:p[1]] 字号不匹配: 期望 12.0pt, 实际 70.0pt"
+      ]
+    }
+  },
+  "word_staged_geometry": {
+    "stage": "before Word export; not a completed delivery",
+    "expected_mm": {
+      "width": 210,
+      "height": 297,
+      "top": 25,
+      "bottom": 25
+    },
+    "actual_mm": {
+      "width": 215.9,
+      "height": 279.4,
+      "top": 25.4,
+      "bottom": 24.606
+    }
+  },
+  "word_runs": {
+    "first_session_run": "completed previously; output unavailable after interruption, excluded from retained acceptance evidence",
+    "retained_rerun": "AppleEvent timeout -1712",
+    "last_retry": "Word temporary-folder grant rejected by automatic approval review; prompt cancelled; no completed delivery"
+  }
+}

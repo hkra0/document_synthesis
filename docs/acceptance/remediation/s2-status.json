@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "batch": "S2",
+  "plan": "docs/post-n0-n10-remediation-plan.md",
+  "status": "verified",
+  "verified_at": "2026-09-08",
+  "closes": [
+    "D02"
+  ],
+  "commands": [
+    "python3 -m unittest tests.test_docx_inspector tests.test_remediation_contracts -q",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_remediation_word.RemediationWordTest.test_SW02_real_word_preserves_default_first_even_story_bindings -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_remediation_word.RemediationWordTest.test_SW02_real_word_two_section_shared_and_unlinked_bindings -v",
+    "DOCUMENT_SYNTHESIS_WORD_TEST=1 DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR=<word-access-dir> python3 -m unittest tests.test_remediation_word.RemediationWordTest.test_SW02_real_word_wrong_story_relationship_is_rejected -v"
+  ],
+  "tests": {
+    "offline": {
+      "passed": true
+    },
+    "story_table_inspection": {
+      "run": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    "SW02_real": {
+      "run": 3,
+      "passed": 3,
+      "failed": 0
+    }
+  },
+  "code_and_test_sha256": {
+    "lib/docx_inspector.py": "e298edde5a41a1c304806b778071535543471ca51bbafbe1e1156202a9a1764b",
+    "lib/verification_contracts.py": "9c21db70ac6821ac9346da4c46996d3d06cbc07e1d1478dee5ec2fd906ed5a51",
+    "lib/content_integrity.py": "acd89737a8d7276ec93a1c582a4979964e50614ec3c73852fda53297428b7a1c",
+    "tests/test_docx_inspector.py": "2397dc31a53b463c26f5e865bf8ef9b2685ed57c8c7872495875879306bd14dc",
+    "tests/test_remediation_contracts.py": "3db0f8880f45741afca707fffd23aa89ef4b2c3f422e0f6a72bfe1988daf27d1",
+    "tests/test_remediation_word.py": "431292d77e707f9dace7cccf8149b34979bb4ee74d86f5a89d7f915f9c2dd276"
+  },
+  "evidence": [
+    "story part、显式关系、linked_to_previous、different_first_page、文字/距离/有效字符属性和页眉表格边界均有断言；三项真实 SW02 夹具覆盖共享/解除链接及错误关系目标，均通过 Word→PDF/最终门禁。"
+  ],
+  "word_access_directory": "<word-access-dir>",
+  "remaining_limits": []
+}

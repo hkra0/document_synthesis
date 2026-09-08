@@ -1,0 +1,260 @@
+{
+  "dataset_schema_version": 1,
+  "dataset_id": "r7-independent-anonymous-unstructured-hard-v1",
+  "fictional_only": true,
+  "frozen": true,
+  "label_source": "fixture_author_manual_review",
+  "document_count": 4,
+  "categories": [
+    "公文",
+    "报告",
+    "论文",
+    "手工格式"
+  ],
+  "case_types": [
+    "caption",
+    "date_or_version",
+    "missing_intermediate_level",
+    "numbered_body",
+    "same_level_different_size",
+    "short_bold_body"
+  ],
+  "documents": [
+    {
+      "filename": "公文-hard-cases.docx",
+      "category": "公文",
+      "source_sha256": "cfbf6b416ddacf4fa71ed7663969e4d36a12a53b91789149df7653744f0240ab",
+      "paragraph_count": 12,
+      "checks": [
+        {
+          "paragraph_index": 0,
+          "case": "missing_intermediate_level",
+          "expected_role": "heading.1"
+        },
+        {
+          "paragraph_index": 2,
+          "case": "missing_intermediate_level",
+          "expected_role": "heading.3",
+          "expected_review_status": "pending_review",
+          "required_conflict": "numbering_vs_size_level"
+        },
+        {
+          "paragraph_index": 4,
+          "case": "date_or_version",
+          "expected_role": "body",
+          "expected_numbering_kind": "date_or_version",
+          "expected_review_status": "pending_review"
+        },
+        {
+          "paragraph_index": 5,
+          "case": "numbered_body",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 6,
+          "case": "short_bold_body",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 7,
+          "case": "caption",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 8,
+          "case": "same_level_different_size",
+          "expected_role": "heading.2",
+          "expected_review_status": "pending_review"
+        },
+        {
+          "paragraph_index": 10,
+          "case": "same_level_different_size",
+          "expected_role": "heading.2",
+          "expected_review_status": "pending_review"
+        }
+      ],
+      "all_documents_have_no_outlineLvl": true
+    },
+    {
+      "filename": "报告-hard-cases.docx",
+      "category": "报告",
+      "source_sha256": "b3b43103477fbbba8d9bb5efa245120702c3e5050dd0fd98e88150ff61e0a147",
+      "paragraph_count": 12,
+      "checks": [
+        {
+          "paragraph_index": 0,
+          "case": "missing_intermediate_level",
+          "expected_role": "heading.1"
+        },
+        {
+          "paragraph_index": 2,
+          "case": "missing_intermediate_level",
+          "expected_role": "heading.3",
+          "expected_review_status": "pending_review",
+          "required_conflict": "numbering_vs_size_level"
+        },
+        {
+          "paragraph_index": 4,
+          "case": "date_or_version",
+          "expected_role": "body",
+          "expected_numbering_kind": "date_or_version",
+          "expected_review_status": "pending_review"
+        },
+        {
+          "paragraph_index": 5,
+          "case": "numbered_body",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 6,
+          "case": "short_bold_body",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 7,
+          "case": "caption",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 8,
+          "case": "same_level_different_size",
+          "expected_role": "heading.2",
+          "expected_review_status": "pending_review"
+        },
+        {
+          "paragraph_index": 10,
+          "case": "same_level_different_size",
+          "expected_role": "heading.2",
+          "expected_review_status": "pending_review"
+        }
+      ],
+      "all_documents_have_no_outlineLvl": true
+    },
+    {
+      "filename": "论文-hard-cases.docx",
+      "category": "论文",
+      "source_sha256": "c7daf7400c3a923bf83eccb47fad4ae7a469f76512b66f27eabb7eff07e5925b",
+      "paragraph_count": 12,
+      "checks": [
+        {
+          "paragraph_index": 0,
+          "case": "missing_intermediate_level",
+          "expected_role": "heading.1"
+        },
+        {
+          "paragraph_index": 2,
+          "case": "missing_intermediate_level",
+          "expected_role": "heading.3",
+          "expected_review_status": "pending_review",
+          "required_conflict": "numbering_vs_size_level"
+        },
+        {
+          "paragraph_index": 4,
+          "case": "date_or_version",
+          "expected_role": "body",
+          "expected_numbering_kind": "date_or_version",
+          "expected_review_status": "pending_review"
+        },
+        {
+          "paragraph_index": 5,
+          "case": "numbered_body",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 6,
+          "case": "short_bold_body",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 7,
+          "case": "caption",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 8,
+          "case": "same_level_different_size",
+          "expected_role": "heading.2",
+          "expected_review_status": "pending_review"
+        },
+        {
+          "paragraph_index": 10,
+          "case": "same_level_different_size",
+          "expected_role": "heading.2",
+          "expected_review_status": "pending_review"
+        }
+      ],
+      "all_documents_have_no_outlineLvl": true
+    },
+    {
+      "filename": "手工格式-hard-cases.docx",
+      "category": "手工格式",
+      "source_sha256": "6b1abd203cc2be15cbbe6dddf1e9dd807ecd8b3a7ae68b1cdd954323e4afc624",
+      "paragraph_count": 12,
+      "checks": [
+        {
+          "paragraph_index": 0,
+          "case": "missing_intermediate_level",
+          "expected_role": "heading.1"
+        },
+        {
+          "paragraph_index": 2,
+          "case": "missing_intermediate_level",
+          "expected_role": "heading.3",
+          "expected_review_status": "pending_review",
+          "required_conflict": "numbering_vs_size_level"
+        },
+        {
+          "paragraph_index": 4,
+          "case": "date_or_version",
+          "expected_role": "body",
+          "expected_numbering_kind": "date_or_version",
+          "expected_review_status": "pending_review"
+        },
+        {
+          "paragraph_index": 5,
+          "case": "numbered_body",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 6,
+          "case": "short_bold_body",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 7,
+          "case": "caption",
+          "expected_role": "body",
+          "expected_review_status": "selected"
+        },
+        {
+          "paragraph_index": 8,
+          "case": "same_level_different_size",
+          "expected_role": "heading.2",
+          "expected_review_status": "pending_review"
+        },
+        {
+          "paragraph_index": 10,
+          "case": "same_level_different_size",
+          "expected_role": "heading.2",
+          "expected_review_status": "pending_review"
+        }
+      ],
+      "all_documents_have_no_outlineLvl": true
+    }
+  ],
+  "limitations": [
+    "这是主冻结集之外的困难样例压力集，结论不外推为真实模板准确率。",
+    "决策文件/人工操作日志仍需由实际审阅者在产品工作流中产生；本清单只冻结夹具事实与预期反例。"
+  ]
+}
