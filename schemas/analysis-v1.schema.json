@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://document-synthesis.org/schemas/analysis-v1.json",
+  "title": "Document Synthesis Analysis Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["analysis_schema_version", "report_id", "source_sha256", "source_file", "analyzer_version", "page", "clusters", "candidate_roles", "node_roles", "missing_roles", "diagnostics"],
+  "properties": {
+    "analysis_schema_version": {"type": "integer", "const": 1},
+    "report_id": {"type": "string", "minLength": 1},
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "source_file": {"type": "string", "minLength": 1},
+    "analyzer_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+.*$"},
+    "base_format_ref": {"type": ["string", "null"]},
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width_mm", "height_mm", "orientation", "margin_top_mm", "margin_bottom_mm", "margin_left_mm", "margin_right_mm", "header_distance_mm", "footer_distance_mm", "snap_to_grid"],
+      "properties": {
+        "width_mm": {"type": "number", "exclusiveMinimum": 0},
+        "height_mm": {"type": "number", "exclusiveMinimum": 0},
+        "orientation": {"type": "string", "enum": ["portrait", "landscape"]},
+        "margin_top_mm": {"type": "number", "minimum": 0},
+        "margin_bottom_mm": {"type": "number", "minimum": 0},
+        "margin_left_mm": {"type": "number", "minimum": 0},
+        "margin_right_mm": {"type": "number", "minimum": 0},
+        "header_distance_mm": {"type": "number", "minimum": 0},
+        "footer_distance_mm": {"type": "number", "minimum": 0},
+        "snap_to_grid": {"type": "boolean"}
+      }
+    },
+    "clusters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cluster_id", "run_style", "paragraph_style", "outline_level", "p_style_ids", "occurrence_count", "sample_nodes", "sample_texts", "suggested_role", "confidence"],
+        "properties": {
+          "cluster_id": {"type": "string", "minLength": 1},
+          "structure_type": {"type": "string", "enum": ["paragraph", "table", "section_break", "drawing"]},
+          "run_style": {"type": "object"},
+          "paragraph_style": {"type": "object"},
+          "outline_level": {"type": ["integer", "null"], "minimum": 1, "maximum": 9},
+          "p_style_ids": {"type": "array", "items": {"type": "string"}},
+          "occurrence_count": {"type": "integer", "minimum": 1},
+          "sample_nodes": {"type": "array", "items": {"type": "string"}},
+          "sample_texts": {"type": "array", "items": {"type": "string"}},
+          "suggested_role": {"type": "string"},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "candidate_roles": {"type": "object", "additionalProperties": {"type": "object", "required": ["cluster_id", "role"], "properties": {"cluster_id": {"type": "string"}, "role": {"type": "string"}}, "additionalProperties": true}},
+    "node_roles": {"type": "object", "additionalProperties": {"type": "string"}},
+    "unstructured_candidate_evidence": {"type": "object"},
+    "node_refs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_sha256", "part_uri", "element_path", "text_hash"],
+        "properties": {
+          "source_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+          "part_uri": {"type": "string", "minLength": 1},
+          "element_path": {"type": "string", "minLength": 1},
+          "text_hash": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"}
+        }
+      }
+    },
+    "missing_roles": {"type": "array", "items": {"type": "object", "required": ["role", "suggested_fallback", "reason"], "properties": {"role": {"type": "string"}, "suggested_fallback": {"type": "string"}, "reason": {"type": "string"}}, "additionalProperties": false}},
+    "sample_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blocks", "paragraphs", "tables", "runs", "headings", "nodes_with_protected_objects"],
+      "properties": {
+        "blocks": {"type": "integer", "minimum": 0},
+        "paragraphs": {"type": "integer", "minimum": 0},
+        "tables": {"type": "integer", "minimum": 0},
+        "runs": {"type": "integer", "minimum": 0},
+        "headings": {"type": "integer", "minimum": 0},
+        "nodes_with_protected_objects": {"type": "integer", "minimum": 0}
+      }
+    },
+    "style_inventory": {"type": "object"},
+    "field_evidence": {"type": "array", "items": {"type": "object"}},
+    "unsupported_features": {"type": "array", "items": {"type": "object"}},
+    "confidence_summary": {"type": "object"},
+    "diagnostics": {"type": "array", "items": {"type": "object", "required": ["code", "severity", "location", "message"], "properties": {"code": {"type": "string"}, "severity": {"type": "string", "enum": ["info", "warning", "error"]}, "location": {"type": "string"}, "message": {"type": "string"}}, "additionalProperties": false}}
+  }
+}

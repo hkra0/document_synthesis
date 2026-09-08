@@ -14,6 +14,7 @@ from docx.enum.section import WD_SECTION_START, WD_ORIENT
 from docx.oxml import parse_xml, OxmlElement
 from docx.oxml.ns import nsdecls, qn
 import lxml.etree
+from xml.sax.saxutils import escape
 
 # 公文标准版面参数
 DEFAULT_PAGE_SETUP = {
@@ -72,6 +73,7 @@ def add_toc_entry_with_hyperlink(doc: Document, text: str, page_num: int, level:
         pPr.append(tabs)
     
     if bookmark_name:
+        text = escape(text)
         hlink = parse_xml(f'<w:hyperlink {nsdecls("w")} w:anchor="{bookmark_name}" w:history="1"/>')
         r_t = parse_xml(f'<w:r {nsdecls("w")}><w:t>{text}</w:t></w:r>')
         r_tab = parse_xml(f'<w:r {nsdecls("w")}><w:tab/></w:r>')
@@ -292,8 +294,9 @@ def inline_style_properties(element, doc_src: Document):
         pStyle = pPr.find(qn('w:pStyle'))
         sid = pStyle.get(qn('w:val')) if pStyle is not None else 'Normal'
         has_src_color = False
-        
-        style_el = styles_by_id.get(sid) or styles_by_id.get('Normal')
+        style_el = styles_by_id.get(sid)
+        if style_el is None:
+            style_el = styles_by_id.get('Normal')
         if style_el is not None:
             style_pPr = style_el.find(qn('w:pPr'))
             if style_pPr is not None:

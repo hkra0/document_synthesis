@@ -1,0 +1,205 @@
+{
+  "format_schema_version": 1,
+  "id": "report-basic",
+  "version": "1.0.0",
+  "metadata": {
+    "description": "现代通用商业与技术报告排版预设",
+    "institution": "通用标准"
+  },
+  "page": {
+    "width_mm": 210.0,
+    "height_mm": 297.0,
+    "orientation": "portrait",
+    "margin_top_mm": 25.4,
+    "margin_bottom_mm": 25.4,
+    "margin_left_mm": 31.8,
+    "margin_right_mm": 31.8,
+    "header_distance_mm": 15.0,
+    "footer_distance_mm": 15.0,
+    "snap_to_grid": false
+  },
+  "styles": {
+    "body": {
+      "run": {
+        "east_asia": "微软雅黑",
+        "latin": "Segoe UI",
+        "size_pt": 11.0,
+        "bold": false,
+        "italic": false,
+        "color": "auto"
+      },
+      "paragraph": {
+        "alignment": "justify",
+        "first_line_indent": { "value": 0.0, "unit": "char" },
+        "space_before_pt": 0.0,
+        "space_after_pt": 4.0,
+        "line_spacing": { "mode": "multiple", "value": 1.3 },
+        "widow_control": true
+      }
+    },
+    "title": {
+      "run": {
+        "east_asia": "微软雅黑",
+        "latin": "Segoe UI",
+        "size_pt": 24.0,
+        "bold": true
+      },
+      "paragraph": {
+        "alignment": "center",
+        "space_before_pt": 18.0,
+        "space_after_pt": 18.0,
+        "keep_with_next": true
+      }
+    },
+    "subtitle": {
+      "run": {
+        "east_asia": "微软雅黑",
+        "latin": "Segoe UI",
+        "size_pt": 14.0,
+        "bold": false
+      },
+      "paragraph": {
+        "alignment": "center",
+        "space_before_pt": 6.0,
+        "space_after_pt": 12.0,
+        "keep_with_next": true
+      }
+    },
+    "heading.1": {
+      "based_on": "body",
+      "run": {
+        "east_asia": "微软雅黑",
+        "latin": "Segoe UI",
+        "size_pt": 18.0,
+        "bold": true
+      },
+      "paragraph": {
+        "alignment": "left",
+        "space_before_pt": 14.0,
+        "space_after_pt": 6.0,
+        "keep_with_next": true
+      }
+    },
+    "heading.2": {
+      "based_on": "body",
+      "run": {
+        "east_asia": "微软雅黑",
+        "latin": "Segoe UI",
+        "size_pt": 14.0,
+        "bold": true
+      },
+      "paragraph": {
+        "alignment": "left",
+        "space_before_pt": 10.0,
+        "space_after_pt": 4.0,
+        "keep_with_next": true
+      }
+    },
+    "heading.3": {
+      "based_on": "body",
+      "run": {
+        "east_asia": "微软雅黑",
+        "latin": "Segoe UI",
+        "size_pt": 12.0,
+        "bold": true
+      },
+      "paragraph": {
+        "alignment": "left",
+        "space_before_pt": 6.0,
+        "space_after_pt": 2.0,
+        "keep_with_next": true
+      }
+    },
+    "heading.4": { "based_on": "body" },
+    "heading.5": { "based_on": "body" },
+    "heading.6": { "based_on": "body" },
+    "heading.7": { "based_on": "body" },
+    "heading.8": { "based_on": "body" },
+    "heading.9": { "based_on": "body" },
+    "toc.title": {
+      "run": {
+        "east_asia": "微软雅黑",
+        "latin": "Segoe UI",
+        "size_pt": 20.0,
+        "bold": true
+      },
+      "paragraph": {
+        "alignment": "center",
+        "space_before_pt": 12.0,
+        "space_after_pt": 12.0
+      }
+    },
+    "toc.1": { "based_on": "body" },
+    "toc.2": { "based_on": "body" },
+    "toc.3": { "based_on": "body" },
+    "toc.4": { "based_on": "body" },
+    "toc.5": { "based_on": "body" },
+    "toc.6": { "based_on": "body" },
+    "toc.7": { "based_on": "body" },
+    "toc.8": { "based_on": "body" },
+    "toc.9": { "based_on": "body" },
+    "header": {
+      "run": { "east_asia": "微软雅黑", "latin": "Segoe UI", "size_pt": 9.0 },
+      "paragraph": { "alignment": "right" }
+    },
+    "footer": {
+      "run": { "east_asia": "微软雅黑", "latin": "Segoe UI", "size_pt": 9.0 },
+      "paragraph": { "alignment": "center" }
+    },
+    "table.body": {
+      "based_on": "body",
+      "run": { "size_pt": 10.0 },
+      "paragraph": { "space_after_pt": 2.0 }
+    },
+    "caption": {
+      "run": { "east_asia": "微软雅黑", "latin": "Segoe UI", "size_pt": 9.5 },
+      "paragraph": { "alignment": "center", "space_before_pt": 4.0, "space_after_pt": 4.0 }
+    },
+    "quote": {
+      "based_on": "body",
+      "paragraph": { "left_indent": { "value": 2.0, "unit": "char" } }
+    },
+    "bibliography": {
+      "based_on": "body",
+      "run": { "size_pt": 10.0 }
+    }
+  },
+  "roles": {
+    "body": { "style": "body", "include_in_toc": false },
+    "title": { "style": "title", "include_in_toc": false },
+    "subtitle": { "style": "subtitle", "include_in_toc": false },
+    "heading.1": { "style": "heading.1", "outline_level": 1, "include_in_toc": true },
+    "heading.2": { "style": "heading.2", "outline_level": 2, "include_in_toc": true },
+    "heading.3": { "style": "heading.3", "outline_level": 3, "include_in_toc": true },
+    "heading.4": { "style": "heading.4", "outline_level": 4, "include_in_toc": true },
+    "heading.5": { "style": "heading.5", "outline_level": 5, "include_in_toc": true },
+    "heading.6": { "style": "heading.6", "outline_level": 6, "include_in_toc": true },
+    "heading.7": { "style": "heading.7", "outline_level": 7, "include_in_toc": true },
+    "heading.8": { "style": "heading.8", "outline_level": 8, "include_in_toc": true },
+    "heading.9": { "style": "heading.9", "outline_level": 9, "include_in_toc": true },
+    "toc.title": { "style": "toc.title", "include_in_toc": false },
+    "caption": { "style": "caption", "include_in_toc": false },
+    "table.body": { "style": "table.body", "include_in_toc": false },
+    "quote": { "style": "quote", "include_in_toc": false },
+    "bibliography": { "style": "bibliography", "include_in_toc": false }
+  },
+  "toc": {
+    "title": "目录",
+    "title_role": "toc.title",
+    "max_level": 3,
+    "leader": "dots",
+    "page_number_gap_mm": 5.0
+  },
+  "footer": {
+    "mode": "managed",
+    "format": "number",
+    "alignment": "center",
+    "style": "footer"
+  },
+  "required_capabilities": [
+    "styles.paragraph.v1",
+    "styles.character.v1",
+    "layout.single_column.v1",
+    "docx.single_source_preservation.v1"
+  ]
+}

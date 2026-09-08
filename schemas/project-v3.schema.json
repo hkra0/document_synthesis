@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://document-synthesis.org/schemas/project-v3.json",
+  "title": "Document Synthesis Project Manifest Schema v3",
+  "type": "object",
+  "required": ["schema_version", "project_name", "format", "formatting"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 3
+    },
+    "project_name": {
+      "type": "string"
+    },
+    "format": {
+      "type": "object",
+      "required": ["ref"],
+      "additionalProperties": false,
+      "properties": {
+        "ref": { "type": "string" },
+        "overrides": { "type": "object" }
+      }
+    },
+    "formatting": {
+      "type": "object",
+      "required": ["mode"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string", "enum": ["preserve", "restyle", "mixed"] },
+        "role_map": { "type": "string" },
+        "on_unmapped": { "type": "string", "enum": ["preserve", "error"] },
+        "page_policy": { "type": "string", "enum": ["target", "source"] },
+        "inline_emphasis": { "type": "string", "enum": ["preserve", "target"] },
+        "source_toc": { "type": "string", "enum": ["preserve", "error"] },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "mode"],
+            "additionalProperties": false,
+            "properties": {
+              "file": { "type": "string" },
+              "node_range": { "type": "string" },
+              "mode": { "type": "string", "enum": ["preserve", "restyle"] },
+              "page_policy": { "type": "string", "enum": ["target", "source"] }
+            }
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "filename", "parts"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "filename": { "type": "string" },
+              "parts": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "toc": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reference": { "type": "string" },
+                  "links": { "type": "string", "enum": ["internal", "none"] }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "parts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "kind": { "type": "string", "enum": ["cover", "generated_toc", "content"] },
+              "source_region": { "type": "string" },
+              "section_ref": { "type": "string" },
+              "section_type": { "type": "string", "enum": ["nextPage", "oddPage", "evenPage", "continuous"] },
+              "page_sequence": { "type": "string" },
+              "include_in_toc": { "type": "boolean" }
+            }
+          }
+        },
+        "page_sequences": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "format": { "type": "string", "enum": ["decimal", "upperRoman", "lowerRoman", "upperLetter", "lowerLetter"] },
+              "start": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "strategy": { "type": "string", "enum": ["directory_tree", "explicit_tree", "highlighted_docx", "docx_document"] },
+        "file": { "type": "string" },
+        "path": { "type": "string" },
+        "content_dir": { "type": "string" },
+        "tree": { "type": "array" },
+        "highlight": { "type": "object" },
+        "regions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["start", "end"],
+            "additionalProperties": false,
+            "properties": {
+              "start": { "type": "string" },
+              "end": { "type": "string" },
+              "exclude": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "regions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["start", "end"],
+        "additionalProperties": false,
+        "properties": {
+          "start": { "type": "string" },
+          "end": { "type": "string" },
+          "exclude": { "type": "boolean" }
+        }
+      }
+    },
+    "cover": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string", "enum": ["generated", "template", "static_template"] },
+        "header_title": { "type": "string" },
+        "sub_title": { "type": "string" },
+        "main_title": { "type": "string" },
+        "author": { "type": "string" },
+        "date": { "type": "string" },
+        "template": { "type": ["string", "null", "boolean"] }
+      }
+    },
+    "node_overrides": { "type": "object" },
+    "tree_order": { "type": "array", "items": { "type": "string" } },
+    "ignore_nodes": { "type": "array", "items": { "type": "string" } }
+  }
+}

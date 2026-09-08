@@ -1,0 +1,25 @@
+{
+  "project_name": "Custom Format Demo",
+  "schema_version": 3,
+  "format": {
+    "ref": "academic-demo.format.json"
+  },
+  "formatting": {
+    "mode": "restyle",
+    "role_map": "manuscript-roles.json",
+    "on_unmapped": "error"
+  },
+  "source": {
+    "strategy": "docx_document",
+    "file": "manuscript.docx"
+  },
+  "output": {
+    "documents": [
+      {
+        "id": "main",
+        "filename": "academic_paper.docx",
+        "parts": ["body"]
+      }
+    ]
+  }
+}

@@ -2,7 +2,7 @@
   "_comment_info": "公文排版与材料合成项目配置清单示例 (manifest.example.json)",
   "_comment_usage": "如需定制封面、输出文件名、特殊行距或排除文件，可复制本文件，命名为 <项目名>.json 后放入 manifests/。项目专用配置也可命名为 manifest.json，放入对应 input 子目录。",
 
-  "schema_version": 1,
+  "schema_version": 2,
   "project_name": "示例板块名称（如：某模块建设方案）",
 
   "cover": {
@@ -14,9 +14,13 @@
   },
 
   "output": {
-    "compiled_document": "示例板块_合成材料.docx",
-    "cover_toc": "示例板块_封面+目录.docx",
-    "toc_body": "示例板块_目录+正文.docx"
+    "documents": [
+      {
+        "id": "main",
+        "filename": "示例板块_完整文档.docx",
+        "parts": ["cover", "toc", "body"]
+      }
+    ]
   },
 
   "source": {

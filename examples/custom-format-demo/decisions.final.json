@@ -1,0 +1,17 @@
+{
+  "decisions_schema_version": 1,
+  "report_id": "sample-analysis-2570861d",
+  "source_sha256": "2570861d8c65fcc82996342f4d23b0efafa0baa765e20bd2ade63682cfcd1027",
+  "role_styles": {
+    "heading.1": "cluster-04",
+    "heading.2": "cluster-05",
+    "title": "cluster-03",
+    "table.body": "cluster-01",
+    "body": "cluster-02"
+  },
+  "style_overrides": {},
+  "missing_roles": {
+    "heading.3": "inherit"
+  },
+  "on_unmapped": "error"
+}

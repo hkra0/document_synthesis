@@ -1,0 +1,22 @@
+{
+  "decisions_schema_version": 1,
+  "report_id": "sample-analysis-46505dcd",
+  "source_sha256": "46505dcd122c513102836eae0ef5666f77c5ae06bf34883c5b523bd6628e6e34",
+  "role_styles": {
+    "heading.1": "cluster-01",
+    "heading.2": "cluster-02",
+    "body": "cluster-03"
+  },
+  "style_overrides": {},
+  "missing_roles": {
+    "title": "inherit",
+    "heading.3": "inherit",
+    "table.body": "inherit"
+  },
+  "node_roles": {
+    "/w:document/w:body/w:p[1]": "heading.1",
+    "/w:document/w:body/w:p[2]": "heading.2",
+    "/w:document/w:body/w:p[3]": "body"
+  },
+  "on_unmapped": "error"
+}

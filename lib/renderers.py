@@ -7,7 +7,7 @@ import io
 import re
 import copy
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from PIL import Image
 import pymupdf
 from docx import Document
@@ -26,11 +26,37 @@ from .styles import (
     add_heading_paragraph,
     set_run_fonts
 )
+from .layout import RenderContext, apply_section_spec, adapt_table_to_content_box
 from .sanitizers import PdfPageSanitizer
 from .scanner import CN_NUMS
 
 # 记录上一个节点是否以横版分节结尾
 LAST_RENDERED_LANDSCAPE = [False]
+
+
+def _context_is_preserve(context: Optional[RenderContext]) -> bool:
+    policy = getattr(context, "formatting_policy", None) if context is not None else None
+    return bool(policy and policy.mode == "preserve")
+
+
+def _context_preserves_geometry(context: Optional[RenderContext]) -> bool:
+    policy = getattr(context, "formatting_policy", None) if context is not None else None
+    return bool(policy and (policy.mode == "preserve" or (policy.mode == "mixed" and policy.page_policy == "source")))
+
+
+def _copy_section_stories(source_section, target_section) -> None:
+    """复制简单页眉页脚内容，保持 preserve/source 下的故事流不被默认模板替换。"""
+    for attr in ("header", "footer", "first_page_header", "first_page_footer", "even_page_header", "even_page_footer"):
+        try:
+            source_story = getattr(source_section, attr)
+            target_story = getattr(target_section, attr)
+            target_story.is_linked_to_previous = False
+            for child in list(target_story._element):
+                target_story._element.remove(child)
+            for child in source_story._element:
+                target_story._element.append(copy.deepcopy(child))
+        except Exception:
+            continue
 
 
 def copy_element_with_rels(elem, src_doc: Document, dst_doc: Document):
@@ -125,6 +151,126 @@ def copy_element_with_rels(elem, src_doc: Document, dst_doc: Document):
     return cloned
 
 
+def _prepare_source_bookmark_remap(
+    doc_src: Document,
+    target: Document,
+    docx_path: Path,
+    extra_names=(),
+):
+    """Prepare collision-safe bookmark names and IDs for one DOCX import.
+
+    Directory-tree rendering imports each source document by cloning its XML
+    directly.  Unlike ``PackageImporter``, that path previously left source
+    bookmark names untouched, so two valid sources containing the same local
+    bookmark (for example ``fig_caption``) produced an invalid merged package.
+    The remap is scoped to one source import and is applied consistently to
+    every cloned paragraph/table, including simple-field instructions.
+    """
+    existing_names = {
+        marker.get(qn("w:name"))
+        for marker in target.element.body.iter(qn("w:bookmarkStart"))
+        if marker.get(qn("w:name"))
+    }
+    source_names = []
+    source_ids = []
+    source_name_ids = {}
+    for marker in doc_src.element.body.iter(qn("w:bookmarkStart")):
+        name = marker.get(qn("w:name"))
+        marker_id = marker.get(qn("w:id"))
+        if name and name not in source_names:
+            source_names.append(name)
+            if marker_id is not None:
+                source_name_ids[name] = marker_id
+        if marker_id is not None and marker_id not in source_ids:
+            source_ids.append(marker_id)
+    for name in extra_names:
+        if name and name not in source_names:
+            source_names.append(name)
+
+    name_map = {}
+    source_token = hashlib.sha256(str(Path(docx_path).resolve()).encode("utf-8")).hexdigest()[:10]
+    for index, old_name in enumerate(source_names, 1):
+        new_name = old_name
+        if new_name in existing_names:
+            new_name = f"_SynthBm_{source_token}_{index:02d}"
+            while new_name in existing_names:
+                index += 1
+                new_name = f"_SynthBm_{source_token}_{index:02d}"
+        existing_names.add(new_name)
+        name_map[old_name] = new_name
+
+    existing_ids = [
+        int(marker.get(qn("w:id")))
+        for marker in target.element.body.iter(qn("w:bookmarkStart"))
+        if (marker.get(qn("w:id")) or "").lstrip("-").isdigit()
+    ]
+    next_id = max(existing_ids, default=-1) + 1
+    id_map = {}
+    for old_id in source_ids:
+        id_map[old_id] = str(next_id)
+        next_id += 1
+    name_id_map = {}
+    for name in source_names:
+        old_id = source_name_ids.get(name)
+        if old_id in id_map:
+            name_id_map[name] = id_map[old_id]
+        else:
+            name_id_map[name] = str(next_id)
+            next_id += 1
+    return name_map, id_map, name_id_map
+
+
+def _remap_source_bookmarks(element, name_map, id_map):
+    """Apply one source import's bookmark and field-reference remap."""
+    field_pattern = re.compile(
+        r"(\b(?:REF|PAGEREF|STYLEREF)\s+)([^\s\\]+)",
+        flags=re.IGNORECASE,
+    )
+    for item in element.iter():
+        if item.tag == qn("w:bookmarkStart"):
+            old_id = item.get(qn("w:id"))
+            if old_id in id_map:
+                item.set(qn("w:id"), id_map[old_id])
+            old_name = item.get(qn("w:name"))
+            if old_name in name_map:
+                item.set(qn("w:name"), name_map[old_name])
+        elif item.tag == qn("w:bookmarkEnd"):
+            old_id = item.get(qn("w:id"))
+            if old_id in id_map:
+                item.set(qn("w:id"), id_map[old_id])
+        elif item.tag == qn("w:hyperlink"):
+            old_name = item.get(qn("w:anchor"))
+            if old_name in name_map:
+                item.set(qn("w:anchor"), name_map[old_name])
+        elif item.tag == qn("w:instrText") and item.text:
+            item.text = field_pattern.sub(
+                lambda match: match.group(1) + name_map.get(match.group(2), match.group(2)),
+                item.text,
+            )
+        elif item.tag == qn("w:fldSimple"):
+            instruction = item.get(qn("w:instr"))
+            if instruction:
+                item.set(
+                    qn("w:instr"),
+                    field_pattern.sub(
+                        lambda match: match.group(1) + name_map.get(match.group(2), match.group(2)),
+                        instruction,
+                    ),
+                )
+
+
+def _remap_source_note_references(element, footnote_ids, endnote_ids):
+    """Rewrite note references to the IDs allocated in the target package."""
+    for reference in element.iter(qn("w:footnoteReference")):
+        old_id = reference.get(qn("w:id"))
+        if old_id in footnote_ids:
+            reference.set(qn("w:id"), footnote_ids[old_id])
+    for reference in element.iter(qn("w:endnoteReference")):
+        old_id = reference.get(qn("w:id"))
+        if old_id in endnote_ids:
+            reference.set(qn("w:id"), endnote_ids[old_id])
+
+
 def append_element_to_body(doc: Document, elem):
     """将 XML 节点插入文档正文尾部，保持分节属性处于最后"""
     body = doc.element.body
@@ -158,11 +304,25 @@ def _get_pdf_render_cache_dir() -> Path:
     return CACHE_DIR
 
 
-def get_cached_pdf_page_image(pdf_path: Path, page_idx: int, dpi: int = 300) -> bytes:
-    """基于文件修改时间与大小的内容哈希缓存，避免重复渲染"""
+def get_cached_pdf_page_image(
+    pdf_path: Path,
+    page_idx: int,
+    dpi: int = 300,
+    sanitize_footer: bool = True,
+    crop_whitespace: bool = True,
+    cache_version: str = "v1",
+    format_hash: str = "",
+    page_geometry: str = "",
+    formatting_strategy: str = "",
+) -> bytes:
+    """基于文件修改状态、页面编号、DPI与清洗策略的哈希缓存，避免不同清洗策略复用错误缓存"""
     stat = pdf_path.stat()
-    # 使用绝对路径避免不同项目中同名 PDF 复用错误缓存。
-    key = f"{pdf_path.resolve()}_{stat.st_mtime_ns}_{stat.st_size}_p{page_idx}_dpi{dpi}"
+    # 使用绝对路径与策略哈希，避免不同配置复用错误图片。
+    key = (
+        f"{pdf_path.resolve()}_{stat.st_mtime_ns}_{stat.st_size}_p{page_idx}"
+        f"_dpi{dpi}_sf{int(sanitize_footer)}_cw{int(crop_whitespace)}"
+        f"_fmt{format_hash}_page{page_geometry}_strategy{formatting_strategy}_{cache_version}"
+    )
     h = hashlib.md5(key.encode('utf-8')).hexdigest()
     cache_file = _get_pdf_render_cache_dir() / f"{h}.png"
     
@@ -173,14 +333,16 @@ def get_cached_pdf_page_image(pdf_path: Path, page_idx: int, dpi: int = 300) -> 
     zoom = dpi / 72.0
     mat = pymupdf.Matrix(zoom, zoom)
     page = pdf_doc[page_idx]
-    PdfPageSanitizer.erase_footer_page_number(page, page_idx)
+    if sanitize_footer:
+        PdfPageSanitizer.erase_footer_page_number(page, page_idx)
     
     pix = page.get_pixmap(matrix=mat, alpha=False)
     img = Image.open(io.BytesIO(pix.tobytes("png")))
-    cropped_img = PdfPageSanitizer.crop_vertical_whitespace(img)
+    if crop_whitespace:
+        img = PdfPageSanitizer.crop_vertical_whitespace(img)
     
     buf = io.BytesIO()
-    cropped_img.save(buf, format="PNG", optimize=False)
+    img.save(buf, format="PNG", optimize=False)
     data = buf.getvalue()
     
     try:
@@ -192,13 +354,34 @@ def get_cached_pdf_page_image(pdf_path: Path, page_idx: int, dpi: int = 300) -> 
     return data
 
 
-def render_pdf_file(doc: Document, pdf_path: Path, has_headings_on_page: bool = True, dpi: int = 300):
+def render_pdf_file(
+    doc: Document,
+    pdf_path: Path,
+    has_headings_on_page: bool = True,
+    dpi: int = 300,
+    render_context: Optional[RenderContext] = None,
+):
     """PDF 页面渲染排版，结合可用高度自适应等比缩放"""
     pdf_doc = pymupdf.open(str(pdf_path))
     total_pages = len(pdf_doc)
     
     for i in range(total_pages):
-        img_bytes = get_cached_pdf_page_image(pdf_path, i, dpi=dpi)
+        page_geometry = ""
+        formatting_strategy = ""
+        format_hash = ""
+        if render_context is not None:
+            box = render_context.get_content_box()
+            page_geometry = f"{box.page_width_twip}x{box.page_height_twip}:{box.content_width_twip}x{box.content_height_twip}"
+            formatting_strategy = getattr(render_context.formatting_policy, "mode", "")
+            format_hash = getattr(render_context.resolved_format, "content_hash", "")
+        img_bytes = get_cached_pdf_page_image(
+            pdf_path,
+            i,
+            dpi=dpi,
+            format_hash=format_hash,
+            page_geometry=page_geometry,
+            formatting_strategy=formatting_strategy,
+        )
         img = Image.open(io.BytesIO(img_bytes))
         
         p_img = doc.add_paragraph()
@@ -216,13 +399,14 @@ def render_pdf_file(doc: Document, pdf_path: Path, has_headings_on_page: bool = 
         aspect = h_px / w_px
         
         rect = pdf_doc[i].rect
-        default_w_cm = 15.6 if rect.width > rect.height else 15.0
+        content_box = render_context.get_content_box() if render_context is not None else None
+        default_w_cm = content_box.content_width_cm if content_box is not None else (15.6 if rect.width > rect.height else 15.0)
         
         # 首页若与标题同页，按多级标题场景预留足够高度，防止标题成为孤页。
         if i == 0 and has_headings_on_page:
-            max_h_cm = 15.5
+            max_h_cm = min(15.5, content_box.content_height_cm) if content_box is not None else 15.5
         else:
-            max_h_cm = 22.0
+            max_h_cm = content_box.content_height_cm if content_box is not None else 22.0
             
         w_cm = min(default_w_cm, max_h_cm / aspect)
         p_img.add_run().add_picture(io.BytesIO(img_bytes), width=Cm(w_cm))
@@ -516,10 +700,89 @@ def render_docx_file(
     exact_pages: Dict[str, int] = None,
     fonts: Dict[str, str] = None,
     embedded_outline: List[Dict[str, Any]] = None,
+    render_context: Optional[RenderContext] = None,
+    suppress_first_page_break: bool = False,
 ):
     """Word 文件保真渲染，支持全动态横竖版分节自适应、内部目录高保真还原与格式微调"""
     doc_src = Document(str(docx_path))
+    derived_outline = []
+    source_assignments = []
+    if embedded_outline is None:
+        # A directory-tree DOCX node has no explicit outline children, but
+        # the source may still contain PAGEREF/REF fields pointing to the
+        # deterministic heading anchors produced by RoleMapper.  Materialize
+        # those anchors while importing the source so such fields remain
+        # closed and measurable in the merged package.
+        try:
+            from .role_mapper import RoleMapper
+
+            source_assignments, _ = RoleMapper().map_document(docx_path)
+            derived_outline = [
+                {
+                    "source_text": assignment.title_text or "",
+                    "bookmark_name": assignment.bookmark_name,
+                    "bm_id": assignment.node_ref.element_path,
+                }
+                for assignment in source_assignments
+                if assignment.bookmark_name and assignment.title_text
+            ]
+        except Exception:
+            derived_outline = []
+        embedded_outline = derived_outline
+    extra_bookmark_names = [
+        item.get("bookmark_name")
+        for item in (embedded_outline or [])
+        if item.get("bookmark_name")
+    ]
+    source_bookmark_names, source_bookmark_ids, source_bookmark_name_ids = _prepare_source_bookmark_remap(
+        doc_src, doc, docx_path, extra_names=extra_bookmark_names
+    )
+    from .notes_merger import NotesMerger
+
+    source_footnote_ids = NotesMerger.merge_notes(
+        doc_src, doc, is_endnote=False, strict_rels=False
+    )
+    source_endnote_ids = NotesMerger.merge_notes(
+        doc_src, doc, is_endnote=True, strict_rels=False
+    )
+    normalized_outline = []
+    for item in embedded_outline or []:
+        normalized = dict(item)
+        old_name = normalized.get("bookmark_name")
+        if old_name:
+            normalized["bookmark_name"] = source_bookmark_names.get(old_name, old_name)
+            mapped_id = source_bookmark_name_ids.get(old_name)
+            if mapped_id is not None:
+                normalized["bm_id"] = int(mapped_id)
+        normalized_outline.append(normalized)
+    embedded_outline = normalized_outline
+    if (
+        render_context is not None
+        and getattr(render_context, "resolved_format", None) is not None
+        and getattr(getattr(render_context, "formatting_policy", None), "mode", "restyle") == "restyle"
+        and source_assignments
+    ):
+        # Directory-tree imports use the low-level clone path below, so apply
+        # the target role styles to the source package before cloning.  This
+        # keeps a restyle build consistent with the docx_document path while
+        # preserving the source's inline semantic objects.
+        from .style_applier import apply_roles
+
+        apply_roles(
+            doc_src,
+            {item.node_ref.element_path: item.role for item in source_assignments},
+            render_context.resolved_format,
+            policy=render_context.formatting_policy,
+        )
     merge_styles_into_doc(doc_src, doc)
+    source_sections = list(doc_src.sections)
+    preserve_source = _context_is_preserve(render_context)
+    preserve_geometry = _context_preserves_geometry(render_context)
+    if preserve_geometry and source_sections and doc.sections:
+        # 来源边界由 engine 在外层标题写入前创建；这里仅把首节的几何与故事
+        # 流绑定到当前目标节，避免把外层标题留在新节之前形成孤行。
+        apply_section_spec(doc.sections[-1], source_section=source_sections[0])
+        _copy_section_stories(source_sections[0], doc.sections[-1])
     num_info = extract_numbering_rules(doc_src)
     num_counters = {}
     remaining_anchors: Dict[str, List[Dict[str, Any]]] = {}
@@ -577,67 +840,104 @@ def render_docx_file(
     is_pyfa_doc = False
     in_pyfa_toc = False
     first_pyfa_body = False
-    for orient, chunk_elems in chunks:
+    first_content_element = True
+    for chunk_index, (orient, chunk_elems) in enumerate(chunks):
+        last_landscape = (
+            render_context.last_rendered_landscape
+            if render_context is not None else LAST_RENDERED_LANDSCAPE[0]
+        )
         need_new_section = False
-        if orient == 'landscape' and not LAST_RENDERED_LANDSCAPE[0]:
+        if orient == 'landscape' and not last_landscape:
             need_new_section = True
-        elif orient == 'portrait' and LAST_RENDERED_LANDSCAPE[0]:
+        elif orient == 'portrait' and last_landscape:
             need_new_section = True
             
         if need_new_section:
             sec = doc.add_section(WD_SECTION_START.NEW_PAGE)
-            if orient == 'landscape':
-                sec.orientation = WD_ORIENT.LANDSCAPE
-                sec.page_width = Cm(29.7)
-                sec.page_height = Cm(21.0)
-                sec.top_margin = Cm(2.2)
-                sec.bottom_margin = Cm(2.2)
-                sec.left_margin = Cm(2.8)
-                sec.right_margin = Cm(2.6)
+            source_section = source_sections[min(chunk_index, len(source_sections) - 1)] if source_sections else None
+            if preserve_geometry and source_section is not None:
+                apply_section_spec(sec, source_section=source_section)
+                _copy_section_stories(source_section, sec)
+            elif orient == 'landscape':
+                if render_context is not None and render_context.page_spec is not None:
+                    from dataclasses import replace
+                    base = render_context.page_spec
+                    target = replace(base, width_mm=max(base.width_mm, base.height_mm), height_mm=min(base.width_mm, base.height_mm), orientation="landscape")
+                    apply_section_spec(sec, target)
+                else:
+                    sec.orientation = WD_ORIENT.LANDSCAPE
+                    sec.page_width = Cm(29.7)
+                    sec.page_height = Cm(21.0)
+                    sec.top_margin = Cm(2.2)
+                    sec.bottom_margin = Cm(2.2)
+                    sec.left_margin = Cm(2.8)
+                    sec.right_margin = Cm(2.6)
                 secPr_land = sec._sectPr
                 pgSz = secPr_land.find(qn('w:pgSz'))
-                if pgSz is not None:
+                if pgSz is not None and not preserve_geometry:
                     pgSz.set(qn('w:orient'), 'landscape')
                     pgSz.set(qn('w:w'), '16838')
                     pgSz.set(qn('w:h'), '11906')
                 pgNumType = secPr_land.find(qn('w:pgNumType'))
-                if pgNumType is not None:
+                if pgNumType is not None and not preserve_geometry:
                     secPr_land.remove(pgNumType)
-                setup_footer(sec, font_en='Times New Roman')
-                LAST_RENDERED_LANDSCAPE[0] = True
+                if not preserve_geometry and render_context is not None and render_context.resolved_format:
+                    from .style_applier import setup_styled_footer
+                    setup_styled_footer(sec, render_context.resolved_format)
+                elif not preserve_geometry:
+                    setup_footer(sec, font_en='Times New Roman')
+                if render_context is not None:
+                    render_context.track_landscape(True)
+                else:
+                    LAST_RENDERED_LANDSCAPE[0] = True
             else:
-                sec.orientation = WD_ORIENT.PORTRAIT
-                sec.page_width = Cm(21.0)
-                sec.page_height = Cm(29.7)
-                apply_standard_page_setup(sec)
+                if preserve_geometry and source_section is not None:
+                    apply_section_spec(sec, source_section=source_section)
+                elif render_context is not None and render_context.page_spec is not None:
+                    apply_section_spec(sec, render_context.page_spec)
+                else:
+                    sec.orientation = WD_ORIENT.PORTRAIT
+                    sec.page_width = Cm(21.0)
+                    sec.page_height = Cm(29.7)
+                    apply_standard_page_setup(sec)
                 secPr_port = sec._sectPr
                 pgSz = secPr_port.find(qn('w:pgSz'))
-                if pgSz is not None:
+                if pgSz is not None and not preserve_geometry:
                     pgSz.set(qn('w:orient'), 'portrait')
                     pgSz.set(qn('w:w'), '11906')
                     pgSz.set(qn('w:h'), '16838')
                 pgNumType = secPr_port.find(qn('w:pgNumType'))
-                if pgNumType is not None:
+                if pgNumType is not None and not preserve_geometry:
                     secPr_port.remove(pgNumType)
-                setup_footer(sec, font_en='Times New Roman')
-                LAST_RENDERED_LANDSCAPE[0] = False
+                if not preserve_geometry and render_context is not None and render_context.resolved_format:
+                    from .style_applier import setup_styled_footer
+                    setup_styled_footer(sec, render_context.resolved_format)
+                elif not preserve_geometry:
+                    setup_footer(sec, font_en='Times New Roman')
+                if render_context is not None:
+                    render_context.track_landscape(False)
+                else:
+                    LAST_RENDERED_LANDSCAPE[0] = False
 
         consecutive_empty_p = 0
         has_standalone_cover = is_standalone_cover_doc(docx_path)
         last_elem_was_table = False
+        if render_context is not None and doc.sections:
+            render_context.current_section = doc.sections[-1]
 
         for elem in chunk_elems:
             tag = elem.tag.split('}')[-1]
             if tag == 'p':
-                splits = split_element_by_soft_breaks(elem)
+                splits = [elem] if preserve_source else split_element_by_soft_breaks(elem)
                 for sp in splits:
-                    inline_numbering_to_paragraph(sp, num_info, num_counters)
+                    if not preserve_source:
+                        inline_numbering_to_paragraph(sp, num_info, num_counters)
                     txt = ''.join(sp.itertext()).strip()
                     drawings = sp.findall('.//' + qn('w:drawing')) + sp.findall('.//' + qn('w:pict'))
                     brs = sp.findall('.//' + qn('w:br'))
                     
                     is_empty = (not txt and not drawings)
-                    if is_empty:
+                    if is_empty and not preserve_source:
                         # 过滤掉连续超过 2 个的冗余空段落，防止原文档中大量空行撑爆版面产生空白页
                         if consecutive_empty_p >= 2:
                             continue
@@ -646,7 +946,7 @@ def render_docx_file(
                     else:
                         consecutive_empty_p = 0
                         # 若是独立封面文档，移除段首多余的无意义软换行符
-                        if has_standalone_cover:
+                        if has_standalone_cover and not preserve_source:
                             for r_node in list(sp.findall(qn('w:r'))):
                                 t_node = r_node.find(qn('w:t'))
                                 if t_node is not None and t_node.text and t_node.text.strip():
@@ -713,12 +1013,31 @@ def render_docx_file(
                                 first_pyfa_body = True
 
                     cloned = copy_element_with_rels(sp, doc_src, doc)
+                    _remap_source_bookmarks(
+                        cloned, source_bookmark_names, source_bookmark_ids
+                    )
+                    _remap_source_note_references(
+                        cloned, source_footnote_ids, source_endnote_ids
+                    )
                     pPr_cl = cloned.find(qn('w:pPr'))
                     if pPr_cl is not None:
                         sPr = pPr_cl.find(qn('w:sectPr'))
                         if sPr is not None:
                             pPr_cl.remove(sPr)
-                    inline_style_properties(cloned, doc_src)
+                    if suppress_first_page_break and first_content_element and (vis_txt or drawings):
+                        # The outer directory-tree heading already establishes
+                        # the file boundary. Override a source Heading 1's
+                        # inherited page break so heading and first body
+                        # content do not create a title-only page.
+                        first_ppr = cloned.get_or_add_pPr()
+                        first_break = first_ppr.find(qn("w:pageBreakBefore"))
+                        if first_break is None:
+                            first_break = OxmlElement("w:pageBreakBefore")
+                            first_ppr.append(first_break)
+                        first_break.set(qn("w:val"), "0")
+                        first_content_element = False
+                    if not preserve_source:
+                        inline_style_properties(cloned, doc_src)
 
                     # itertext() 会把部分 Word XML 文本重复计入；用前面逐节点提取的可见文本匹配。
                     matching = remaining_anchors.get(vis_txt)
@@ -802,7 +1121,8 @@ def render_docx_file(
                             sp_el.set(qn('w:line'), '235')
                             sp_el.set(qn('w:lineRule'), 'auto')
                             
-                    sanitize_ole_and_external_links(cloned)
+                    if not preserve_source:
+                        sanitize_ole_and_external_links(cloned)
                     append_element_to_body(doc, cloned)
                     if txt:
                         last_elem_was_table = False
@@ -810,7 +1130,18 @@ def render_docx_file(
             elif tag in ('tbl', 'sdt'):
                 last_elem_was_table = True
                 cloned = copy_element_with_rels(elem, doc_src, doc)
-                inline_style_properties(cloned, doc_src)
+                _remap_source_bookmarks(
+                    cloned, source_bookmark_names, source_bookmark_ids
+                )
+                _remap_source_note_references(
+                    cloned, source_footnote_ids, source_endnote_ids
+                )
+                if suppress_first_page_break and first_content_element:
+                    first_content_element = False
+                if not preserve_source:
+                    inline_style_properties(cloned, doc_src)
+                    if render_context is not None:
+                        adapt_table_to_content_box(cloned, render_context.get_content_box())
                 if tag == 'tbl' and is_pyfa_doc:
                     t_txt = ''.join(cloned.itertext())
                     if '版本号' in t_txt and '单位名称' in t_txt:
@@ -900,7 +1231,8 @@ def render_docx_file(
                 for tc_el in cloned.findall('.//' + qn('w:tc')):
                     if len(tc_el.findall(qn('w:p'))) == 0:
                         tc_el.append(parse_xml(f'<w:p {nsdecls("w")}><w:pPr><w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/></w:pPr></w:p>'))
-                sanitize_ole_and_external_links(cloned)
+                if not preserve_source:
+                    sanitize_ole_and_external_links(cloned)
                 append_element_to_body(doc, cloned)
 
     missing = [item["title"] for matches in remaining_anchors.values() for item in matches]
@@ -908,8 +1240,21 @@ def render_docx_file(
         raise RuntimeError(f"内嵌目录标题未能写入书签: {', '.join(missing)}")
 
 
-def render_image_file(doc: Document, img_path: Path, max_w_cm: float = 15.0, max_h_cm: float = 18.2):
+def render_image_file(
+    doc: Document,
+    img_path: Path,
+    max_w_cm: Optional[float] = None,
+    max_h_cm: Optional[float] = None,
+    render_context: Optional[RenderContext] = None,
+):
     """图片居中插入，限制最大宽高"""
+    if render_context is not None:
+        box = render_context.get_content_box()
+        max_w_cm = max_w_cm if max_w_cm is not None else box.content_width_cm
+        max_h_cm = max_h_cm if max_h_cm is not None else box.content_height_cm
+    else:
+        max_w_cm = max_w_cm if max_w_cm is not None else 15.0
+        max_h_cm = max_h_cm if max_h_cm is not None else 18.2
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     pf = p.paragraph_format
@@ -982,7 +1327,8 @@ def render_tree_node(
     is_first_section: bool,
     fonts: Dict[str, str],
     is_first_child: bool = False,
-    exact_pages: Dict[str, int] = None
+    exact_pages: Dict[str, int] = None,
+    render_context: Optional[RenderContext] = None,
 ):
     """
     递归渲染大纲节点
@@ -993,25 +1339,41 @@ def render_tree_node(
     has_cover = (ntype == "docx" and fpath and fpath.exists() and is_standalone_cover_doc(fpath))
     
     need_pb = False
-    if not is_first_section and not is_first_child and not LAST_RENDERED_LANDSCAPE[0]:
+    last_landscape = render_context.last_rendered_landscape if render_context is not None else LAST_RENDERED_LANDSCAPE[0]
+    if not is_first_section and not is_first_child and not last_landscape:
         need_pb = True
-    LAST_RENDERED_LANDSCAPE[0] = False
+    if render_context is not None:
+        render_context.last_rendered_landscape = False
+    else:
+        LAST_RENDERED_LANDSCAPE[0] = False
         
     if has_cover:
         add_invisible_heading_anchor(doc, node, need_page_break=need_pb)
     else:
-        add_heading_paragraph(doc, node, fonts, need_page_break=need_pb)
+        if render_context is not None and render_context.resolved_format:
+            from .style_applier import add_styled_heading
+            add_styled_heading(doc, node.get("title", ""), int(node.get("level") or 1), render_context.resolved_format,
+                               bookmark_name=node.get("bookmark_name"), bookmark_id=node.get("bm_id"), need_page_break=need_pb)
+        else:
+            add_heading_paragraph(doc, node, fonts, need_page_break=need_pb)
     
     if ntype == "pdf":
         fpath = source_root / node["file"]
-        render_pdf_file(doc, fpath, has_headings_on_page=True)
+        render_pdf_file(doc, fpath, has_headings_on_page=True, render_context=render_context)
     elif ntype == "docx":
         fpath = source_root / node["file"]
-        render_docx_file(doc, fpath, exact_pages=exact_pages, fonts=fonts)
+        render_docx_file(
+            doc,
+            fpath,
+            exact_pages=exact_pages,
+            fonts=fonts,
+            render_context=render_context,
+            suppress_first_page_break=True,
+        )
     elif ntype == "image":
         fpath = source_root / node["file"]
-        render_image_file(doc, fpath)
+        render_image_file(doc, fpath, render_context=render_context)
     elif ntype == "folder":
         children = node.get("children", [])
         for idx, child in enumerate(children):
-            render_tree_node(doc, child, source_root, is_first_section=False, fonts=fonts, is_first_child=(idx == 0), exact_pages=exact_pages)
+            render_tree_node(doc, child, source_root, is_first_section=False, fonts=fonts, is_first_child=(idx == 0), exact_pages=exact_pages, render_context=render_context)

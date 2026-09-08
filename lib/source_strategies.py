@@ -4,7 +4,7 @@
 import copy
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .scanner import SUPPORTED_EXTENSIONS, scan_directory_to_tree
 
@@ -13,14 +13,45 @@ class SourceStrategyError(ValueError):
     """来源策略无法生成一个安全、完整的大纲时抛出。"""
 
 
+def resolve_docx_document_path(source_dir: Path, config: Any) -> Path:
+    """解析 docx_document 的唯一源文件，统一供 prepare、plan 与 render 使用。"""
+    source_dir = Path(source_dir).resolve()
+    source_cfg = getattr(config, "source", {}) or {}
+    file_name = source_cfg.get("file") or source_cfg.get("path")
+    if file_name:
+        candidate = Path(file_name)
+        if not candidate.is_absolute():
+            base = source_dir if source_dir.is_dir() else source_dir.parent
+            candidate = base / candidate
+        file_path = candidate.resolve()
+    elif source_dir.is_file():
+        file_path = source_dir
+    else:
+        docx_files = [
+            p.resolve() for p in source_dir.glob("*.docx")
+            if not p.name.startswith(("~$", "."))
+        ]
+        if len(docx_files) != 1:
+            raise SourceStrategyError(
+                f"docx_document 策略需要 source.file 或目录内唯一 .docx 文件: {source_dir}"
+            )
+        file_path = docx_files[0]
+
+    if not file_path.is_file() or file_path.suffix.lower() != ".docx":
+        raise SourceStrategyError(f"docx_document 必须引用存在的 .docx 文件: {file_path}")
+    return file_path
+
+
 def _assign_bookmarks(nodes: List[Dict[str, Any]], counter: List[int] = None) -> List[Dict[str, Any]]:
     """为所有节点重建唯一且与书签名称一致的 ID。"""
     if counter is None:
         counter = [0]
     for node in nodes:
         counter[0] += 1
-        node["bm_id"] = counter[0]
-        node["bookmark_name"] = f"_Toc_auto_{counter[0]:03d}"
+        if "bm_id" not in node:
+            node["bm_id"] = counter[0]
+        if not node.get("bookmark_name"):
+            node["bookmark_name"] = f"_Toc_auto_{counter[0]:03d}"
         children = node.get("children") or []
         if children:
             _assign_bookmarks(children, counter)
@@ -125,7 +156,12 @@ def _expand_docx_outline_nodes(nodes: List[Dict[str, Any]], source_dir: Path) ->
         node["children"] = virtual_children
 
 
-def build_outline(source_dir: Path, config: Any) -> List[Dict[str, Any]]:
+def build_outline(
+    source_dir: Path,
+    config: Any,
+    assignments: Optional[List[Any]] = None,
+    inspection: Optional[Any] = None,
+) -> List[Dict[str, Any]]:
     """依据 config.source.strategy 生成最终树，并保证书签 ID 全局唯一。"""
     strategy = config.source.get("strategy", "directory_tree")
     if strategy == "directory_tree":
@@ -139,8 +175,41 @@ def build_outline(source_dir: Path, config: Any) -> List[Dict[str, Any]]:
             _validate_explicit_node(node, source_dir, 1)
         _expand_docx_outline_nodes(tree, source_dir)
         tree = config.apply_overrides_to_tree(tree)
+    elif strategy == "docx_document":
+        file_path = resolve_docx_document_path(source_dir, config)
+        if assignments is None or inspection is None:
+            from .role_mapper import RoleMapper
+            mapper = RoleMapper()
+            assignments, inspection = mapper.map_document(file_path)
+
+        heading_children: List[Dict[str, Any]] = []
+        for idx, a in enumerate(assignments):
+            if a.role.startswith("heading."):
+                heading_children.append({
+                    "idx": idx,
+                    "level": a.level or 1,
+                    "title": a.title_text or "",
+                    "toc_title": a.title_text or "",
+                    "type": "embedded_heading",
+                    "file": file_path.name,
+                    "node_ref_path": a.node_ref.element_path,
+                    "bookmark_name": a.bookmark_name,
+                    "bm_id": len(heading_children) + 1,
+                })
+
+        tree = [{
+            "title": file_path.stem,
+            "level": 1,
+            "type": "docx_document",
+            "file": file_path.name,
+            "include_in_toc": False,
+            "children": heading_children,
+            "content_block_count": len(inspection.blocks),
+            "heading_count": len(heading_children),
+        }]
+        tree = config.apply_overrides_to_tree(tree)
     else:
-        raise SourceStrategyError(f"目录型项目不支持来源策略: {strategy}")
+        raise SourceStrategyError(f"不支持的材料来源策略: {strategy}")
 
     if not tree:
         raise SourceStrategyError("来源策略没有生成任何可合成节点。")

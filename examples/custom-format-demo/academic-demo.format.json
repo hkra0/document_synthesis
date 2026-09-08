@@ -1,0 +1,309 @@
+{
+  "format_schema_version": 1,
+  "id": "academic-demo",
+  "version": "1.0.0",
+  "metadata": {
+    "description": "Compiled from sample.docx via format-analysis",
+    "author": "Document Synthesis Format Compiler",
+    "year": "2026"
+  },
+  "page": {
+    "width_mm": 215.9,
+    "height_mm": 279.4,
+    "orientation": "portrait",
+    "margin_top_mm": 25.4,
+    "margin_bottom_mm": 25.4,
+    "margin_left_mm": 31.8,
+    "margin_right_mm": 31.8,
+    "header_distance_mm": 12.7,
+    "footer_distance_mm": 12.7,
+    "snap_to_grid": true
+  },
+  "styles": {
+    "style_heading_1": {
+      "run": {
+        "latin": "黑体",
+        "size_pt": 16.0,
+        "bold": true
+      },
+      "paragraph": {
+        "space_after_pt": 10.0,
+        "line_spacing": {
+          "mode": "multiple",
+          "value": 1.15
+        }
+      }
+    },
+    "style_heading_2": {
+      "run": {
+        "latin": "黑体",
+        "size_pt": 14.0,
+        "bold": true
+      },
+      "paragraph": {
+        "space_after_pt": 10.0,
+        "line_spacing": {
+          "mode": "multiple",
+          "value": 1.15
+        }
+      }
+    },
+    "style_title": {
+      "run": {
+        "latin": "黑体",
+        "size_pt": 22.0,
+        "bold": true
+      },
+      "paragraph": {
+        "alignment": "center",
+        "space_after_pt": 10.0,
+        "line_spacing": {
+          "mode": "multiple",
+          "value": 1.15
+        }
+      }
+    },
+    "style_table_body": {
+      "run": {
+        "latin": "Cambria",
+        "size_pt": 11.0
+      },
+      "paragraph": {
+        "space_after_pt": 10.0,
+        "line_spacing": {
+          "mode": "multiple",
+          "value": 1.15
+        }
+      }
+    },
+    "style_body": {
+      "run": {
+        "latin": "宋体",
+        "size_pt": 12.0
+      },
+      "paragraph": {
+        "first_line_indent": {
+          "value": 24.0,
+          "unit": "pt"
+        },
+        "space_after_pt": 10.0,
+        "line_spacing": {
+          "mode": "multiple",
+          "value": 1.15
+        }
+      }
+    },
+    "subtitle": {
+      "run": {
+        "east_asia": "楷体_GB2312",
+        "latin": "Times New Roman",
+        "size_pt": 14.0
+      },
+      "paragraph": {
+        "alignment": "center"
+      }
+    },
+    "heading.3": {
+      "run": {
+        "east_asia": "黑体",
+        "latin": "Times New Roman",
+        "size_pt": 12.0
+      },
+      "paragraph": {
+        "alignment": "left"
+      }
+    },
+    "heading.4": {
+      "run": {
+        "east_asia": "宋体",
+        "latin": "Times New Roman",
+        "size_pt": 12.0
+      },
+      "paragraph": {
+        "alignment": "left"
+      }
+    },
+    "heading.5": {
+      "run": {
+        "east_asia": "宋体",
+        "latin": "Times New Roman",
+        "size_pt": 12.0
+      },
+      "paragraph": {
+        "alignment": "left"
+      }
+    },
+    "heading.6": {
+      "run": {
+        "east_asia": "宋体",
+        "latin": "Times New Roman",
+        "size_pt": 12.0
+      },
+      "paragraph": {
+        "alignment": "left"
+      }
+    },
+    "heading.7": {
+      "run": {
+        "east_asia": "宋体",
+        "latin": "Times New Roman",
+        "size_pt": 12.0
+      },
+      "paragraph": {
+        "alignment": "left"
+      }
+    },
+    "heading.8": {
+      "run": {
+        "east_asia": "宋体",
+        "latin": "Times New Roman",
+        "size_pt": 12.0
+      },
+      "paragraph": {
+        "alignment": "left"
+      }
+    },
+    "heading.9": {
+      "run": {
+        "east_asia": "宋体",
+        "latin": "Times New Roman",
+        "size_pt": 12.0
+      },
+      "paragraph": {
+        "alignment": "left"
+      }
+    },
+    "toc.title": {
+      "run": {
+        "east_asia": "黑体",
+        "latin": "Times New Roman",
+        "size_pt": 18.0
+      },
+      "paragraph": {
+        "alignment": "center"
+      }
+    },
+    "caption": {
+      "run": {
+        "east_asia": "宋体",
+        "latin": "Times New Roman",
+        "size_pt": 10.5
+      },
+      "paragraph": {
+        "alignment": "center"
+      }
+    },
+    "quote": {
+      "run": {
+        "east_asia": "宋体",
+        "latin": "Times New Roman",
+        "size_pt": 12.0
+      },
+      "paragraph": {
+        "alignment": "left"
+      }
+    },
+    "bibliography": {
+      "run": {
+        "east_asia": "宋体",
+        "latin": "Times New Roman",
+        "size_pt": 10.5
+      },
+      "paragraph": {
+        "alignment": "left"
+      }
+    }
+  },
+  "roles": {
+    "heading.1": {
+      "style": "style_heading_1",
+      "outline_level": 1,
+      "include_in_toc": true
+    },
+    "heading.2": {
+      "style": "style_heading_2",
+      "outline_level": 2,
+      "include_in_toc": true
+    },
+    "title": {
+      "style": "style_title"
+    },
+    "table.body": {
+      "style": "style_table_body"
+    },
+    "body": {
+      "style": "style_body"
+    },
+    "subtitle": {
+      "style": "subtitle",
+      "include_in_toc": false
+    },
+    "heading.3": {
+      "style": "heading.3",
+      "include_in_toc": true,
+      "outline_level": 3
+    },
+    "heading.4": {
+      "style": "heading.4",
+      "include_in_toc": true,
+      "outline_level": 4
+    },
+    "heading.5": {
+      "style": "heading.5",
+      "include_in_toc": true,
+      "outline_level": 5
+    },
+    "heading.6": {
+      "style": "heading.6",
+      "include_in_toc": true,
+      "outline_level": 6
+    },
+    "heading.7": {
+      "style": "heading.7",
+      "include_in_toc": true,
+      "outline_level": 7
+    },
+    "heading.8": {
+      "style": "heading.8",
+      "include_in_toc": true,
+      "outline_level": 8
+    },
+    "heading.9": {
+      "style": "heading.9",
+      "include_in_toc": true,
+      "outline_level": 9
+    },
+    "toc.title": {
+      "style": "toc.title",
+      "include_in_toc": false
+    },
+    "caption": {
+      "style": "caption",
+      "include_in_toc": false
+    },
+    "quote": {
+      "style": "quote",
+      "include_in_toc": false
+    },
+    "bibliography": {
+      "style": "bibliography",
+      "include_in_toc": false
+    }
+  },
+  "toc": {
+    "title": "目  录",
+    "title_role": "toc.title",
+    "max_level": 3,
+    "leader": "dots",
+    "page_number_gap_mm": 5.0
+  },
+  "header": {
+    "mode": "none"
+  },
+  "footer": {
+    "mode": "managed",
+    "format": "dash_number",
+    "alignment": "center"
+  },
+  "extends": "preset:academic-basic@1.0.0"
+}

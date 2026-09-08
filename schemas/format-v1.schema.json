@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://document-synthesis.org/schemas/format-v1.json",
+  "title": "Document Synthesis Format Package Schema v1",
+  "type": "object",
+  "required": ["format_schema_version", "id", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "format_schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+.*$"
+    },
+    "extends": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "description": { "type": "string" },
+        "author": { "type": "string" },
+        "institution": { "type": "string" },
+        "year": { "type": "string" },
+        "url": { "type": "string" }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "width_mm": { "type": "number", "minimum": 10 },
+        "height_mm": { "type": "number", "minimum": 10 },
+        "orientation": { "type": "string", "enum": ["portrait", "landscape"] },
+        "margin_top_mm": { "type": "number", "minimum": 0 },
+        "margin_bottom_mm": { "type": "number", "minimum": 0 },
+        "margin_left_mm": { "type": "number", "minimum": 0 },
+        "margin_right_mm": { "type": "number", "minimum": 0 },
+        "header_distance_mm": { "type": "number", "minimum": 0 },
+        "footer_distance_mm": { "type": "number", "minimum": 0 },
+        "snap_to_grid": { "type": "boolean" }
+      }
+    },
+    "styles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "based_on": { "type": "string" },
+          "run": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "east_asia": { "type": "string" },
+              "latin": { "type": "string" },
+              "complex_script": { "type": "string" },
+              "size_pt": { "type": "number", "exclusiveMinimum": 0 },
+              "bold": { "type": "boolean" },
+              "italic": { "type": "boolean" },
+              "color": { "type": "string", "pattern": "^(auto|[0-9A-Fa-f]{6})$" }
+            }
+          },
+          "paragraph": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "alignment": { "type": "string", "enum": ["left", "center", "right", "justify"] },
+              "first_line_indent": {
+                "type": "object",
+                "required": ["value", "unit"],
+                "additionalProperties": false,
+                "properties": {
+                  "value": { "type": "number", "minimum": 0 },
+                  "unit": { "type": "string", "enum": ["char", "pt", "mm"] }
+                }
+              },
+              "hanging_indent": {
+                "type": "object",
+                "required": ["value", "unit"],
+                "additionalProperties": false,
+                "properties": {
+                  "value": { "type": "number", "minimum": 0 },
+                  "unit": { "type": "string", "enum": ["char", "pt", "mm"] }
+                }
+              },
+              "left_indent": {
+                "type": "object",
+                "required": ["value", "unit"],
+                "additionalProperties": false,
+                "properties": {
+                  "value": { "type": "number" },
+                  "unit": { "type": "string", "enum": ["char", "pt", "mm"] }
+                }
+              },
+              "right_indent": {
+                "type": "object",
+                "required": ["value", "unit"],
+                "additionalProperties": false,
+                "properties": {
+                  "value": { "type": "number" },
+                  "unit": { "type": "string", "enum": ["char", "pt", "mm"] }
+                }
+              },
+              "space_before_pt": { "type": "number", "minimum": 0 },
+              "space_after_pt": { "type": "number", "minimum": 0 },
+              "line_spacing": {
+                "type": "object",
+                "required": ["mode"],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": { "type": "string", "enum": ["single", "multiple", "exact", "at_least"] },
+                  "value": { "type": "number", "exclusiveMinimum": 0 }
+                }
+              },
+              "keep_with_next": { "type": "boolean" },
+              "keep_lines": { "type": "boolean" },
+              "widow_control": { "type": "boolean" },
+              "page_break_before": { "type": "boolean" },
+              "snap_to_grid": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["style"],
+        "additionalProperties": false,
+        "properties": {
+          "style": { "type": "string" },
+          "outline_level": { "type": "integer", "minimum": 1, "maximum": 9 },
+          "include_in_toc": { "type": "boolean" }
+        }
+      }
+    },
+    "toc": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "title_role": { "type": "string" },
+        "max_level": { "type": "integer", "minimum": 1, "maximum": 9 },
+        "leader": { "type": "string", "enum": ["dots", "hyphens", "underline", "none"] },
+        "page_number_gap_mm": { "type": "number", "minimum": 0 }
+      }
+    },
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string", "enum": ["managed", "none", "source"] },
+        "text": { "type": "string" },
+        "alignment": { "type": "string", "enum": ["left", "center", "right"] },
+        "style": { "type": "string" }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "type": "string", "enum": ["managed", "none", "source"] },
+        "format": { "type": "string", "enum": ["number", "dash_number", "none"] },
+        "alignment": { "type": "string", "enum": ["left", "center", "right"] },
+        "style": { "type": "string" }
+      }
+    },
+    "required_capabilities": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

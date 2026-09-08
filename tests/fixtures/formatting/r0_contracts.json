@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "purpose": "R0 defect contracts for B1-B10 acceptance follow-up",
+  "hash_policy": {
+    "generated_fixture": "sha256(canonical case_id + fixture + recipe_version)",
+    "word_fixture": "sha256(file bytes)"
+  },
+  "cases": [
+    {
+      "id": "F01",
+      "fixture": "region-image-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "34ac55bab2c593ce8f9b0a32070c8659417bb19698bfa1af3532ade2867b5720",
+      "contract": "选区导入必须保留图片、关系闭包和自定义样式；结构校验必须拒绝错误关系目标。",
+      "test_kind": "integration without Word",
+      "expected_state": "verified_after_R5"
+    },
+    {
+      "id": "F02",
+      "fixture": "corrupt-format-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "9bccdb4705d6207bdf519dd2360432705bcdddf11ea570253908e5332b86b827",
+      "contract": "已检测到的格式错误必须阻止发布，并保留旧成果和元数据。",
+      "test_kind": "integration without Word",
+      "expected_state": "xfail_until_R1"
+    },
+    {
+      "id": "F03",
+      "fixture": "stale-role-map-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "1624fe955eed444cd3c0368cd7dbdbc4e97fa31c8566d932483e594e3bc28531",
+      "contract": "显式角色映射必须被消费；源哈希过期时必须在创建运行目录前拒绝。",
+      "test_kind": "integration without Word",
+      "expected_state": "verified_after_R3"
+    },
+    {
+      "id": "F04",
+      "fixture": "multi-source-format-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "fdf57b541bc7e611909af05db04a39d6fc757e53763f938dcf134abbab708023",
+      "contract": "多来源与 preserve 策略必须沿用声明格式、源页面几何和源页眉页脚。",
+      "test_kind": "integration without Word",
+      "expected_state": "verified_after_R4"
+    },
+    {
+      "id": "F05",
+      "fixture": "synthetic-page-label-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "00d66197077ce268ba8b8155aa2c54329f09abd4d87e02daf7da2fbe1d4e35a2",
+      "contract": "错误的实测页码标签必须使交付验证失败；合成页码只能验证校验器，不能作为 Word 验收证据。",
+      "test_kind": "validator only; integration without Word",
+      "expected_state": "xfail_until_R8"
+    },
+    {
+      "id": "F06",
+      "fixture": "field-dependency-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "3c08e0bd23b12a9caf4ed969d9cecf8343a7925b446dd5d11bf17e50568e6485",
+      "contract": "字段参数和 REF 范围必须按声明语义更新，不能因参数类型或书签范围导致错误结果。",
+      "test_kind": "integration without Word",
+      "expected_state": "xfail_until_R9"
+    },
+    {
+      "id": "F07",
+      "fixture": "unassigned-object-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "2a55146db63368987009c20926c20bdd2824b5aab01eae3c205d36e14926c31d",
+      "contract": "未覆盖的图片等实质对象和无效选区边界必须明确报错，不能静默漏选或退回全文。",
+      "test_kind": "integration without Word",
+      "expected_state": "verified_after_R5"
+    },
+    {
+      "id": "F08",
+      "fixture": "footnote-integrity-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "f50ce00c2a80e65503f7f007519dde4ca7d0087e4aa88ef2450d2587ace5f1e6",
+      "contract": "脚注/尾注、字段和链接的语义缺失必须被内容清单发现。",
+      "test_kind": "integration without Word",
+      "expected_state": "xfail_until_R6"
+    },
+    {
+      "id": "F09",
+      "fixture": "role-style-alias-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "0f09bd59732fe9c9d12ccff4d26cb1fa710975a5a8b92e9e401f0094bf65aec4",
+      "contract": "格式包必须通过 roles.style 解析实际样式 ID，样式 ID 不要求与语义角色同名。",
+      "test_kind": "integration without Word",
+      "expected_state": "verified_in_R1; broader delivery-scope coverage remains in R6"
+    },
+    {
+      "id": "F10",
+      "fixture": "word-e2e-separation-v1",
+      "recipe_version": 1,
+      "recipe_sha256": "e06dbdc71e8852898a0e100944a7efca3de8038037e67b6a07024de90b352f8b",
+      "contract": "装配级测试不能宣称真实 Word 端到端通过；真实 Word 测试必须独立执行并留存证据。",
+      "test_kind": "test-layer contract",
+      "expected_state": "verified_in_R0"
+    }
+  ],
+  "word_followup": [
+    {
+      "id": "W04",
+      "fixture": "word-academic-geometry-v1",
+      "path": "docs/acceptance/word-followup/academic.docx",
+      "input_sha256": "a1aaa8d9127e3ffcde139064dfa9d45d4192b365754e8ebe6f764549f6480cf3",
+      "contract": "真实 Word 交付必须发布 A4 210x297 mm；Letter 结果不得标记格式通过。",
+      "test_kind": "integration with Word",
+      "expected_state": "blocked_or_failing_until_R1_R4"
+    },
+    {
+      "id": "W05",
+      "fixture": "word-numbering-v1",
+      "path": "docs/acceptance/word-followup/m2-fixtures/numbering-source.docx",
+      "input_sha256": "94f57578b7773c6a48dfeee4123886b1af4829d5246d4ce32bff2273be5f51d5",
+      "contract": "真实 PDF 页脚必须验证罗马/阿拉伯标签、重启、oddPage 和页级 QA；未解释的孤行不得发布。",
+      "test_kind": "integration with Word",
+      "expected_state": "blocked_or_failing_until_R8"
+    },
+    {
+      "id": "W06",
+      "fixture": "word-pageref-v1",
+      "path": "docs/acceptance/word-followup/m2-fixtures/pageref-source.docx",
+      "input_sha256": "16c3645603c1c52ee0d4bca8a21a4250c76ddf3c137b479f2656bb281e33d50d",
+      "contract": "真实 Word 两轮字段迭代必须完成 PAGEREF 测量收敛并发布；类型错误必须结构化诊断。",
+      "test_kind": "integration with Word",
+      "expected_state": "blocked_or_failing_until_R9"
+    }
+  ]
+}

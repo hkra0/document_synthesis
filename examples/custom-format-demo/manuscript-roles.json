@@ -1,0 +1,48 @@
+{
+  "mapping_schema_version": 1,
+  "source_sha256": "46505dcd122c513102836eae0ef5666f77c5ae06bf34883c5b523bd6628e6e34",
+  "source_file": "manuscript.docx",
+  "analyzer_version": "1.0.0",
+  "assignments": [
+    {
+      "node_ref": {
+        "source_sha256": "46505dcd122c513102836eae0ef5666f77c5ae06bf34883c5b523bd6628e6e34",
+        "part_uri": "word/document.xml",
+        "element_path": "/w:document/w:body/w:p[1]",
+        "text_hash": "85e28b0a414017d35884ecc376f85507eadc28bdaecdb51d4ea5ed2323a3c128"
+      },
+      "role": "heading.1",
+      "provenance": "explicit",
+      "confirmed": true,
+      "level": null,
+      "bookmark_name": null
+    },
+    {
+      "node_ref": {
+        "source_sha256": "46505dcd122c513102836eae0ef5666f77c5ae06bf34883c5b523bd6628e6e34",
+        "part_uri": "word/document.xml",
+        "element_path": "/w:document/w:body/w:p[2]",
+        "text_hash": "07c45a276d43de9f17c75d6006aa53150bc0d95d16d9eaba85f1193d2171e45b"
+      },
+      "role": "heading.2",
+      "provenance": "explicit",
+      "confirmed": true,
+      "level": null,
+      "bookmark_name": null
+    },
+    {
+      "node_ref": {
+        "source_sha256": "46505dcd122c513102836eae0ef5666f77c5ae06bf34883c5b523bd6628e6e34",
+        "part_uri": "word/document.xml",
+        "element_path": "/w:document/w:body/w:p[3]",
+        "text_hash": "4dda148568ef1d35944831edd31d3832b7d5c7be9da2b92416a50f07b01a1299"
+      },
+      "role": "body",
+      "provenance": "explicit",
+      "confirmed": true,
+      "level": null,
+      "bookmark_name": null
+    }
+  ],
+  "on_unmapped": "error"
+}

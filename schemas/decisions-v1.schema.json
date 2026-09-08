@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://document-synthesis.org/schemas/decisions-v1.json",
+  "title": "Document Synthesis Format Decisions v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decisions_schema_version", "report_id", "source_sha256", "role_styles", "style_overrides", "missing_roles"],
+  "properties": {
+    "decisions_schema_version": {"type": "integer", "const": 1},
+    "report_id": {"type": "string", "minLength": 1},
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "role_styles": {"type": "object", "additionalProperties": {"type": "string", "minLength": 1}},
+    "style_overrides": {"type": "object", "additionalProperties": {"type": "object", "additionalProperties": false, "properties": {"run": {"type": "object"}, "paragraph": {"type": "object"}}}},
+    "missing_roles": {"type": "object", "additionalProperties": {"type": "string", "enum": ["pending", "inherit", "reject"]}},
+    "node_roles": {"type": "object", "additionalProperties": {"type": "string"}},
+    "on_unmapped": {"type": "string", "enum": ["preserve", "error"]},
+    "review_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["audit_schema_version", "report_id", "source_sha256", "origin", "automation", "reviewer_attested", "operation_count", "operations"],
+      "properties": {
+        "audit_schema_version": {"type": "integer", "const": 1},
+        "report_id": {"type": "string", "minLength": 1},
+        "source_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+        "origin": {"type": "string", "enum": ["browser_ui", "imported", "test_fixture"]},
+        "automation": {"type": "boolean"},
+        "reviewer_attested": {"type": "boolean"},
+        "started_at": {"type": "string", "minLength": 1},
+        "completed_at": {"type": "string", "minLength": 1},
+        "operation_count": {"type": "integer", "minimum": 0},
+        "operations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sequence", "operation", "target", "from", "to"],
+            "properties": {
+              "sequence": {"type": "integer", "minimum": 1},
+              "operation": {"type": "string", "enum": ["select_cluster", "set_node_role", "set_missing_role", "set_style_override"]},
+              "target": {"type": "string", "minLength": 1},
+              "from": {"type": ["string", "null"]},
+              "to": {"type": ["string", "null"]}
+            }
+          }
+        }
+      }
+    }
+  }
+}

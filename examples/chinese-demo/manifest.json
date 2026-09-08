@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "project_name": "材料合成中文示例",
+  "fonts": {
+    "title": "FZXiaoBiaoSong-B05S",
+    "h1": "SimHei",
+    "h2": "KaiTi_GB2312",
+    "h3": "FangSong_GB2312",
+    "body": "FangSong_GB2312"
+  },
+  "cover": {
+    "template": "examples/chinese-demo/templates/cover.docx",
+    "main_title": "文档合成"
+  },
+  "output": {
+    "documents": [
+      {
+        "id": "main",
+        "filename": "材料合成_中文示例.docx",
+        "parts": ["cover", "toc", "body"]
+      }
+    ]
+  },
+  "source": {
+    "strategy": "explicit_tree",
+    "tree": [
+      {
+        "level": 1,
+        "title": "一、应用场景",
+        "type": "docx_outline",
+        "file": "0_应用场景.docx",
+        "outline_rules": [{"level": 2, "pattern": "^（[一二]）"}]
+      },
+      {
+        "level": 1,
+        "title": "二、材料归集与合成",
+        "type": "docx_outline",
+        "file": "1_材料整理.docx",
+        "outline_rules": [{"level": 2, "pattern": "^（[一二三]）"}]
+      },
+      {
+        "level": 1,
+        "title": "三、目录编排与交付",
+        "type": "docx_outline",
+        "file": "2_目录与交付.docx",
+        "outline_rules": [{"level": 2, "pattern": "^（[一二三]）"}]
+      }
+    ]
+  }
+}

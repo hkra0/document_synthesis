@@ -4,8 +4,12 @@
 包含调用 Word 导出 PDF、反查打印页码与版面断言
 """
 import os
+from pathlib import Path
+import shutil
 import sys
 import subprocess
+import tempfile
+import uuid
 import pypdf
 import pymupdf
 import re
@@ -14,6 +18,27 @@ from typing import Dict, Any, List, Tuple
 
 class OfficeExportError(RuntimeError):
     """无法使用本地 Word 取得精确分页时抛出的错误。"""
+
+
+def _word_access_directory() -> Path:
+    """Return one stable directory for all files touched by Word automation.
+
+    macOS Word asks for folder access on the directory used by ``save as``.
+    Per-call random temporary directories therefore cause an authorization
+    dialog for every pagination pass.  A dedicated stable directory keeps the
+    grant target constant; callers still use unique files and clean them up.
+    ``DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR`` is intended for CI or a user-facing
+    directory that has already been granted to Word.
+    """
+    configured = os.environ.get("DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR")
+    if configured:
+        directory = Path(configured).expanduser()
+    elif sys.platform == "darwin":
+        directory = Path("/private/tmp/document-synthesis-word-access")
+    else:
+        directory = Path(tempfile.gettempdir()) / "document-synthesis-word-access"
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory.resolve()
 
 
 def word_export_status() -> Tuple[bool, str]:
@@ -56,7 +81,7 @@ def word_automation_status() -> Tuple[bool, str]:
         return False, reason
     try:
         result = subprocess.run(
-            ["osascript", "-e", 'tell application id "com.microsoft.Word" to get name'],
+            ["osascript", "-e", 'tell application "Microsoft Word" to get name'],
             capture_output=True,
             text=True,
             timeout=15,
@@ -90,28 +115,74 @@ def export_docx_to_pdf(docx_path: str, pdf_path: str) -> bool:
         except Exception:
             pass
             
+    access_dir = _word_access_directory()
+    working_docx = access_dir / f"export-{uuid.uuid4().hex}.docx"
+    working_pdf = access_dir / f"export-{uuid.uuid4().hex}.pdf"
+    try:
+        shutil.copy2(docx_abs, working_docx)
+    except OSError as exc:
+        print(f"[错误] 无法准备 Word Automation 输入副本: {exc}")
+        return False
+
     script = f'''
     with timeout of 600 seconds
         tell application "Microsoft Word"
-            set display alerts to none
-            open (POSIX file "{_applescript_string(docx_abs)}")
-            set myDoc to active document
-            save as active document file name "{_applescript_string(pdf_abs)}" file format format PDF
+            set previousAlerts to display alerts
+            set myDoc to missing value
             try
+                set display alerts to none
+                open (POSIX file "{_applescript_string(str(working_docx))}")
+                set myDoc to active document
+                -- Word's AppleScript dictionary exposes `save as` on a document
+                -- reference, not on the `active document` property expression.
+                -- Keeping the explicit handle is important when the test host has
+                -- more than one generated document open.
+                save as myDoc file name "{_applescript_string(str(working_pdf))}" file format format PDF
                 close myDoc saving no
+                set myDoc to missing value
+                set display alerts to previousAlerts
+            on error errorMessage number errorNumber
+                -- Always close the generated document, including when Word
+                -- fails before the normal close.  Otherwise stale documents
+                -- remain open and can block the next Automation call.
+                if myDoc is not missing value then
+                    try
+                        close myDoc saving no
+                    end try
+                end if
+                set display alerts to previousAlerts
+                error errorMessage number errorNumber
             end try
         end tell
     end timeout
     '''
     try:
-        res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=620)
-    except subprocess.TimeoutExpired:
-        print("[错误] Microsoft Word 导出 PDF 超时；请确认 Word 没有被模态对话框阻塞。")
-        return False
-    if res.returncode != 0:
-        detail = (res.stderr or res.stdout).strip()
-        print(f"[错误] {_automation_failure_message(detail)}")
-    return res.returncode == 0 and os.path.exists(pdf_abs)
+        try:
+            res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=620)
+        except subprocess.TimeoutExpired:
+            print("[错误] Microsoft Word 导出 PDF 超时；请确认 Word 没有被模态对话框阻塞。")
+            return False
+        if res.returncode != 0:
+            detail = (res.stderr or res.stdout).strip()
+            print(f"[错误] {_automation_failure_message(detail)}")
+            return False
+        if not working_pdf.is_file():
+            print("[错误] Microsoft Word 未生成 PDF。")
+            return False
+        try:
+            shutil.copy2(working_pdf, pdf_abs)
+        except OSError as exc:
+            print(f"[错误] 无法保存 Word 导出的 PDF: {exc}")
+            return False
+        return os.path.exists(pdf_abs)
+    finally:
+        for temporary in (working_docx, working_pdf):
+            try:
+                temporary.unlink()
+            except FileNotFoundError:
+                pass
+            except OSError:
+                pass
 
 
 def get_exact_printed_heading_pages(docx_path: str, toc_items: List[Dict[str, Any]], source_dir: Any = None) -> Dict[str, int]:
@@ -239,7 +310,7 @@ def get_exact_printed_heading_pages(docx_path: str, toc_items: List[Dict[str, An
     return exact_pages
 
 
-def run_qa_assertions(pdf_path: str, ignore_front_pages: int = 4) -> bool:
+def run_qa_assertions(pdf_path: str, ignore_front_pages: int = 4, page_roles=None, allowed_blank_pages=None) -> bool:
     """逐页扫描断言，检查是否存在空白页、单标题页与孤行"""
     if not os.path.exists(pdf_path):
         return False
@@ -266,21 +337,39 @@ def run_qa_assertions(pdf_path: str, ignore_front_pages: int = 4) -> bool:
         dark_samples = sum(1 for value in samples[::3] if value < 245)
         return dark_samples > max(12, (pix.width * pix.height) // 10000)
 
+    def is_header_footer_page_num(line_str: str) -> bool:
+        clean = line_str.strip("- ").strip()
+        if not clean:
+            return False
+        if clean.isdigit():
+            return True
+        from .pagination_types import roman_to_int
+        if roman_to_int(clean) is not None:
+            return True
+        return False
+
     for i, page in enumerate(pdoc):
         txt = page.get_text().strip()
         raw_lines = [l.strip() for l in txt.split('\n') if l.strip()]
         content_lines = [
             l for l in raw_lines 
-            if not (l.startswith('-') and l.endswith('-')) and l not in ['- 1 -', '- 2 -', '- 3 -']
+            if not is_header_footer_page_num(l)
         ]
         images = page.get_images()
         drawings = page.get_drawings()
-        has_graphical_content = bool(images or drawings) or has_visible_page_content(page)
+        has_graphical_content = bool(images or drawings) or (not content_lines and has_visible_page_content(page))
         
         if len(content_lines) == 0 and not has_graphical_content:
-            if i >= ignore_front_pages:
+            if i >= ignore_front_pages and (i + 1) not in (allowed_blank_pages or set()):
                 blank_pages.append(i + 1)
-        elif len(content_lines) <= 2 and not has_graphical_content:
+        elif total_pages > 1 and len(content_lines) <= 2 and not has_graphical_content and (
+            page_roles is None or page_roles.get(i + 1) == "body"
+        ):
+            # A complete one-page document can legitimately contain only a
+            # short paragraph.  "Orphan tail" is a page-boundary defect, so
+            # it is meaningful only when the artifact has another page to
+            # establish that boundary; blank-page checks above still apply to
+            # one-page artifacts.
             if i >= ignore_front_pages:
                 if any("目录" in l or "目  录" in l or "....." in l or "……" in l for l in content_lines):
                     continue

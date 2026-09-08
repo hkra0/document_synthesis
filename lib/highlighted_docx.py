@@ -6,7 +6,7 @@
 """
 
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -68,6 +68,7 @@ def extract_and_format_highlighted_headings(
     settings: Dict[str, Any],
     fonts: Dict[str, str],
     normalize: bool = True,
+    render_context=None,
 ) -> List[Dict[str, Any]]:
     """读取配置化标记标题；``normalize=False`` 可用于只读构建计划。"""
     merged = {**DEFAULT_HIGHLIGHT_SETTINGS, **(settings or {})}
@@ -115,18 +116,41 @@ def extract_and_format_highlighted_headings(
         paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
         paragraph_format.left_indent = Cm(0)
         paragraph_format.keep_with_next = True
-        if level == 1:
-            paragraph_format.space_before, paragraph_format.space_after = Pt(14), Pt(6)
-            paragraph_format.line_spacing = Pt(30)
-            font_name = fonts.get("h1", "黑体")
-        else:
-            paragraph_format.space_before, paragraph_format.space_after = Pt(10), Pt(4)
-            paragraph_format.line_spacing = Pt(30)
-            font_name = fonts.get("h2", "楷体_GB2312")
+        style_def = None
+        if render_context is not None and render_context.resolved_format is not None:
+            from .style_applier import install_styles, _apply_direct_paragraph_style, _apply_direct_run_style
+            role_name = f"heading.{level}"
+            role_spec = render_context.resolved_format.roles.get(role_name)
+            style_def = render_context.resolved_format.styles.get(role_spec.style) if role_spec else None
+            role_to_style = install_styles(doc, render_context.resolved_format)
+            p_pr = paragraph._p.get_or_add_pPr()
+            p_style = p_pr.find(qn("w:pStyle"))
+            if p_style is None:
+                p_style = OxmlElement("w:pStyle")
+                p_pr.insert(0, p_style)
+            p_style.set(qn("w:val"), role_to_style.get(role_name, f"SynthHeading{level}"))
+            out_lvl = p_pr.find(qn("w:outlineLvl"))
+            if out_lvl is None:
+                out_lvl = OxmlElement("w:outlineLvl")
+                p_pr.append(out_lvl)
+            out_lvl.set(qn("w:val"), str(level - 1))
+        if style_def is None:
+            if level == 1:
+                paragraph_format.space_before, paragraph_format.space_after = Pt(14), Pt(6)
+                paragraph_format.line_spacing = Pt(30)
+                font_name = fonts.get("h1", "黑体")
+            else:
+                paragraph_format.space_before, paragraph_format.space_after = Pt(10), Pt(4)
+                paragraph_format.line_spacing = Pt(30)
+                font_name = fonts.get("h2", "楷体_GB2312")
         for run in list(paragraph.runs):
             paragraph._p.remove(run._r)
         run = paragraph.add_run(title)
-        set_run_fonts(run, font_name, 16, bold=True, color_rgb=RGBColor(0, 0, 0), font_en=fonts.get("en", "Times New Roman"))
+        if style_def is not None:
+            _apply_direct_paragraph_style(paragraph, style_def)
+            _apply_direct_run_style(run, style_def)
+        else:
+            set_run_fonts(run, font_name, 16, bold=True, color_rgb=RGBColor(0, 0, 0), font_en=fonts.get("en", "Times New Roman"))
         p_pr = paragraph._p.get_or_add_pPr()
         start = parse_xml(f'<w:bookmarkStart {nsdecls("w")} w:id="{node["bm_id"]}" w:name="{node["bookmark_name"]}"/>')
         end = parse_xml(f'<w:bookmarkEnd {nsdecls("w")} w:id="{node["bm_id"]}"/>')

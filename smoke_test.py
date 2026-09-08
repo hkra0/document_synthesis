@@ -1,227 +1,328 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""已发布目录型项目的回归检查工具。
+"""按构建计划核验已发布交付物；默认包含 Word 原生分页 QA。
 
-脚本检查源文件、大纲、文本保留、页面资源和 Word 导出的 PDF 版式。
-它适合检查 input/ 与 output/ 中已有材料的目录型项目。统一引擎的配置与来源策略测试位于 tests/。
-
-用法示例
-  python3 smoke_test.py --all
-  python3 smoke_test.py --project 项目名称
+--structure-only 可在无 Office 环境检查配置、来源、交付清单、书签和文字，
+但不证明页码或版式正确。脚本不修改源文件或已发布的 DOCX。
 """
 
-import os
-import sys
-import re
 import argparse
-import subprocess
+import re
+import tempfile
+from types import SimpleNamespace
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-from docx import Document
-import pymupdf
-from PIL import Image
+from typing import Optional
 
-from lib.styles import DEFAULT_FONTS
-from lib.qa import run_qa_assertions, export_docx_to_pdf
-from lib.scanner import scan_directory_to_tree, flatten_tree_nodes
+from docx import Document
+
+from lib.engine import UnifiedSynthesizer
+from synthesize import (
+    DEFAULT_INPUT_DIR,
+    discover_all_input_projects,
+    discover_standalone_input_files,
+    find_project_matches,
+)
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_INPUT_DIR = ROOT / "input"
 DEFAULT_OUTPUT_DIR = ROOT / "output"
 
 
-def discover_all_input_projects(input_dir: Path) -> List[Path]:
-    """动态扫描并发现 input/ 目录下的所有有效子项目目录"""
-    projects = []
-    if not input_dir.exists():
-        return projects
-        
-    for item in sorted(input_dir.iterdir()):
-        if item.is_dir() and not item.name.startswith('.') and not item.name.startswith('~$') and item.name != '__pycache__':
-            projects.append(item)
-    return projects
+def declared_delivery_paths(plan, output_dir):
+    """只接受计划中的文件，不用旧文件名猜测或替代缺失交付物。"""
+    paths = [(spec, Path(output_dir) / spec["filename"]) for spec in plan["documents"]]
+    missing = [str(path) for _, path in paths if not path.is_file()]
+    if missing:
+        raise ValueError("缺少声明的交付物: " + ", ".join(missing))
+    return paths
 
 
-def resolve_project_directory(input_dir: Path, target_query: str) -> Optional[Path]:
-    """根据用户输入动态解析目标项目目录"""
-    p = Path(target_query)
-    if p.exists() and p.is_dir():
-        return p.resolve()
-        
-    candidate = input_dir / target_query
-    if candidate.exists() and candidate.is_dir():
-        return candidate.resolve()
-        
-    all_projs = discover_all_input_projects(input_dir)
-    for proj in all_projs:
-        if proj.name.lower() == target_query.lower():
-            return proj.resolve()
-            
-    for proj in all_projs:
-        if target_query.lower() in proj.name.lower():
-            return proj.resolve()
-            
-    return None
+def _source_docx_paths(source, nodes):
+    if source.is_file():
+        return [source] if source.suffix.lower() == ".docx" else []
+    paths = set()
+    for node in nodes:
+        if not node.get("file"):
+            continue
+        path = (source / node["file"]).resolve()
+        if not path.is_file():
+            raise ValueError(f"源文件不存在: {path}")
+        if path.suffix.lower() == ".docx":
+            paths.add(path)
+    return sorted(paths)
 
 
-def test_project(source_dir: Path, output_dir: Optional[Path] = None) -> bool:
-    """通用单项目自动化质检"""
-    proj_name = source_dir.name
-    print("\n" + "=" * 65)
-    print(f"=== 开始检测《{proj_name}》 ===")
-    print("=" * 65)
-    
-    out_dir = output_dir if output_dir else DEFAULT_OUTPUT_DIR / proj_name
-    
-    # 查找合成后的主要交付成果文档
-    target_docx = out_dir / f"{proj_name}_目录+正文.docx"
-    if not target_docx.exists():
-        target_docx = out_dir / f"{proj_name}_合成材料.docx"
-    if not target_docx.exists():
-        target_docx = out_dir / f"{proj_name}_支撑材料.docx"
-        
-    cover_docx = out_dir / f"{proj_name}_封面+目录.docx"
-    if not cover_docx.exists():
-        print(f"[警告] 未找到独立的封面+目录文档: {cover_docx}")
-        
-    if not target_docx.exists():
-        print(f"[未通过] 目标成果文档不存在: {out_dir / f'{proj_name}_目录+正文.docx'}")
-        return False
-        
-    doc_target = Document(str(target_docx))
-    target_text = "".join(doc_target.element.body.itertext())
-    
-    # 1. 扫描源目录大纲
-    raw_tree = scan_directory_to_tree(source_dir)
-    all_items = flatten_tree_nodes(raw_tree)
-    
-    print(f"\n[测试项 1] 大纲源文件检测 (共 {len(all_items)} 个节点):")
-    src_docs, src_pdfs, src_imgs = [], [], []
-    for item in all_items:
-        if "file" in item:
-            fpath = source_dir / item["file"]
-            if not fpath.exists():
-                print(f"  [缺失] 源文件不存在: {fpath}")
-                return False
-            t = item.get("type")
-            if t == "docx":
-                src_docs.append(fpath)
-            elif t == "pdf":
-                src_pdfs.append(fpath)
-            elif t == "image":
-                src_imgs.append(fpath)
-    print(f"  [通过] 全部源文件就绪 (Word: {len(src_docs)} 份, PDF: {len(src_pdfs)} 份, 图片: {len(src_imgs)} 张)")
-    
-    # 2. PDF / 图片资源映射核验
-    total_pdf_pages = sum(len(pymupdf.open(str(f))) for f in src_pdfs) if src_pdfs else 0
-    image_rels = [r for r in doc_target.part.rels.values() if "image" in r.target_ref]
-    print(f"\n[测试项 2] 资源要素映射核验 (包含图像/页面数: {len(image_rels)}):")
-    if total_pdf_pages > 0:
-        print(f"  [通过] PDF 源文件 {total_pdf_pages} 页物理基准确认完毕")
-    print(f"  [通过] 图像与文档段落完整映射 ({len(image_rels)} 张图像要素)。")
-    
-    # 3. Word 文档文本保留检测
-    if src_docs:
-        print(f"\n[测试项 3] Word 文字内容逐段核验 (比对 {len(src_docs)} 份源文档):")
-        total_paras, missing_paras = 0, 0
-        for fpath in src_docs:
-            d = Document(str(fpath))
-            paras = [p.text.strip() for p in d.paragraphs if len(p.text.strip()) > 2]
-            total_paras += len(paras)
-            for p in paras:
-                # 兼容段落内包含软回车拆分、以及内部目录页码动态重计算的情况
-                lines = [line.strip() for line in p.split('\n') if len(line.strip()) > 2]
-                for line in lines:
-                    line_clean = re.sub(r'[\t\.\·\s]*\d+\s*$', '', line).strip()
-                    if line_clean and len(line_clean) > 2 and line_clean not in target_text:
-                        missing_paras += 1
-                        break
-        print(f"  累计核验段落: {total_paras} 段，丢失段落: {missing_paras} 段")
-        if missing_paras == 0:
-            print("  [通过] 全部 Word 段落文字完整保留。")
+def _normalized_text(text):
+    return re.sub(r"\s+", "", text)
+
+
+def _check_body_text(path, source_docx, nodes, expected_inventory=None):
+    # smoke 与 engine 共用 PreparedBuild 期望清单/严格验证器；无构建计划时
+    # 用传入的源文件构造等价的只读准备视图，兼容历史单元测试调用。
+    from lib.content_integrity import build_expected_inventory, verify_content_integrity, ContentIntegrityError
+    if expected_inventory is None and not source_docx:
+        print("  正文文字核验: 0 段")
+        return
+    if expected_inventory is None:
+        from types import SimpleNamespace
+        expected_inventory = build_expected_inventory(
+            SimpleNamespace(
+                source_order=tuple(str(source) for source in source_docx),
+                source_docx_path=source_docx[0] if len(source_docx) == 1 else None,
+                nodes=tuple(nodes),
+                parts={},
+                config=SimpleNamespace(regions={}),
+            ),
+            spec={"id": "smoke", "parts": ["body"]},
+        )
+    if not expected_inventory.source_order:
+        raise ValueError("没有可用于内容完整性核验的 DOCX 源节点清单")
+    checked = len(expected_inventory.semantic.paragraphs)
+    try:
+        verify_content_integrity(expected_inventory, path)
+    except ContentIntegrityError as cie:
+        names = ", ".join(Path(item).name for item in expected_inventory.source_order)
+        raise ValueError(f"正文文字完整性核验未通过: {names}: {cie}") from cie
+
+    print(f"  正文文字核验: {checked} 段")
+
+
+def _metadata_contract_violations(metadata, plan, prepared, paths):
+    """Compare every recorded build hash with the current plan and files."""
+    from lib.content_integrity import compute_file_sha256
+
+    violations = []
+    if not isinstance(metadata, dict):
+        return ["build-metadata.json 根节点不是对象"]
+
+    stored_sources = metadata.get("source_hashes")
+    current_sources = plan.get("source_hashes", {})
+    if stored_sources != current_sources:
+        violations.append("源文件 SHA-256 与当前 plan 不一致")
+    if prepared is not None and getattr(prepared, "source_hashes", {}) != current_sources:
+        violations.append("PreparedBuild 与当前 plan 的源文件 SHA-256 不一致")
+
+    if prepared is not None:
+        configuration = metadata.get("configuration")
+        if not isinstance(configuration, dict):
+            violations.append("build-metadata.json 缺少 configuration 契约")
         else:
-            print(f"  [未通过] 发现丢失段落 {missing_paras} 处")
-            return False
-            
-    # 4. 基于 Microsoft Word 导出 PDF 逐页质检（孤行、单标题、空白页）
-    if sys.platform == "darwin":
-        print(f"\n[测试项 4] Word 原生排版逐页检测:")
-        pdf_tmp = os.path.abspath(f".tmp_{proj_name}_smoke.pdf")
-        export_docx_to_pdf(str(target_docx), pdf_tmp)
-        if os.path.exists(pdf_tmp):
-            passed = run_qa_assertions(pdf_tmp, ignore_front_pages=1)
-            os.remove(pdf_tmp)
-            if not passed:
-                return False
-                
-    print(f"《{proj_name}》测试通过。")
-    return True
+            stored_config = configuration.get("config_contract_sha256")
+            if stored_config != prepared.config_hash:
+                violations.append("配置契约 SHA-256 与当前 PreparedBuild 不一致")
+        format_info = metadata.get("format", {})
+        stored_format = format_info.get("source_sha256") if isinstance(format_info, dict) else None
+        if prepared.format_hash and stored_format != prepared.format_hash:
+            violations.append("格式包 SHA-256 与当前 PreparedBuild 不一致")
+
+    delivery_records = metadata.get("deliveries", {})
+    if not isinstance(delivery_records, dict):
+        violations.append("build-metadata.json 缺少 deliveries 契约")
+        delivery_records = {}
+    expected_delivery_ids = {spec["id"] for spec, _ in paths}
+    if set(delivery_records) != expected_delivery_ids:
+        violations.append("deliveries 契约与当前声明交付物集合不一致")
+    for spec, path in paths:
+        record = delivery_records.get(spec["id"])
+        if not isinstance(record, dict):
+            violations.append(f"交付物 {spec['id']} 缺少元数据记录")
+            continue
+        actual_hash = compute_file_sha256(path)
+        if record.get("sha256") != actual_hash:
+            violations.append(f"交付物 {spec['id']} SHA-256 与元数据不一致")
+        if record.get("filename") != spec.get("filename"):
+            violations.append(f"交付物 {spec['id']} 文件名与当前 plan 不一致")
+        if record.get("parts") != spec.get("parts"):
+            violations.append(f"交付物 {spec['id']} 部件清单与当前 plan 不一致")
+    return violations
+
+
+def test_project(
+    source_dir: Path,
+    output_dir: Optional[Path] = None,
+    manifest_path: Optional[Path] = None,
+    override_paths=None,
+    structure_only=False,
+) -> bool:
+    """所有来源策略共用计划和交付验证；任一声明交付物缺失即失败。"""
+    try:
+        import json
+        from lib.delivery import validate_delivery, validate_delivery_structure
+
+        source = Path(source_dir).resolve()
+        plan = UnifiedSynthesizer.plan(source, manifest_path, override_paths=override_paths)
+        out_dir = Path(output_dir) if output_dir else DEFAULT_OUTPUT_DIR / plan["project"]
+        print(f"\n《{plan['project']}》交付检查: {out_dir}")
+        for warning in plan.get("warnings", []):
+            print(f"  [提示] {warning}")
+
+        # 0. 读取交付元数据；具体哈希核对要等 PreparedBuild 和声明文件
+        # 路径就绪后进行，不能只依赖元数据中的历史 passed 字段。
+        meta_path = out_dir / "build-metadata.json"
+        metadata = None
+        if meta_path.is_file():
+            try:
+                metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+            except Exception as meta_exc:
+                raise ValueError(f"读取交付元数据失败: {meta_exc}") from meta_exc
+
+        paths = declared_delivery_paths(plan, out_dir)
+        nodes = plan["nodes"]
+        source_docx = _source_docx_paths(source, nodes)
+        maps = {}
+        cfg = None
+        prepared_for_verification = None
+        try:
+            from lib.config import load_project_config
+            config_dir = source if source.is_dir() else source.parent
+            cfg = load_project_config(
+                config_dir,
+                manifest_path,
+                project_name=plan["project"],
+                override_paths=override_paths,
+            )
+            if getattr(cfg, "schema_version", 0) >= 3:
+                prepared_for_verification = UnifiedSynthesizer.prepare_build(
+                    source, manifest_path, override_paths=override_paths
+                )
+        except Exception:
+            if cfg is not None and getattr(cfg, "schema_version", 0) >= 3:
+                raise
+
+        if metadata is not None:
+            violations = _metadata_contract_violations(
+                metadata, plan, prepared_for_verification, paths
+            )
+            if violations:
+                raise ValueError("交付元数据契约核验未通过: " + "; ".join(violations))
+        elif cfg is not None and getattr(cfg, "schema_version", 0) >= 3:
+            raise ValueError("v3 交付缺少必需的 build-metadata.json")
+        # plan() exposes a JSON-serializable parts registry; delivery validators
+        # historically consume attribute-style DocumentPart objects.
+        parts_registry = {
+            key: SimpleNamespace(**value) if isinstance(value, dict) else value
+            for key, value in plan.get("parts", {}).items()
+        }
+        if cfg is not None and getattr(cfg, "schema_version", 0) >= 3:
+            parts_registry = dict(getattr(cfg, "parts", {}) or {})
+        from lib.content_integrity import build_expected_inventory
+
+        def has_content_part(parts):
+            return "body" in parts or any(
+                parts_registry.get(p) and parts_registry[p].kind == "content" for p in parts
+            )
+
+        prepared_view = prepared_for_verification or SimpleNamespace(
+            source_order=tuple(str(source) for source in source_docx),
+            source_docx_path=source_docx[0] if len(source_docx) == 1 else None,
+            nodes=tuple(nodes),
+            parts=parts_registry,
+            config=SimpleNamespace(regions={}),
+        )
+        expected_by_delivery = {
+            spec["id"]: build_expected_inventory(prepared_view, spec=spec)
+            for spec, _ in paths
+            if has_content_part(spec["parts"]) and source_docx
+        }
+
+        ordered = sorted(paths, key=lambda pair: not has_content_part(pair[0]["parts"]))
+        with tempfile.TemporaryDirectory(prefix="document-synthesis-smoke-") as temporary:
+            for index, (spec, path) in enumerate(ordered):
+                reference = spec.get("toc", {}).get("reference")
+                reference_map = maps.get(reference) if reference != spec["id"] else None
+                print(f"  检查 {spec['id']}: {path.name} ({' + '.join(spec['parts'])})")
+                if has_content_part(spec["parts"]):
+                    _check_body_text(
+                        path, source_docx, nodes,
+                        expected_inventory=expected_by_delivery.get(spec["id"]),
+                    )
+                if structure_only:
+                    validate_delivery_structure(
+                        path, spec, nodes, reference_map=reference_map, parts_registry=parts_registry
+                    )
+                else:
+                    maps[spec["id"]] = validate_delivery(
+                        path, spec, nodes, Path(temporary) / f"delivery-{index}.pdf",
+                        reference_map=reference_map,
+                        parts_registry=parts_registry,
+                    )
+
+        # 格式有效性核验 (针对 v3 或配置了 resolved_format 的项目)。v3
+        # 必须复用准备阶段的上下文；任何必需核验异常都应使 smoke 失败。
+        if cfg is not None and getattr(cfg, "resolved_format", None) and getattr(cfg, "schema_version", 0) >= 3:
+            from lib.content_integrity import verify_delivery_format, verify_generated_content
+            from lib.verification_contracts import build_verification_context
+            for spec, path in paths:
+                if prepared_for_verification is None:
+                    raise ValueError("v3 smoke 缺少冻结的 PreparedBuild 验证上下文")
+                context = build_verification_context(
+                    prepared_for_verification, None, spec, path
+                )
+                if metadata is not None:
+                    recorded_hash = metadata["deliveries"][spec["id"]]["sha256"]
+                    if context.delivery_sha256 != recorded_hash:
+                        raise ValueError(f"{spec['id']} VerificationContext 与当前交付物哈希不一致")
+                generated = verify_generated_content(path, context.expected_delivery)
+                if not generated["passed"]:
+                    raise ValueError(f"生成内容核验未通过: {generated['failures']}")
+                fmt_rep = verify_delivery_format(
+                    path, cfg.resolved_format, verification_context=context
+                )
+                if not fmt_rep.passed:
+                    raise ValueError("交付格式核验未通过: " + "; ".join(fmt_rep.violations[:3]))
+                print(f"  交付格式核验: {fmt_rep.verified_count} 个块符合格式包规格 ({', '.join(fmt_rep.verified_roles)})")
+        elif cfg is not None and getattr(cfg, "resolved_format", None):
+            from lib.content_integrity import verify_delivery_format
+            for spec, path in paths:
+                fmt_rep = verify_delivery_format(path, cfg.resolved_format)
+                if fmt_rep.passed:
+                    print(f"  交付格式核验: {fmt_rep.verified_count} 个块符合格式包规格 ({', '.join(fmt_rep.verified_roles)})")
+                else:
+                    print(f"  [提示] 交付格式核验提示: {len(fmt_rep.violations)} 项属性偏差")
+
+        if structure_only:
+            print("[通过] 结构检查完成；未执行 Word 导出、目录页码和页级版式核验。")
+        else:
+            print("[通过] 所有声明交付物的结构、Word 页码与版式检查完成。")
+        return True
+    except Exception as exc:
+        print(f"[未通过] {exc}")
+        return False
 
 
 def main():
-    parser = argparse.ArgumentParser(description="通用多源公文排版与材料合成统一自动化测试脚本 (smoke_test.py)")
-    parser.add_argument(
-        "--project",
-        default="all",
-        help="指定要测试的子项目名称或路径 (支持全名、模糊匹配，默认: all)"
-    )
-    parser.add_argument(
-        "--all",
-        action="store_true",
-        help="一键测试全部项目"
-    )
-    parser.add_argument(
-        "--input-dir",
-        default=None,
-        help="指定原始输入材料根目录 (可选)"
-    )
-    parser.add_argument(
-        "--output-dir",
-        default=None,
-        help="指定成果输出目录 (可选)"
-    )
-    
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--project", default="all", help="项目名称或路径（默认 all）")
+    parser.add_argument("--source", help="直接指定目录或单一 DOCX 来源")
+    parser.add_argument("--all", action="store_true", help="检查全部目录与配置化单文件项目")
+    parser.add_argument("--input-dir", type=Path, default=DEFAULT_INPUT_DIR)
+    parser.add_argument("--output-dir", type=Path, help="单项目为实际交付目录；--all 时为输出根目录")
+    parser.add_argument("--manifest", type=Path, help="与构建时相同的基础配置")
+    parser.add_argument("--override", type=Path, action="append", default=[], help="按顺序应用构建时的覆写文件，可重复")
+    parser.add_argument("--structure-only", action="store_true", help="仅检查结构与文字，不验证 Word 页码或版式")
     args = parser.parse_args()
-    input_dir = Path(args.input_dir) if args.input_dir else DEFAULT_INPUT_DIR
-    output_dir = Path(args.output_dir) if args.output_dir else DEFAULT_OUTPUT_DIR
-    
-    target = "all" if args.all else args.project
-    
-    if target == "all":
-        all_projs = discover_all_input_projects(input_dir)
-        if not all_projs:
-            print(f"[错误] 未在 {input_dir} 目录下找到任何子项目。")
-            sys.exit(1)
-            
-        all_ok = True
-        for proj in all_projs:
-            proj_out = output_dir / proj.name
-            ok = test_project(proj, proj_out)
-            if not ok:
-                all_ok = False
-    else:
-        src_dir = resolve_project_directory(input_dir, target)
-        if not src_dir:
-            all_projs = discover_all_input_projects(input_dir)
-            print(f"[错误] 未能匹配到板块: \"{target}\"")
-            if all_projs:
-                print(f"当前可测试的板块列表如下:")
-                for p in all_projs:
-                    print(f"  - {p.name}")
-            sys.exit(1)
-            
-        proj_out = output_dir / src_dir.name
-        all_ok = test_project(src_dir, proj_out)
-        
-    print("\n" + "=" * 65)
-    if all_ok:
-        print("所有项目自动化测试全部通过。")
-    else:
-        print("存在未通过的测试项，请检查上述日志。")
-    print("=" * 65 + "\n")
-    
-    sys.exit(0 if all_ok else 1)
+    if args.all and args.source:
+        parser.error("--all 不能与 --source 同用")
+    all_projects = args.all or (not args.source and args.project == "all")
+    if all_projects and (args.manifest or args.override):
+        parser.error("--manifest/--override 仅用于单项目，避免对全部项目误用同一配置")
+    try:
+        if all_projects:
+            projects = discover_all_input_projects(args.input_dir) + discover_standalone_input_files(args.input_dir)
+        else:
+            projects = find_project_matches(args.input_dir, args.source or args.project)
+        if not projects:
+            parser.error("没有找到可检查的项目")
+        if not all_projects and len(projects) != 1:
+            parser.error("项目名称有歧义，请使用完整路径: " + ", ".join(str(p) for p in projects))
+        results = []
+        for project in projects:
+            output = (args.output_dir / project.stem) if all_projects and args.output_dir else args.output_dir
+            results.append(test_project(project, output, args.manifest, args.override, args.structure_only))
+        return 0 if all(results) else 1
+    except Exception as exc:
+        print(f"[未通过] {exc}")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

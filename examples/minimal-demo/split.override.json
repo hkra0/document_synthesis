@@ -1,0 +1,17 @@
+{
+  "output": {
+    "documents": [
+      {
+        "id": "front",
+        "filename": "demo_cover_toc.docx",
+        "parts": ["cover", "toc"],
+        "toc": {"reference": "main", "links": "none"}
+      },
+      {
+        "id": "main",
+        "filename": "demo_toc_body.docx",
+        "parts": ["toc", "body"]
+      }
+    ]
+  }
+}

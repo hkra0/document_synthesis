@@ -1,0 +1,198 @@
+{
+  "format_schema_version": 1,
+  "id": "legacy-official",
+  "version": "1.0.0",
+  "metadata": {
+    "description": "党政机关公文格式基线预设 (GB/T 9704 风格排版规范)",
+    "institution": "通用公文标准"
+  },
+  "page": {
+    "width_mm": 210.0,
+    "height_mm": 297.0,
+    "orientation": "portrait",
+    "margin_top_mm": 37.0,
+    "margin_bottom_mm": 35.0,
+    "margin_left_mm": 28.0,
+    "margin_right_mm": 26.0,
+    "header_distance_mm": 15.0,
+    "footer_distance_mm": 15.0,
+    "snap_to_grid": true
+  },
+  "styles": {
+    "body": {
+      "run": {
+        "east_asia": "仿宋_GB2312",
+        "latin": "Times New Roman",
+        "size_pt": 16.0,
+        "bold": false,
+        "italic": false,
+        "color": "auto"
+      },
+      "paragraph": {
+        "alignment": "justify",
+        "first_line_indent": { "value": 2.0, "unit": "char" },
+        "space_before_pt": 0.0,
+        "space_after_pt": 0.0,
+        "line_spacing": { "mode": "multiple", "value": 1.5 },
+        "widow_control": true
+      }
+    },
+    "title": {
+      "run": {
+        "east_asia": "方正小标宋简体",
+        "latin": "Times New Roman",
+        "size_pt": 22.0,
+        "bold": false
+      },
+      "paragraph": {
+        "alignment": "center",
+        "space_before_pt": 12.0,
+        "space_after_pt": 12.0,
+        "keep_with_next": true
+      }
+    },
+    "subtitle": {
+      "run": {
+        "east_asia": "楷体_GB2312",
+        "latin": "Times New Roman",
+        "size_pt": 16.0,
+        "bold": false
+      },
+      "paragraph": {
+        "alignment": "center",
+        "space_before_pt": 6.0,
+        "space_after_pt": 6.0,
+        "keep_with_next": true
+      }
+    },
+    "heading.1": {
+      "based_on": "body",
+      "run": {
+        "east_asia": "黑体",
+        "latin": "Times New Roman",
+        "size_pt": 16.0,
+        "bold": false
+      },
+      "paragraph": {
+        "keep_with_next": true,
+        "first_line_indent": { "value": 2.0, "unit": "char" }
+      }
+    },
+    "heading.2": {
+      "based_on": "body",
+      "run": {
+        "east_asia": "楷体_GB2312",
+        "latin": "Times New Roman",
+        "size_pt": 16.0,
+        "bold": false
+      },
+      "paragraph": {
+        "keep_with_next": true,
+        "first_line_indent": { "value": 2.0, "unit": "char" }
+      }
+    },
+    "heading.3": {
+      "based_on": "body",
+      "run": {
+        "east_asia": "仿宋_GB2312",
+        "latin": "Times New Roman",
+        "size_pt": 16.0,
+        "bold": true
+      },
+      "paragraph": {
+        "keep_with_next": true,
+        "first_line_indent": { "value": 2.0, "unit": "char" }
+      }
+    },
+    "heading.4": { "based_on": "body" },
+    "heading.5": { "based_on": "body" },
+    "heading.6": { "based_on": "body" },
+    "heading.7": { "based_on": "body" },
+    "heading.8": { "based_on": "body" },
+    "heading.9": { "based_on": "body" },
+    "toc.title": {
+      "run": {
+        "east_asia": "方正小标宋简体",
+        "size_pt": 22.0,
+        "bold": false
+      },
+      "paragraph": {
+        "alignment": "center",
+        "space_before_pt": 12.0,
+        "space_after_pt": 12.0
+      }
+    },
+    "toc.1": { "based_on": "body" },
+    "toc.2": { "based_on": "body" },
+    "toc.3": { "based_on": "body" },
+    "toc.4": { "based_on": "body" },
+    "toc.5": { "based_on": "body" },
+    "toc.6": { "based_on": "body" },
+    "toc.7": { "based_on": "body" },
+    "toc.8": { "based_on": "body" },
+    "toc.9": { "based_on": "body" },
+    "header": {
+      "run": { "east_asia": "仿宋_GB2312", "size_pt": 10.5 },
+      "paragraph": { "alignment": "right" }
+    },
+    "footer": {
+      "run": { "east_asia": "仿宋_GB2312", "size_pt": 10.5 },
+      "paragraph": { "alignment": "center" }
+    },
+    "table.body": {
+      "based_on": "body",
+      "run": { "size_pt": 14.0 },
+      "paragraph": { "first_line_indent": { "value": 0.0, "unit": "char" } }
+    },
+    "caption": {
+      "run": { "east_asia": "楷体_GB2312", "size_pt": 14.0 },
+      "paragraph": { "alignment": "center" }
+    },
+    "quote": {
+      "based_on": "body",
+      "run": { "east_asia": "楷体_GB2312" }
+    },
+    "bibliography": {
+      "based_on": "body",
+      "run": { "size_pt": 14.0 }
+    }
+  },
+  "roles": {
+    "body": { "style": "body", "include_in_toc": false },
+    "title": { "style": "title", "include_in_toc": false },
+    "subtitle": { "style": "subtitle", "include_in_toc": false },
+    "heading.1": { "style": "heading.1", "outline_level": 1, "include_in_toc": true },
+    "heading.2": { "style": "heading.2", "outline_level": 2, "include_in_toc": true },
+    "heading.3": { "style": "heading.3", "outline_level": 3, "include_in_toc": true },
+    "heading.4": { "style": "heading.4", "outline_level": 4, "include_in_toc": true },
+    "heading.5": { "style": "heading.5", "outline_level": 5, "include_in_toc": true },
+    "heading.6": { "style": "heading.6", "outline_level": 6, "include_in_toc": true },
+    "heading.7": { "style": "heading.7", "outline_level": 7, "include_in_toc": true },
+    "heading.8": { "style": "heading.8", "outline_level": 8, "include_in_toc": true },
+    "heading.9": { "style": "heading.9", "outline_level": 9, "include_in_toc": true },
+    "toc.title": { "style": "toc.title", "include_in_toc": false },
+    "caption": { "style": "caption", "include_in_toc": false },
+    "table.body": { "style": "table.body", "include_in_toc": false },
+    "quote": { "style": "quote", "include_in_toc": false },
+    "bibliography": { "style": "bibliography", "include_in_toc": false }
+  },
+  "toc": {
+    "title": "目  录",
+    "title_role": "toc.title",
+    "max_level": 3,
+    "leader": "dots",
+    "page_number_gap_mm": 5.0
+  },
+  "footer": {
+    "mode": "managed",
+    "format": "dash_number",
+    "alignment": "center",
+    "style": "footer"
+  },
+  "required_capabilities": [
+    "styles.paragraph.v1",
+    "styles.character.v1",
+    "layout.single_column.v1",
+    "docx.single_source_preservation.v1"
+  ]
+}

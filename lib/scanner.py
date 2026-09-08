@@ -159,48 +159,48 @@ def scan_directory_to_tree(
         # 判断当前组是单文件还是包含点分小标题的复合组
         has_sub_items = any(len(e[4]) > 1 for e in g_entries)
         
-        if not has_sub_items and len(g_entries) == 1:
-            # 标准单一节点
-            sort_val, path_obj, raw_title, orig_cn, num_parts = g_entries[0]
-            rel_path = path_obj.relative_to(base_dir).as_posix()
-            bm_counter[0] += 1
-            bm_name = f"_Toc_auto_{bm_counter[0]:03d}"
-            
-            if path_obj.is_dir():
-                child_nodes = scan_directory_to_tree(
-                    path_obj,
-                    base_dir=base_dir,
-                    level=level + 1,
-                    bm_counter=bm_counter
-                )
-                title = format_node_title(raw_title, level, group_idx, path_obj.name)
-                node = {
-                    "level": level,
-                    "title": title,
-                    "toc_title": raw_title,
-                    "type": "folder",
-                    "folder": rel_path,
-                    "bookmark_name": bm_name,
-                    "bm_id": bm_counter[0],
-                    "children": child_nodes
-                }
-                nodes.append(node)
-                group_idx += 1
-            else:
-                ext = path_obj.suffix.lower()
-                if ext not in SUPPORTED_EXTENSIONS:
-                    continue
-                node_type = SUPPORTED_EXTENSIONS[ext]
-                title = format_node_title(raw_title, level, group_idx, path_obj.name)
-                node = {
-                    "level": level,
-                    "title": title,
-                    "toc_title": raw_title,
-                    "type": node_type,
-                    "file": rel_path,
-                    "bookmark_name": bm_name,
-                    "bm_id": bm_counter[0]
-                }
+        if not has_sub_items:
+            # 没有点分级子项时，每个文件/目录都是独立节点。此前把多个
+            # 未编号文件聚合成一个“复合组”，会把同组的第一个文件当作
+            # 虚拟父节点而不渲染，导致目录型多来源交付静默丢失一个来源。
+            for sort_val, path_obj, raw_title, orig_cn, num_parts in g_entries:
+                rel_path = path_obj.relative_to(base_dir).as_posix()
+                bm_counter[0] += 1
+                bm_name = f"_Toc_auto_{bm_counter[0]:03d}"
+
+                if path_obj.is_dir():
+                    child_nodes = scan_directory_to_tree(
+                        path_obj,
+                        base_dir=base_dir,
+                        level=level + 1,
+                        bm_counter=bm_counter
+                    )
+                    title = format_node_title(raw_title, level, group_idx, path_obj.name)
+                    node = {
+                        "level": level,
+                        "title": title,
+                        "toc_title": raw_title,
+                        "type": "folder",
+                        "folder": rel_path,
+                        "bookmark_name": bm_name,
+                        "bm_id": bm_counter[0],
+                        "children": child_nodes
+                    }
+                else:
+                    ext = path_obj.suffix.lower()
+                    if ext not in SUPPORTED_EXTENSIONS:
+                        continue
+                    node_type = SUPPORTED_EXTENSIONS[ext]
+                    title = format_node_title(raw_title, level, group_idx, path_obj.name)
+                    node = {
+                        "level": level,
+                        "title": title,
+                        "toc_title": raw_title,
+                        "type": node_type,
+                        "file": rel_path,
+                        "bookmark_name": bm_name,
+                        "bm_id": bm_counter[0]
+                    }
                 nodes.append(node)
                 group_idx += 1
         else:

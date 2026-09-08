@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "project_name": "Custom Format Demo Legacy",
+  "source": {
+    "strategy": "docx_document",
+    "file": "manuscript.docx"
+  },
+  "output": {
+    "compiled_document": "legacy_complete.docx"
+  }
+}

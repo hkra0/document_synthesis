@@ -1,0 +1,17 @@
+{
+  "output": {
+    "documents": [
+      {
+        "id": "front",
+        "filename": "材料合成_封面与目录.docx",
+        "parts": ["cover", "toc"],
+        "toc": {"reference": "main", "links": "none"}
+      },
+      {
+        "id": "main",
+        "filename": "材料合成_目录与正文.docx",
+        "parts": ["toc", "body"]
+      }
+    ]
+  }
+}
