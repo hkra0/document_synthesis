@@ -82,6 +82,11 @@ templates/*.pdf
 !examples/**/
 !examples/**/*.docx
 
+# Synthetic test fixtures pinned by hash in tests (python-docx generated, no personal data)
+!docs/acceptance/word-followup/academic.docx
+!docs/acceptance/word-followup/m2-fixtures/*.docx
+!docs/acceptance/r7-evaluation/unstructured-hard-samples/*.docx
+
 # Output deliverables and build artifacts
 output/*
 !output/.gitkeep
