@@ -134,11 +134,11 @@ class PostReviewWordMatrixTest(unittest.TestCase):
 
     def _cli(self, source: Path, manifest: Path, output: Path) -> Path:
         common = [sys.executable, "synthesize.py", "--source", str(source), "--manifest", str(manifest)]
-        plan = subprocess.run(common + ["--plan"], cwd=REPO, capture_output=True, text=True, timeout=120)
+        plan = subprocess.run(common + ["--plan"], cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         self.assertEqual(plan.returncode, 0, plan.stdout + plan.stderr)
-        doctor = subprocess.run(common + ["--doctor"], cwd=REPO, capture_output=True, text=True, timeout=120)
+        doctor = subprocess.run(common + ["--doctor"], cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         self.assertEqual(doctor.returncode, 0, doctor.stdout + doctor.stderr)
-        result = subprocess.run(common + ["--output-dir", str(output)], cwd=REPO, capture_output=True, text=True, timeout=900)
+        result = subprocess.run(common + ["--output-dir", str(output)], cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         delivered = output / json.loads(manifest.read_text(encoding="utf-8"))["output"]["documents"][0]["filename"]
         self.assertTrue(delivered.is_file(), result.stdout + result.stderr)
@@ -323,15 +323,15 @@ class PostReviewWordMatrixTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             work = root / "workflow"
-            analysis = subprocess.run([sys.executable, "synthesize.py", "--analyze-format", str(REPO / "examples" / "custom-format-demo" / "sample.docx"), "--analysis-dir", str(work / "sample"), "--replace-output"], cwd=REPO, capture_output=True, text=True)
+            analysis = subprocess.run([sys.executable, "synthesize.py", "--analyze-format", str(REPO / "examples" / "custom-format-demo" / "sample.docx"), "--analysis-dir", str(work / "sample"), "--replace-output"], cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace")
             self.assertEqual(analysis.returncode, 0, analysis.stdout + analysis.stderr)
             fmt = work / "academic-demo.json"
-            result = subprocess.run([sys.executable, "synthesize.py", "--compile-format", str(work / "sample" / "analysis.json"), "--decisions", str(REPO / "examples" / "custom-format-demo" / "decisions.final.json"), "--format-base", "preset:academic-basic@1.0.0", "--format-id", "nw11", "--format-version", "1.0.0", "--format-out", str(fmt), "--replace-output"], cwd=REPO, capture_output=True, text=True)
+            result = subprocess.run([sys.executable, "synthesize.py", "--compile-format", str(work / "sample" / "analysis.json"), "--decisions", str(REPO / "examples" / "custom-format-demo" / "decisions.final.json"), "--format-base", "preset:academic-basic@1.0.0", "--format-id", "nw11", "--format-version", "1.0.0", "--format-out", str(fmt), "--replace-output"], cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            target_analysis = subprocess.run([sys.executable, "synthesize.py", "--analyze-source", str(REPO / "examples" / "custom-format-demo" / "manuscript.docx"), "--analysis-dir", str(work / "target"), "--replace-output"], cwd=REPO, capture_output=True, text=True)
+            target_analysis = subprocess.run([sys.executable, "synthesize.py", "--analyze-source", str(REPO / "examples" / "custom-format-demo" / "manuscript.docx"), "--analysis-dir", str(work / "target"), "--replace-output"], cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace")
             self.assertEqual(target_analysis.returncode, 0, target_analysis.stdout + target_analysis.stderr)
             mapping = work / "roles.json"
-            result = subprocess.run([sys.executable, "synthesize.py", "--compile-mapping", str(work / "target" / "analysis.json"), "--decisions", str(REPO / "examples" / "custom-format-demo" / "manuscript-decisions.final.json"), "--mapping-out", str(mapping), "--replace-output"], cwd=REPO, capture_output=True, text=True)
+            result = subprocess.run([sys.executable, "synthesize.py", "--compile-mapping", str(work / "target" / "analysis.json"), "--decisions", str(REPO / "examples" / "custom-format-demo" / "manuscript-decisions.final.json"), "--mapping-out", str(mapping), "--replace-output"], cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             manifest = _write_manifest(root, filename="nw11.docx", project="NW11", formatting={"mode": "restyle", "role_map": str(mapping), "on_unmapped": "error"})
             manifest_data = json.loads(manifest.read_text(encoding="utf-8"))

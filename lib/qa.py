@@ -16,25 +16,21 @@ import re
 from typing import Dict, Any, List, Tuple
 
 
+from .office import get_backend, OfficeBackendError
+
+
 class OfficeExportError(RuntimeError):
     """无法使用本地 Word 取得精确分页时抛出的错误。"""
 
 
 def _word_access_directory() -> Path:
-    """Return one stable directory for all files touched by Word automation.
-
-    macOS Word asks for folder access on the directory used by ``save as``.
-    Per-call random temporary directories therefore cause an authorization
-    dialog for every pagination pass.  A dedicated stable directory keeps the
-    grant target constant; callers still use unique files and clean them up.
-    ``DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR`` is intended for CI or a user-facing
-    directory that has already been granted to Word.
-    """
+    """Return one stable directory for all files touched by Word automation."""
+    backend = get_backend()
+    if hasattr(backend, "get_word_access_directory"):
+        return backend.get_word_access_directory()
     configured = os.environ.get("DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR")
     if configured:
         directory = Path(configured).expanduser()
-    elif sys.platform == "darwin":
-        directory = Path("/private/tmp/document-synthesis-word-access")
     else:
         directory = Path(tempfile.gettempdir()) / "document-synthesis-word-access"
     directory.mkdir(parents=True, exist_ok=True)
@@ -43,55 +39,20 @@ def _word_access_directory() -> Path:
 
 def word_export_status() -> Tuple[bool, str]:
     """检查精确分页的静态前置条件，不触发系统授权弹窗。"""
-    if sys.platform != "darwin":
-        return False, "精确分页目前需要 macOS 上的 Microsoft Word。"
-    if not os.path.exists("/usr/bin/osascript"):
-        return False, "未找到 osascript，无法调用 Microsoft Word。"
-    if not os.path.exists("/Applications/Microsoft Word.app"):
-        return False, "未在 /Applications 找到 Microsoft Word。"
-    return True, "Microsoft Word 精确分页可用。"
+    stat = get_backend().static_status()
+    return stat.available, stat.reason
 
 
 def _automation_failure_message(detail: str) -> str:
-    """把 macOS/AppleScript 的底层错误转成可执行的排障提示。"""
-    normalized = detail.lower()
-    if "-1743" in detail or "not authorized" in normalized or "not permitted" in normalized:
-        return (
-            "当前运行构建的应用尚未获准控制 Microsoft Word。"
-            "请在“系统设置 → 隐私与安全性 → 自动化”中允许该应用控制 Word；"
-            "Full Disk Access 不能替代此权限。"
-        )
-    if (
-        "connection invalid" in normalized
-        or "hiservices-xpcservice" in normalized
-        or "can't get application id" in normalized
-        or "can’t get application id" in normalized
-    ):
-        return (
-            "当前命令运行在无法连接 macOS 图形自动化服务的受限上下文中。"
-            "请从已获 Automation 权限的本机终端或 Codex 桌面应用运行构建。"
-        )
-    return f"AppleScript 调用 Microsoft Word 失败: {detail or '未知错误'}"
+    """把底层错误转成可执行的排障提示。"""
+    from .office.mac_applescript import _automation_failure_message as _afm
+    return _afm(detail)
 
 
 def word_automation_status() -> Tuple[bool, str]:
     """真实验证当前调用方能否控制 Word；不读取或修改任何文档。"""
-    available, reason = word_export_status()
-    if not available:
-        return False, reason
-    try:
-        result = subprocess.run(
-            ["osascript", "-e", 'tell application "Microsoft Word" to get name'],
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-    except subprocess.TimeoutExpired:
-        return False, "等待 Microsoft Word Automation 响应超时。请确认 Word 没有被模态对话框阻塞。"
-    if result.returncode == 0:
-        return True, f"Automation 探针成功: {(result.stdout or 'Microsoft Word').strip()}。"
-    detail = (result.stderr or result.stdout).strip()
-    return False, _automation_failure_message(detail)
+    stat = get_backend().probe()
+    return stat.available, stat.reason
 
 
 def _applescript_string(value: str) -> str:
@@ -101,92 +62,31 @@ def _applescript_string(value: str) -> str:
 
 def export_docx_to_pdf(docx_path: str, pdf_path: str) -> bool:
     """调用本次打开的 Microsoft Word 文档导出 PDF，不影响其他已打开文档。"""
-    available, reason = word_export_status()
-    if not available:
-        print(f"[错误] {reason}")
-        return False
-        
-    docx_abs = os.path.abspath(docx_path)
-    pdf_abs = os.path.abspath(pdf_path)
-    
-    if os.path.exists(pdf_abs):
-        try:
-            os.remove(pdf_abs)
-        except Exception:
-            pass
-            
-    access_dir = _word_access_directory()
-    working_docx = access_dir / f"export-{uuid.uuid4().hex}.docx"
-    working_pdf = access_dir / f"export-{uuid.uuid4().hex}.pdf"
-    try:
-        shutil.copy2(docx_abs, working_docx)
-    except OSError as exc:
-        print(f"[错误] 无法准备 Word Automation 输入副本: {exc}")
+    backend = get_backend()
+    stat = backend.static_status()
+    if not stat.available:
+        print(f"[错误] {stat.reason}")
         return False
 
-    script = f'''
-    with timeout of 600 seconds
-        tell application "Microsoft Word"
-            set previousAlerts to display alerts
-            set myDoc to missing value
-            try
-                set display alerts to none
-                open (POSIX file "{_applescript_string(str(working_docx))}")
-                set myDoc to active document
-                -- Word's AppleScript dictionary exposes `save as` on a document
-                -- reference, not on the `active document` property expression.
-                -- Keeping the explicit handle is important when the test host has
-                -- more than one generated document open.
-                save as myDoc file name "{_applescript_string(str(working_pdf))}" file format format PDF
-                close myDoc saving no
-                set myDoc to missing value
-                set display alerts to previousAlerts
-            on error errorMessage number errorNumber
-                -- Always close the generated document, including when Word
-                -- fails before the normal close.  Otherwise stale documents
-                -- remain open and can block the next Automation call.
-                if myDoc is not missing value then
-                    try
-                        close myDoc saving no
-                    end try
-                end if
-                set display alerts to previousAlerts
-                error errorMessage number errorNumber
-            end try
-        end tell
-    end timeout
-    '''
     try:
-        try:
-            res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=620)
-        except subprocess.TimeoutExpired:
-            print("[错误] Microsoft Word 导出 PDF 超时；请确认 Word 没有被模态对话框阻塞。")
-            return False
-        if res.returncode != 0:
-            detail = (res.stderr or res.stdout).strip()
-            print(f"[错误] {_automation_failure_message(detail)}")
-            return False
-        if not working_pdf.is_file():
-            print("[错误] Microsoft Word 未生成 PDF。")
-            return False
-        try:
-            shutil.copy2(working_pdf, pdf_abs)
-        except OSError as exc:
-            print(f"[错误] 无法保存 Word 导出的 PDF: {exc}")
-            return False
-        return os.path.exists(pdf_abs)
-    finally:
-        for temporary in (working_docx, working_pdf):
-            try:
-                temporary.unlink()
-            except FileNotFoundError:
-                pass
-            except OSError:
-                pass
+        backend.export_pdf(Path(docx_path), Path(pdf_path))
+        return os.path.exists(pdf_path)
+    except OfficeBackendError as exc:
+        print(f"[错误] {exc}")
+        return False
+    except OSError as exc:
+        print(f"[错误] 无法保存 Word 导出的 PDF: {exc}")
+        return False
 
 
 def get_exact_printed_heading_pages(docx_path: str, toc_items: List[Dict[str, Any]], source_dir: Any = None) -> Dict[str, int]:
-    """通过本地 Word 导出 PDF 反查实际打印页码表（包含顶层大纲与各文档内嵌目录的各级子标题）"""
+    """通过本地 Word 导出 PDF 反查实际打印页码表（已废弃）。"""
+    import warnings
+    warnings.warn(
+        "get_exact_printed_heading_pages 已弃用，将在后续版本中删除。请改用书签报告或 inspect_document。",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     pdf_tmp = docx_path.replace(".docx", "_tmp_pageref.pdf")
     if not export_docx_to_pdf(docx_path, pdf_tmp):
         raise OfficeExportError(

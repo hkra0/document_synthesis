@@ -47,6 +47,8 @@ class RepoHygieneTest(unittest.TestCase):
                 ["git", "ls-files"],
                 cwd=REPO_ROOT,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
             tracked_files = [line.strip() for line in out.splitlines() if line.strip()]
         except Exception as exc:
@@ -94,6 +96,7 @@ class RepoHygieneTest(unittest.TestCase):
         self.assertIn("*.json", text)
         self.assertIn("*.md", text)
         self.assertIn("*.py", text)
+        self.assertIn("*.toml", text)
         self.assertIn("eol=lf", text)
         self.assertIn("*.docx binary", text)
         self.assertIn("*.png binary", text)

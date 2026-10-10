@@ -77,9 +77,26 @@ class OutputConfigTests(unittest.TestCase):
                 self.config(docs)
 
     def test_filenames_and_ids_are_safe_and_unique(self):
-        for filename in ("../bad.docx", "/bad.docx", "dir/bad.docx", "dir\\bad.docx", "C:bad.docx", "bad.pdf", "~$bad.docx", "bad\x00.docx"):
+        bad_filenames = (
+            "../bad.docx", "/bad.docx", "dir/bad.docx", "dir\\bad.docx", "C:bad.docx", "bad.pdf",
+            "~$bad.docx", "bad\x00.docx",
+            # Windows reserved device names
+            "CON.docx", "con.docx", "PRN.docx", "aux.docx", "NUL.docx", "com1.docx", "COM9.docx", "lpt1.docx",
+            # Windows forbidden characters
+            "bad<name.docx", "bad>name.docx", "bad:name.docx", "bad\"name.docx",
+            "bad|name.docx", "bad?name.docx", "bad*name.docx",
+            # Trailing dots and spaces
+            "bad .docx", "bad..docx", "bad.docx.", "bad.docx "
+        )
+        for filename in bad_filenames:
             with self.subTest(filename=filename), self.assertRaises(ConfigError):
                 self.config([document(filename=filename)])
+
+        # Valid filenames must pass
+        for filename in ("main.docx", "report-v1.docx", "2026_公文.docx", "Document (Final).docx"):
+            with self.subTest(filename=filename):
+                self.assertEqual(self.config([document(filename=filename)]).documents[0]["filename"], filename)
+
         for docs in ([document(), document("second", "MAIN.DOCX")], [document(), document("MAIN", "second.docx")]):
             with self.subTest(documents=docs), self.assertRaises(ConfigError):
                 self.config(docs)
@@ -94,8 +111,17 @@ class OutputConfigTests(unittest.TestCase):
             self.config(output={"toc_body": "body.docx"})
 
     def test_project_name_is_safe_even_when_output_filenames_are_explicit(self):
-        for name in (None, "", ".", "..", "../escape", "/absolute", "nested/project", "nested\\project", "C:escape",
-                     ".hidden", "~$lock", " leading", "trailing ", "line\nfeed", "tab\tname", "nul\x00name", "del\x7fname"):
+        bad_names = (
+            None, "", ".", "..", "../escape", "/absolute", "nested/project", "nested\\project", "C:escape",
+            ".hidden", "~$lock", " leading", "trailing ", "line\nfeed", "tab\tname", "nul\x00name", "del\x7fname",
+            # Windows reserved device names
+            "CON", "con", "PRN", "AUX", "aux", "NUL", "COM1", "com9", "LPT1", "lpt8", "con.nested",
+            # Windows forbidden characters
+            "proj<name", "proj>name", "proj:name", "proj\"name", "proj|name", "proj?name", "proj*name",
+            # Trailing dot
+            "project.", "project..", "project. "
+        )
+        for name in bad_names:
             with self.subTest(name=name), self.assertRaisesRegex(ConfigError, "project_name"):
                 self.config([document(filename="safe.docx")], project_name=name)
         for name in ("普通项目", "My Project", "Project.v2", "2026-09_材料"):

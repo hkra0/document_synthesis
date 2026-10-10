@@ -18,6 +18,7 @@ from docx import Document
 from lib.engine import UnifiedSynthesizer
 from synthesize import (
     DEFAULT_INPUT_DIR,
+    configure_console_encoding,
     discover_all_input_projects,
     discover_standalone_input_files,
     find_project_matches,
@@ -290,6 +291,7 @@ def test_project(
 
 
 def main():
+    configure_console_encoding()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", default="all", help="项目名称或路径（默认 all）")
     parser.add_argument("--source", help="直接指定目录或单一 DOCX 来源")

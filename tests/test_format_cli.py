@@ -37,7 +37,14 @@ class FormatCLITest(unittest.TestCase):
 
     def _run_cli(self, args):
         cmd = [sys.executable, "synthesize.py"] + args
-        return subprocess.run(cmd, capture_output=True, text=True, cwd=str(Path(__file__).resolve().parent.parent))
+        return subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            cwd=str(Path(__file__).resolve().parent.parent),
+        )
 
     def test_analyze_format_cli_and_overwrite_protection(self):
         """测试 --analyze-format 正常输出及防覆盖保护"""

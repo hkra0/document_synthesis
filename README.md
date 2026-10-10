@@ -75,7 +75,7 @@ document_synthesis/
 
 ### 1. 运行环境
 
-- Python 3.8 以上版本
+- Python 3.10 以上版本
 - 只有在 macOS 上通过 Microsoft Word 完成导出和页级检查，页码才可视为准确
 - Windows 与 Linux 可用于其他处理，但不能把 LibreOffice 的版面当作 Word 的等价结果
 
@@ -106,6 +106,13 @@ python3 synthesize.py --doctor
 # 只读预览自动推断的目录、顺序和待转换文件
 python3 synthesize.py --project 示例项目 --plan
 ```
+
+`--doctor` 返回标准退出码：
+- `0`：环境完全就绪，支持 `exact` 精确构建（Python 依赖齐全、输入合法、Office 探针通过）。
+- `2`：Python 依赖就绪，但无可用精确 Office 自动化（例如 Linux、Windows，或没有 Word 的 macOS）；可运行 `--plan`、格式分析类命令和 `smoke_test.py --structure-only`，不能构建带目录页码的交付物。
+- `1`：缺少 Python 核心依赖（`docx`、`pymupdf` 等）、输入无效，或 Office 后端配置无效。
+
+可用 `--office-backend {auto,word,none}` 或环境变量 `DOCUMENT_SYNTHESIS_OFFICE_BACKEND` 指定后端；命令行参数优先。
 
 ### 4. 合成
 

@@ -28,8 +28,8 @@ def resolve_docx_document_path(source_dir: Path, config: Any) -> Path:
         file_path = source_dir
     else:
         docx_files = [
-            p.resolve() for p in source_dir.glob("*.docx")
-            if not p.name.startswith(("~$", "."))
+            p.resolve() for p in source_dir.iterdir()
+            if p.is_file() and p.suffix.lower() == ".docx" and not p.name.startswith(("~$", "."))
         ]
         if len(docx_files) != 1:
             raise SourceStrategyError(

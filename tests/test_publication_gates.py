@@ -148,7 +148,14 @@ class PublicationGateContractTest(unittest.TestCase):
                 "--output-dir",
                 str(output),
             ]
-            first = subprocess.run(command, cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True)
+            first = subprocess.run(
+                command,
+                cwd=Path(__file__).resolve().parents[1],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
             self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
             delivery = output / "r0-published.docx"
             metadata = output / "build-metadata.json"
@@ -161,7 +168,14 @@ class PublicationGateContractTest(unittest.TestCase):
                 "on_unmapped": "error",
             }
             manifest.write_text(json.dumps(invalid), encoding="utf-8")
-            second = subprocess.run(command, cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True)
+            second = subprocess.run(
+                command,
+                cwd=Path(__file__).resolve().parents[1],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
             self.assertNotEqual(second.returncode, 0, second.stdout + second.stderr)
             self.assertIn("RoleMap 文件不存在", second.stdout + second.stderr)
             self.assertEqual(before, (_sha256(delivery), _sha256(metadata)))
