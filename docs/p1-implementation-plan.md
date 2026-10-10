@@ -117,6 +117,6 @@
    - 运行：`python3 docs/acceptance/tools/sanitize_paths.py --check`
    - 结果：`Hygiene check passed: no user paths or emails found in tracked files.`。
 4. **全局敏感路径扫描**：
-   - 运行：`git grep -nE '/Users/|/home/'`
+   - 运行：`git grep` 扫描 macOS/Linux 用户主目录形式的绝对路径（模式见 `tests/test_repo_hygiene.py` 的 `USER_DIR_PATTERN`）
    - 结果：**0 matches**。
 
