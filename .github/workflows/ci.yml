@@ -34,7 +34,12 @@ jobs:
       - name: Verify repository hygiene
         run: python -m unittest tests.test_repo_hygiene -v
 
+      # Tests call the engine in-process, so the CLI's console reconfiguration
+      # does not run; Windows runners default to cp1252. The CLI path itself is
+      # checked without this override in the CP936 step below.
       - name: Run unit test suite
+        env:
+          PYTHONIOENCODING: utf-8
         run: python -m unittest discover -s tests -v
 
       - name: Validate minimal demo plan and CLI
