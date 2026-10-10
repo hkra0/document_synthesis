@@ -13,6 +13,7 @@ import subprocess
 import time
 import uuid
 import zipfile
+from typing import Any, Dict
 
 from lxml import etree
 from pypdf import PdfReader
