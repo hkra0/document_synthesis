@@ -1,7 +1,7 @@
 # P4 后续实施记录：一次构建复用一个 Word 实例
 
 > **文档状态**：已完成 (Completed)；macOS 侧仅涉及构建元数据的取值来源，待 macOS 会话回归确认  
-> **基线依赖**：P4（Windows 真实 Word 验收矩阵，`p4-windows-word-acceptance` = `3405aef`）  
+> **基线依赖**：P4（Windows 真实 Word 验收矩阵，已合并，`main` = `466b2a7`；本分支基于其中的 `3405aef`）  
 > **核心目标**：P4 实测中一次构建要多次启动 Word（每次 4–6 秒）。本批次让一次构建内的全部 Word 操作共用同一个 worker 子进程与同一个 Word 实例，构建元数据不再为记录可用性额外启动 Word；P3 建立的可靠性约定（逐请求超时、只结束本次启动的 Word、孤儿判定、Quit 看门狗、诊断日志、不影响用户文档）全部保持。macOS 后端（`lib/office/mac_applescript.py`）不改动。
 
 ---
