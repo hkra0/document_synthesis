@@ -77,9 +77,19 @@ class PaginationTest(unittest.TestCase):
             original = source.read_bytes()
             output.write_bytes(b"previous verified export")
             completed = type("Completed", (), {"returncode": 1, "stdout": "", "stderr": "failure"})()
-            with patch("lib.pagination.word_export_status", return_value=(True, "ok")), patch("lib.pagination.subprocess.run", return_value=completed):
-                with self.assertRaises(OfficeExportError):
-                    inspect_document(source, output, [])
+            # 固定 macOS 后端：auto 在装有 Word 的 Windows 上会选中 COM 后端并真实导出。
+            set_backend(MacAppleScriptBackend())
+            try:
+                with patch.object(
+                    MacAppleScriptBackend, "static_status",
+                    return_value=BackendStatus(True, "ok", "exact"),
+                ), patch("lib.pagination.word_export_status", return_value=(True, "ok")), patch(
+                    "lib.pagination.subprocess.run", return_value=completed
+                ):
+                    with self.assertRaises(OfficeExportError):
+                        inspect_document(source, output, [])
+            finally:
+                set_backend(None)
             self.assertEqual(output.read_bytes(), b"previous verified export")
             self.assertEqual(source.read_bytes(), original)
             self.assertEqual(sorted(p.name for p in Path(directory).iterdir()), ["existing.pdf", "fixture.docx"])
