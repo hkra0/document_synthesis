@@ -556,7 +556,7 @@ def command_run(args: argparse.Namespace) -> int:
     out_dir = EVIDENCE_ROOT / args.label
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / (args.output or "ww-results.json")
-    out_file.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_file.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"结果: {summary}，已写入 {out_file.relative_to(REPO).as_posix()}")
     return 0 if summary["failed"] == 0 and summary["blocked"] == 0 else 1
 
@@ -736,7 +736,8 @@ def command_environment(args: argparse.Namespace) -> int:
     out_dir = EVIDENCE_ROOT / args.label
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / "environment.json"
-    out_file.write_text(json.dumps(Scrubber().data(environment), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_file.write_text(json.dumps(Scrubber().data(environment), ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8", newline="\n")
     print(f"已写入 {out_file.relative_to(REPO).as_posix()}")
     return 0
 
@@ -828,7 +829,7 @@ def command_compare(args: argparse.Namespace) -> int:
     right = json.loads((EVIDENCE_ROOT / args.right / "ww-results.json").read_text(encoding="utf-8"))
     report = compare_results(left, right)
     out_file = EVIDENCE_ROOT / "cross-platform-pages.json"
-    out_file.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_file.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"对照结果: {report['summary']}，已写入 {out_file.relative_to(REPO).as_posix()}")
     return 0 if report["summary"]["with_differences"] == 0 and report["summary"]["comparable"] == report["summary"]["cases"] else 1
 
