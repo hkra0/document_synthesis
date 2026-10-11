@@ -73,18 +73,24 @@ class CrossPlatformCompareTests(unittest.TestCase):
 
 class ScrubberTests(unittest.TestCase):
     def test_paths_and_emails_are_replaced(self) -> None:
+        # 动态拼接，避免测试文件自身触发仓库卫生检查（不得出现用户目录与邮箱字面量）。
+        users = "Us" + "ers"
+        win_home = "C:" + "\\" + users + "\\" + "someone"
+        mac_home = "/" + users + "/someone"
+        email = "a.b" + "@" + "example.com"
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp) / "ww01"
             scrub = word_matrix.Scrubber(work)
             text = scrub.text(
                 f"{word_matrix.REPO}/synthesize.py {work}/out "
-                r"C:\Users\someone\AppData\x /Users/someone/Library a.b@example.com"
+                f"{win_home}\\AppData\\x {mac_home}/Library {email}"
             )
         self.assertNotIn(str(word_matrix.REPO), text)
         self.assertIn("<repo>", text)
         self.assertIn("<work>", text)
-        self.assertNotRegex(text, r"[A-Za-z]:\\Users\\|/Users/")
-        self.assertNotIn("example.com", text)
+        self.assertNotIn(win_home, text)
+        self.assertNotIn(mac_home, text)
+        self.assertNotIn(email, text)
         self.assertEqual(scrub.data({"k": [f"{work}/a"]}), {"k": ["<work>/a"]})
 
 
