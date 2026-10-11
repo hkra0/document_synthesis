@@ -28,9 +28,14 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = ROOT / "output"
 
 
-def declared_delivery_paths(plan, output_dir):
-    """只接受计划中的文件，不用旧文件名猜测或替代缺失交付物。"""
-    paths = [(spec, Path(output_dir) / spec["filename"]) for spec in plan["documents"]]
+def declared_delivery_paths(plan, output_dir, draft=False):
+    """只接受计划中的文件，不用旧文件名猜测或替代缺失交付物。草稿检查 ``*_draft.docx``。"""
+    from lib.drafting import draft_filename
+
+    paths = [
+        (spec, Path(output_dir) / (draft_filename(spec["filename"]) if draft else spec["filename"]))
+        for spec in plan["documents"]
+    ]
     missing = [str(path) for _, path in paths if not path.is_file()]
     if missing:
         raise ValueError("缺少声明的交付物: " + ", ".join(missing))
@@ -92,13 +97,17 @@ def _check_body_text(path, source_docx, nodes, expected_inventory=None):
     print(f"  正文文字核验: {checked} 段")
 
 
-def _metadata_contract_violations(metadata, plan, prepared, paths):
+def _metadata_contract_violations(metadata, plan, prepared, paths, fidelity="exact"):
     """Compare every recorded build hash with the current plan and files."""
     from lib.content_integrity import compute_file_sha256
 
     violations = []
     if not isinstance(metadata, dict):
         return ["build-metadata.json 根节点不是对象"]
+    # 早于草稿模式的元数据没有 fidelity 字段，按 exact 处理。
+    recorded_fidelity = metadata.get("fidelity", "exact")
+    if recorded_fidelity != fidelity:
+        violations.append(f"元数据保真度为 {recorded_fidelity!r}，本次按 {fidelity!r} 检查")
 
     stored_sources = metadata.get("source_hashes")
     current_sources = plan.get("source_hashes", {})
@@ -135,11 +144,64 @@ def _metadata_contract_violations(metadata, plan, prepared, paths):
         actual_hash = compute_file_sha256(path)
         if record.get("sha256") != actual_hash:
             violations.append(f"交付物 {spec['id']} SHA-256 与元数据不一致")
-        if record.get("filename") != spec.get("filename"):
+        if record.get("filename") != path.name:
             violations.append(f"交付物 {spec['id']} 文件名与当前 plan 不一致")
         if record.get("parts") != spec.get("parts"):
             violations.append(f"交付物 {spec['id']} 部件清单与当前 plan 不一致")
     return violations
+
+
+def _draft_pageref_results(document_xml: bytes):
+    """按文档顺序返回每个 PAGEREF 域（简单域与复杂域）的 (指令, 显示结果)。"""
+    import re
+    from lxml import etree
+
+    w = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    root = etree.fromstring(document_xml)
+    results, state, instruction, shown = [], None, "", []
+    for el in root.iter(w + "fldSimple", w + "fldChar", w + "instrText", w + "t"):
+        if el.tag == w + "fldSimple":
+            instr = el.get(w + "instr") or ""
+            if re.match(r"\s*PAGEREF\b", instr, re.IGNORECASE):
+                results.append((instr.strip(), "".join(t.text or "" for t in el.iter(w + "t"))))
+        elif el.tag == w + "fldChar":
+            kind = el.get(w + "fldCharType")
+            if kind == "begin":
+                state, instruction, shown = "instr", "", []
+            elif kind == "separate" and state == "instr":
+                state = "result"
+            elif kind == "end" and state:
+                if re.match(r"\s*PAGEREF\b", instruction, re.IGNORECASE):
+                    results.append((instruction.strip(), "".join(shown)))
+                state = None
+        elif el.tag == w + "instrText" and state == "instr":
+            instruction += el.text or ""
+        elif el.tag == w + "t" and state == "result":
+            shown.append(el.text or "")
+    return results
+
+
+def _check_draft_markers(path):
+    """草稿的页码域在用户更新前只能显示“?”，且不能在打开时自动更新。
+
+    打开时自动更新（w:updateFields 或 w:dirty）会在分页完成前求值，得到看似合理的
+    错误页码；来源文档里遗留的页码缓存同样不能保留。
+    """
+    import zipfile
+
+    with zipfile.ZipFile(path) as package:
+        settings = package.read("word/settings.xml").decode("utf-8")
+        document = package.read("word/document.xml")
+    if "w:updateFields" in settings:
+        raise ValueError(f"草稿 {path.name} 设置了打开时更新域（w:updateFields），会在分页前得到错误页码")
+    text = document.decode("utf-8")
+    if 'w:dirty="true"' in text or "w:dirty=\"1\"" in text:
+        raise ValueError(f"草稿 {path.name} 含有标记为 dirty 的域，打开时会在分页前更新")
+    if "DRAFTPAGEREFTOKEN" in text:
+        raise ValueError(f"草稿 {path.name} 残留目录页码占位标记")
+    shown = [result for _, result in _draft_pageref_results(document) if result != "?"]
+    if shown:
+        raise ValueError(f"草稿 {path.name} 的 PAGEREF 显示了未经核验的页码: {shown[:5]}")
 
 
 def test_project(
@@ -148,15 +210,18 @@ def test_project(
     manifest_path: Optional[Path] = None,
     override_paths=None,
     structure_only=False,
+    draft=False,
 ) -> bool:
     """所有来源策略共用计划和交付验证；任一声明交付物缺失即失败。
+
+    ``draft=True`` 检查 ``--allow-draft`` 生成的草稿：只做结构与文字核验，并确认草稿标注。
 
     同一项目的全部页码核验共用一个 Office 会话（Windows 上只启动一次 Word）。
     """
     from lib.office import office_session
 
     with office_session():
-        return _test_project(source_dir, output_dir, manifest_path, override_paths, structure_only)
+        return _test_project(source_dir, output_dir, manifest_path, override_paths, structure_only, draft)
 
 
 def _test_project(
@@ -165,9 +230,12 @@ def _test_project(
     manifest_path: Optional[Path] = None,
     override_paths=None,
     structure_only=False,
+    draft=False,
 ) -> bool:
+    structure_only = structure_only or draft
     try:
         import json
+        from lib.drafting import DRAFT_METADATA_NAME
         from lib.delivery import validate_delivery, validate_delivery_structure
 
         source = Path(source_dir).resolve()
@@ -179,7 +247,7 @@ def _test_project(
 
         # 0. 读取交付元数据；具体哈希核对要等 PreparedBuild 和声明文件
         # 路径就绪后进行，不能只依赖元数据中的历史 passed 字段。
-        meta_path = out_dir / "build-metadata.json"
+        meta_path = out_dir / (DRAFT_METADATA_NAME if draft else "build-metadata.json")
         metadata = None
         if meta_path.is_file():
             try:
@@ -187,7 +255,10 @@ def _test_project(
             except Exception as meta_exc:
                 raise ValueError(f"读取交付元数据失败: {meta_exc}") from meta_exc
 
-        paths = declared_delivery_paths(plan, out_dir)
+        paths = declared_delivery_paths(plan, out_dir, draft=draft)
+        if draft:
+            for _, path in paths:
+                _check_draft_markers(path)
         nodes = plan["nodes"]
         maps = {}
         cfg = None
@@ -212,12 +283,13 @@ def _test_project(
 
         if metadata is not None:
             violations = _metadata_contract_violations(
-                metadata, plan, prepared_for_verification, paths
+                metadata, plan, prepared_for_verification, paths,
+                fidelity="draft" if draft else "exact",
             )
             if violations:
                 raise ValueError("交付元数据契约核验未通过: " + "; ".join(violations))
         elif cfg is not None and getattr(cfg, "schema_version", 0) >= 3:
-            raise ValueError("v3 交付缺少必需的 build-metadata.json")
+            raise ValueError(f"v3 交付缺少必需的 {meta_path.name}")
         # plan() exposes a JSON-serializable parts registry; delivery validators
         # historically consume attribute-style DocumentPart objects.
         parts_registry = {
@@ -303,7 +375,9 @@ def _test_project(
                 else:
                     print(f"  [提示] 交付格式核验提示: {len(fmt_rep.violations)} 项属性偏差")
 
-        if structure_only:
+        if draft:
+            print("[通过] 草稿结构检查完成；目录页码需在 Word 中更新域后才有效，未执行 Word 页码与版式核验。")
+        elif structure_only:
             print("[通过] 结构检查完成；未执行 Word 导出、目录页码和页级版式核验。")
         else:
             print("[通过] 所有声明交付物的结构、Word 页码与版式检查完成。")
@@ -324,6 +398,7 @@ def main():
     parser.add_argument("--manifest", type=Path, help="与构建时相同的基础配置")
     parser.add_argument("--override", type=Path, action="append", default=[], help="按顺序应用构建时的覆写文件，可重复")
     parser.add_argument("--structure-only", action="store_true", help="仅检查结构与文字，不验证 Word 页码或版式")
+    parser.add_argument("--allow-draft", action="store_true", help="检查 --allow-draft 生成的 *_draft.docx（只做结构与文字核验）")
     args = parser.parse_args()
     if args.all and args.source:
         parser.error("--all 不能与 --source 同用")
@@ -342,7 +417,7 @@ def main():
         results = []
         for project in projects:
             output = (args.output_dir / project.stem) if all_projects and args.output_dir else args.output_dir
-            results.append(test_project(project, output, args.manifest, args.override, args.structure_only))
+            results.append(test_project(project, output, args.manifest, args.override, args.structure_only, args.allow_draft))
         return 0 if all(results) else 1
     except Exception as exc:
         print(f"[未通过] {exc}")

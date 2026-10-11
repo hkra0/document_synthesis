@@ -259,21 +259,25 @@ class OfficeBackend(Protocol):
 
 WW01–WW12 全部 `verified`（`skip` 不算）；跨平台页码差异为 0，或每一项差异都有已确认的原因与说明；README 的平台矩阵只列出已经验证的 Word 版本。
 
-## 10. P5：草稿模式与可选 LibreOffice 后端
+## 10. P5：草稿模式（TOC 页码域）
+
+> 2026-10-11 决定：只做页码域草稿，不实现 LibreOffice 后端。macOS 与 Windows 都已能 `exact` 构建，LibreOffice 的价值只剩 Linux，不值得长期维护一个近似排版后端。第 3.4 节保留为备选设计，本轮不实施。
 
 ### 执行动作
 
-1. 新增 `--allow-draft`：在没有 `exact` 后端时，仍生成交付物，但目录页码只来自草稿后端或留空占位，并在以下位置标注：
-   - 文件名后缀：`*_draft.docx`（可配置，但不能关闭标注）
-   - `build-diagnostics.json` 的 `fidelity: "draft"` 与原因
-   - 终端最后一行：“草稿：页码与版式未经 Microsoft Word 核验”
-2. `none` 后端加 `--allow-draft`：目录写入 Word 原生 TOC 域并设置 `updateFields`，由用户打开 Word 时更新；不填写推算的页码。
-3. 按第 3.4 节实现 `libreoffice.py`；doctor 检查 `soffice` 的路径和版本（Windows 上查找 `Program Files\LibreOffice\program\soffice.exe`）。
-4. 测试：草稿产物永远不会被标成 `exact`；没有 `--allow-draft` 时，构建必须失败，且已有交付物不被替换。
+1. 新增 `--allow-draft`：只有当前 Office 后端无法 `exact` 构建（例如 Linux，或 `--office-backend none`）时才生效；能 `exact` 时照常精确构建，该参数不起作用。
+2. 草稿构建不调用 Word、不推算页码：目录条目保持引擎原有格式，只把页码换成指向对应书签的 `PAGEREF` 域，更新前显示“?”；由用户在 Word 排版完成后全选并按 F9 更新。不标记 dirty、不写 `updateFields`：Windows 复核发现，打开时自动更新会在分页完成前求值，得到看似合理的错误页码（全是 1）。目录引用另一份交付物（拆分打印目录）时，跨文件的 `PAGEREF` 无法成立，页码位置写占位符并在诊断中说明。
+3. 草稿标注不可关闭：
+   - 交付物文件名加 `_draft` 后缀（`demo_complete.docx` → `demo_complete_draft.docx`），因此永远不会覆盖已有的精确交付物；
+   - v3 工程的元数据写入 `build-metadata_draft.json`，顶层 `fidelity: "draft"`，不覆盖精确构建的 `build-metadata.json`；
+   - 终端最后一行：“草稿：目录页码与版式未经 Microsoft Word 核验……”。
+4. 草稿构建仍执行不依赖 Word 的检查：结构核验、v3 的内容完整性与格式核验；跳过分页测量、目录收敛、PAGEREF 缓存核验和 PDF 页级 QA。
+5. `smoke_test.py --allow-draft` 核验草稿交付物（只做结构与文字检查）。
+6. 测试：没有 `--allow-draft` 时构建失败且已有交付物不被替换；草稿产物永远不会被标成 `exact`；能 `exact` 时 `--allow-draft` 不改变结果；后端声称 `draft` 保真度的页码（近似排版）仍一律拒绝。
 
 ### 退出条件
 
-在 Linux CI 上安装 LibreOffice，用最小示例跑通 `--office-backend libreoffice --allow-draft`；所有草稿标注都能被测试检查到；README 中关于草稿的表述与第 1.2 节一致。
+Linux CI 用最小示例和中文示例跑通 `--allow-draft` 构建与 `smoke_test.py --allow-draft`；所有草稿标注都能被测试检查到；在 macOS Word 中打开草稿交付物、更新域后，目录页码与同一示例的 `exact` 构建一致；README 中关于草稿的表述与第 1.2 节一致。
 
 ## 11. P6：字体可移植性
 
@@ -322,13 +326,13 @@ WW01–WW12 全部 `verified`（`skip` 不算）；跨平台页码差异为 0，
    - 删除写死的 `/private/tmp/...`（G2），改为“macOS 默认访问目录，可通过 `DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR` 修改”。
 2. **许可说明（G6）**：新增 `THIRD_PARTY_NOTICES.md`，列出依赖及其许可，重点说明 PyMuPDF 的 AGPL-3.0 或商业双许可对再分发和网络服务场景的影响。本项目代码仍为 MIT。
 3. **治理文件**：`CHANGELOG.md`（Keep a Changelog 格式，从 `1.0.0` 开始）、`SECURITY.md`（漏洞报告方式；说明工具会处理不可信 docx，以及 zip 炸弹和 XML 实体防护的现状）、`CONTRIBUTING.md`（开发环境、测试、证据规则、Skill 同步）、`.github/ISSUE_TEMPLATE/`（附 `--doctor` 输出的 bug 模板）、`.github/pull_request_template.md`。
-4. **版本与打包**：新增 `pyproject.toml`（项目元数据、依赖、`requires-python`，可选的 `document-synthesis` 命令行入口），在 `lib/__init__.py` 中定义 `__version__`，并在 `--doctor` 中输出。本轮不发布到 PyPI，只保证 `pip install .` 可用；是否上 PyPI 留到发布后再决定。
-5. **证据体积（G7）**：保留各批次的 `status.json`、摘要和哈希；1 MB 以上的原始元数据压缩后作为 GitHub Release 附件，或移到独立的 `evidence` 分支，并在原位置保留哈希与下载说明。注意：这只影响以后的克隆，历史提交中的文件仍然存在，**不改写已公开的历史**。
+4. **版本与打包**：在 `lib/__init__.py` 中定义 `__version__`，并在 `--doctor` 中输出。2026-10-11 决定：1.0 不发布到 PyPI，只支持克隆仓库后按 `requirements.txt` 安装或 `pip install -e .`；包名整理与资源打包留到以后。
+5. **证据体积（G7）**：保留各批次的 `status.json`、摘要和哈希；1 MB 以上的原始元数据压缩后作为 GitHub Release 附件（2026-10-11 决定，不使用独立分支），并在原位置保留哈希与下载说明。注意：这只影响以后的克隆，历史提交中的文件仍然存在，**不改写已公开的历史**。
 6. **安全复核**：确认解析 docx 时使用的 lxml 解析器禁用了外部实体与网络访问；确认 zip 解压有大小和数量上限。缺少的项目列入 SECURITY.md 的已知限制，或者在本批修复。
 
 ### 退出条件
 
-一位未参与开发的人（或一个全新的 agent 会话）在三个平台上只按 README 操作，就能完成安装、`--plan`、`--doctor`，以及与平台对应的构建；所有新文档中的链接都能打开（CI 加 markdown 链接检查）；`pip install .` 后命令行入口可用。
+一位未参与开发的人（或一个全新的 agent 会话）在三个平台上只按 README 操作，就能完成安装、`--plan`、`--doctor`，以及与平台对应的构建；所有新文档中的链接都能打开（CI 加 markdown 链接检查）。
 
 ## 14. P9：发布候选回归与发布
 
@@ -357,12 +361,10 @@ WW01–WW12 全部 `verified`（`skip` 不算）；跨平台页码差异为 0，
 | 证据瘦身被误认为删除历史 | 审计链不完整 | 保留哈希与下载说明；不改写 git 历史 |
 | 各 agent 的 Skill 发现路径变化 | Skill 不被加载 | 只维护一份源文件，用同步脚本分发；每次发布前按官方文档核对路径，并在 P7 中做实际试用 |
 
-## 16. 待确认事项
+## 16. 待确认事项（均已决定）
 
-以下事项会影响范围，建议在 P0 开始前确认：
-
-1. 是否有可用的 Windows + Microsoft Word 测试环境，以及 Word 版本。
-2. 最低 Python 版本选 3.9 还是 3.10。
-3. 是否接受可选的 LibreOffice 草稿后端（会增加维护量），还是只做 `none` 加 TOC 域的草稿模式。
-4. 证据瘦身采用 Release 附件还是独立分支。
-5. 是否计划发布到 PyPI（影响 P8 的打包深度和包名选择）。
+1. Windows + Microsoft Word 测试环境：Windows 11 + Microsoft 365 Word 64 位（P3/P4 已使用）。
+2. 最低 Python 版本：3.10（P1）。
+3. 草稿模式：只做 `PAGEREF` 页码域草稿，不实现 LibreOffice 后端（2026-10-11）。
+4. 证据瘦身：大体积原始证据放 GitHub Release 附件，不建独立分支（2026-10-11）。
+5. PyPI：1.0 不发布（2026-10-11）。

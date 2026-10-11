@@ -432,8 +432,14 @@ def build_deliveries(
     parts_registry=None,
     page_maps_out=None,
     prepared=None,
+    draft=False,
 ):
-    """Reassemble cheap prefixes, never re-render sources to make output variants."""
+    """Reassemble cheap prefixes, never re-render sources to make output variants.
+
+    ``draft=True`` assembles each delivery once without Word: TOC page numbers
+    become PAGEREF fields showing "?" until the user updates fields in Word,
+    and every check that needs a measured page map is skipped, not guessed.
+    """
     published_maps, staged = {}, {}
     parts_registry = parts_registry or getattr(config, "parts", {})
     page_sequences = getattr(config, "page_sequences", {})
@@ -446,6 +452,11 @@ def build_deliveries(
         return "body" in spec["parts"] or any(parts_registry.get(p) and parts_registry[p].kind == "content" for p in spec["parts"])
     specs = sorted(config.documents, key=lambda spec: not has_content_check(spec))
     for spec in specs:
+        if draft:
+            staged[spec["id"]] = _build_draft_delivery(
+                config, spec, body_path, nodes, run_dir, parts_registry, page_maps_out, prepared,
+            )
+            continue
         path = Path(run_dir) / spec["filename"]
         pdf_path = Path(run_dir) / f"qa-{spec['id']}.pdf"
         reference = spec.get("toc", {}).get("reference")
@@ -582,3 +593,29 @@ def build_deliveries(
             }
         staged[spec["id"]] = path
     return staged
+
+
+def _build_draft_delivery(config, spec, body_path, nodes, run_dir, parts_registry, page_maps_out, prepared):
+    from .drafting import draft_filename
+
+    path = Path(run_dir) / draft_filename(spec["filename"])
+    reference = spec.get("toc", {}).get("reference")
+    has_toc = "toc" in spec["parts"] or any(
+        parts_registry.get(p) and parts_registry[p].kind == "generated_toc" for p in spec["parts"]
+    )
+    if has_toc and reference is not None and reference != spec["id"]:
+        print(
+            f"[草稿] {path.name} 的目录引用另一份交付物（{reference}），跨文件无法用域更新页码，"
+            "页码位置保留为“?”；需要精确构建才能填入"
+        )
+    assemble_document(config, spec, body_path, nodes, {}, path, draft=True)
+    if prepared is not None and getattr(config, "schema_version", 1) >= 3:
+        from .verification_contracts import build_expected_delivery, stamp_output_occurrences
+
+        expected_delivery = build_expected_delivery(prepared, spec)
+        if expected_delivery.ordered_nodes:
+            stamp_output_occurrences(path, expected_delivery)
+    validate_delivery_structure(path, spec, nodes, parts_registry=parts_registry)
+    if page_maps_out is not None:
+        page_maps_out[spec["id"]] = {"fidelity": "draft"}
+    return path

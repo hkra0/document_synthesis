@@ -829,7 +829,8 @@ class WinComBackend:
             return BackendStatus(
                 False,
                 "未检测到已安装的 Microsoft Word（注册表中没有 Word.Application），无法取得精确页码；"
-                "当前可使用 --plan、格式分析类命令和 smoke_test.py --structure-only。",
+                "当前可使用 --plan、格式分析类命令和 smoke_test.py --structure-only，"
+                "或用 --allow-draft 生成页码由 Word 打开时更新的草稿。",
                 "unsupported",
             )
         if not pywin32_available():

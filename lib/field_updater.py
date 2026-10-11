@@ -244,11 +244,18 @@ class _ComplexFieldState:
         return "".join(self.instr_parts).strip()
 
 
+#: 草稿中 PAGEREF 在用户更新域之前显示的结果。
+DRAFT_PAGEREF_PLACEHOLDER = "?"
+
+
 class FieldUpdater:
     """在不破坏 OMML 和未知字段的前提下更新受控字段。"""
 
-    def __init__(self, page_map: Optional[Dict[str, Any]] = None):
+    def __init__(self, page_map: Optional[Dict[str, Any]] = None, *, defer_pagerefs: bool = False):
         self.page_map = page_map or {}
+        # 草稿构建没有页码测量：PAGEREF 一律显示占位“?”，不保留来源文档中可能
+        # 已过时的页码，由用户在 Word 排版完成后手动更新域。
+        self.defer_pagerefs = defer_pagerefs
         self.counters: Dict[str, int] = {}
         self.bookmark_text_cache: Dict[str, str] = {}
 
@@ -275,6 +282,8 @@ class FieldUpdater:
         if cmd == "SEQ":
             return self._evaluate_seq(tokens, normalised)
         if cmd == "PAGEREF":
+            if self.defer_pagerefs:
+                return DRAFT_PAGEREF_PLACEHOLDER
             return self._evaluate_pageref(tokens, normalised)
         if cmd == "REF":
             if len(tokens) < 2:

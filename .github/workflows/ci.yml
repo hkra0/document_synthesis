@@ -54,6 +54,23 @@ jobs:
         run: |
           python -c "import subprocess, sys; res = subprocess.run([sys.executable, 'synthesize.py', '--doctor', '--source', 'examples/minimal-demo']); assert res.returncode in (0, 2), f'Expected doctor exit code 0 or 2, got {res.returncode}'"
 
+      # CI runners have no Microsoft Word: build every demo as a draft (P5)
+      # and check the draft markers. bash so any failing command fails the step.
+      - name: Draft build and smoke without Word
+        shell: bash
+        run: |
+          set -euo pipefail
+          for demo in minimal chinese; do
+            src="examples/${demo}-demo/source"
+            man="examples/${demo}-demo/manifest.json"
+            python synthesize.py --allow-draft --source "$src" --manifest "$man" --output-dir "draft-out/$demo"
+            python smoke_test.py --allow-draft --source "$src" --manifest "$man" --output-dir "draft-out/$demo"
+          done
+          python synthesize.py --allow-draft --source examples/custom-format-demo/manuscript.docx \
+            --manifest examples/custom-format-demo/manifest.json --output-dir draft-out/custom
+          python smoke_test.py --allow-draft --source examples/custom-format-demo/manuscript.docx \
+            --manifest examples/custom-format-demo/manifest.json --output-dir draft-out/custom
+
       - name: Test Windows console encoding resiliency (CP936)
         if: runner.os == 'Windows'
         shell: cmd

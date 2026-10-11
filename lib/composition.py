@@ -299,7 +299,61 @@ def build_cover(config):
     return doc
 
 
-def append_toc(doc, config, spec, nodes, pages):
+#: 草稿目录的页码占位文本；装配时立即替换为 PAGEREF 域，不会留在交付物中。
+_DRAFT_PAGE_TOKEN = "DRAFTPAGEREFTOKEN"
+#: 草稿 PAGEREF 域在 Word 更新前显示的缓存值。
+DRAFT_PAGE_PLACEHOLDER = "?"
+
+
+def _field_run(rpr, *children):
+    run = OxmlElement("w:r")
+    if rpr is not None:
+        run.append(copy.deepcopy(rpr))
+    for child in children:
+        run.append(child)
+    return run
+
+
+def _fld_char(kind):
+    element = OxmlElement("w:fldChar")
+    element.set(qn("w:fldCharType"), kind)
+    return element
+
+
+def _replace_token_with_pageref(paragraph_element, bookmark_name):
+    """把目录条目中的页码占位文本换成指向书签的 PAGEREF 域，结果显示“?”。
+
+    不标记 dirty，文档也不设置 updateFields：Word 在打开时会于分页完成前求值，
+    得到看似合理的错误页码（全是 1）。页码只在用户排版完成后手动更新域时填入。
+    """
+    for text in reversed(list(paragraph_element.iter(qn("w:t")))):
+        if text.text != _DRAFT_PAGE_TOKEN:
+            continue
+        run = text.getparent()
+        rpr = run.find(qn("w:rPr"))
+        run.remove(text)
+        instruction = OxmlElement("w:instrText")
+        instruction.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+        instruction.text = f" PAGEREF {bookmark_name} \\h "
+        cached = OxmlElement("w:t")
+        cached.text = DRAFT_PAGE_PLACEHOLDER
+        anchor = run
+        for new_run in (
+            _field_run(rpr, _fld_char("begin")),
+            _field_run(rpr, instruction),
+            _field_run(rpr, _fld_char("separate")),
+            _field_run(rpr, cached),
+            _field_run(rpr, _fld_char("end")),
+        ):
+            anchor.addnext(new_run)
+            anchor = new_run
+        if all(child.tag == qn("w:rPr") for child in run):
+            run.getparent().remove(run)
+        return
+    raise ValueError(f"草稿目录条目中没有找到页码占位: {bookmark_name}")
+
+
+def append_toc(doc, config, spec, nodes, pages, draft=False):
     if getattr(config, "schema_version", 1) >= 3 and getattr(config, "resolved_format", None):
         from .style_applier import add_styled_heading, add_styled_toc_entry
         p = add_styled_heading(
@@ -319,9 +373,14 @@ def append_toc(doc, config, spec, nodes, pages):
         set_run_fonts(p.add_run("目  录"), config.fonts["title"], 22, bold=True, font_en=config.fonts["en"])
         add_bookmark(p._p, BOUNDARIES["toc"], 900000)
     from .styles import add_toc_entry_with_hyperlink
+    reference = spec.get("toc", {}).get("reference")
+    # 跨文件的 PAGEREF 不成立：引用另一份交付物的目录在草稿中只写占位符。
+    draft_fields = draft and (reference is None or reference == spec.get("id"))
     for index, node in enumerate(toc_nodes(nodes)):
         name = node["bookmark_name"]
         page_val = pages.get(name, 1)  # Draft only; final publication requires exact comparison.
+        if draft:
+            page_val = _DRAFT_PAGE_TOKEN if draft_fields else DRAFT_PAGE_PLACEHOLDER
         if isinstance(page_val, dict):
             page_label = page_val.get("expected_label") or str(page_val.get("printed_page", 1))
         elif isinstance(page_val, str):
@@ -345,6 +404,8 @@ def append_toc(doc, config, spec, nodes, pages):
                 fonts=config.fonts,
             )
             toc_paragraph = doc.paragraphs[-1]
+        if draft_fields:
+            _replace_token_with_pageref(toc_paragraph._p, name)
         add_bookmark(toc_paragraph._p, f"_Synth_entry_{index:05d}", 910000 + index)
 
 
@@ -414,7 +475,7 @@ class FrontImporter(PackageImporter):
         )
 
 
-def assemble_document(config, spec, body_path, nodes, pages, out_path, odd_page_padding=None):
+def assemble_document(config, spec, body_path, nodes, pages, out_path, odd_page_padding=None, draft=False):
     parts = spec["parts"]
     is_legacy = set(parts).issubset({"cover", "toc", "body"}) and not getattr(config, "regions", None) and not getattr(config, "page_sequences", None)
 
@@ -429,7 +490,7 @@ def assemble_document(config, spec, body_path, nodes, pages, out_path, odd_page_
             if "cover" in parts:
                 section = front.add_section(WD_SECTION_START.NEW_PAGE)
                 _apply_config_page_setup(section, config)
-            append_toc(front, config, spec, nodes, pages)
+            append_toc(front, config, spec, nodes, pages, draft=draft)
             mark_end(front, "toc")
         _clear_front_footers(front)
         if "body" not in parts:
@@ -495,7 +556,7 @@ def assemble_document(config, spec, body_path, nodes, pages, out_path, odd_page_
                 pdoc = Document()
                 neutralize_document_styles(pdoc)
                 _apply_config_page_setup(pdoc.sections[0], config)
-                append_toc(pdoc, config, spec, nodes, pages)
+                append_toc(pdoc, config, spec, nodes, pages, draft=draft)
                 if pid != "toc":
                     p_first = next(pdoc.element.body.iter(qn("w:p")), None)
                     if p_first is not None:
@@ -630,6 +691,6 @@ def assemble_document(config, spec, body_path, nodes, pages, out_path, odd_page_
 
     # 更新文档内的受控字段（题注序列 SEQ、书签引用 REF、页码引用 PAGEREF）
     from .field_updater import FieldUpdater
-    FieldUpdater(pages if isinstance(pages, dict) else {}).update_document_fields(result)
+    FieldUpdater(pages if isinstance(pages, dict) else {}, defer_pagerefs=draft).update_document_fields(result)
 
     result.save(str(out_path))
