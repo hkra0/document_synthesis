@@ -234,6 +234,11 @@ def main() -> int:
         "--office-backend", choices=["auto", "word", "none"], default=None,
         help="指定 Office 自动化后端；未指定时读取 DOCUMENT_SYNTHESIS_OFFICE_BACKEND，默认 auto",
     )
+    parser.add_argument(
+        "--allow-draft", action="store_true",
+        help="没有可精确分页的 Word 时生成草稿（*_draft.docx）：目录页码由 Word 打开时更新，不推算；"
+             "能精确分页时不起作用",
+    )
 
     # B6 格式分析与编译参数
     parser.add_argument("--analyze-format", metavar="DOCX", help="分析参考样本文档，生成样式聚类与 HTML 校正报告")
@@ -260,6 +265,9 @@ def main() -> int:
 
     if args.office_backend is not None:
         os.environ["DOCUMENT_SYNTHESIS_OFFICE_BACKEND"] = args.office_backend
+    if args.allow_draft:
+        from lib.drafting import ALLOW_DRAFT_ENV
+        os.environ[ALLOW_DRAFT_ENV] = "1"
     from lib.office import OfficeUnsupportedError, get_backend
     try:
         get_backend()

@@ -728,7 +728,7 @@ class UnifiedSynthesizer:
         cls, source_dir: Path, output_dir: Optional[Path] = None,
         manifest_path: Optional[Path] = None, override_paths=None, keep_work: bool = False,
     ) -> Dict[str, Path]:
-        prepared =cls.prepare_build(source_dir, manifest_path, override_paths=override_paths)
+        prepared = cls.prepare_build(source_dir, manifest_path, override_paths=override_paths)
         cls.verify_build_plan_hashes(prepared)
         source_path = prepared.source_path
         config = prepared.config
@@ -767,6 +767,12 @@ class UnifiedSynthesizer:
             rendered_body = cls.render_body(prepared, run_dir)
             body_path = rendered_body.path
             nodes = list(rendered_body.nodes)
+            from .drafting import DRAFT_METADATA_NAME, DRAFT_NOTICE, build_fidelity
+
+            fidelity = build_fidelity()
+            draft = fidelity == "draft"
+            if draft:
+                print("[草稿] 当前 Office 后端无法精确分页；按 --allow-draft 生成草稿，不调用 Word、不推算页码")
             print(f"[2/3] 装配并核验 {len(config.documents)} 份交付物")
             staged = build_deliveries(
                 config,
@@ -775,6 +781,7 @@ class UnifiedSynthesizer:
                 run_dir,
                 page_maps_out=page_evidence,
                 prepared=prepared,
+                draft=draft,
             )
 
             # 2.5 内容完整性与有效格式核验及元数据留存 (针对 v3 清单工程)
@@ -957,20 +964,27 @@ class UnifiedSynthesizer:
                 # one that is published after all verification has completed.
                 prepared.verify_inputs_unchanged()
 
-                metadata_path = run_dir / "build-metadata.json"
+                metadata_path = run_dir / (DRAFT_METADATA_NAME if draft else "build-metadata.json")
                 metadata_dict = generate_build_metadata(
                     config,
                     staged,
                     plan.get("source_hashes", {}),
                     qa_summary=qa_summary,
                     page_evidence=page_evidence,
+                    fidelity=fidelity,
                 )
                 with open(metadata_path, "w", encoding="utf-8") as f:
                     json.dump(metadata_dict, f, ensure_ascii=False, indent=2)
                 staged["__metadata__"] = metadata_path
 
-            print("[3/3] 所有交付物已通过检查，发布本次成果")
-            return _publish_deliveries(staged, out_base, run_dir)
+            if draft:
+                print("[3/3] 草稿已通过结构与内容检查（未做分页与页级核验），发布本次草稿")
+            else:
+                print("[3/3] 所有交付物已通过检查，发布本次成果")
+            published = _publish_deliveries(staged, out_base, run_dir)
+            if draft:
+                print(DRAFT_NOTICE)
+            return published
         except (ValueError, OSError, SourceStrategyError, OfficeExportError) as exc:
             error = BuildError(str(exc))
             if is_v3:
@@ -1004,8 +1018,13 @@ def generate_build_metadata(
     source_hashes: Dict[str, str],
     qa_summary: Optional[Dict[str, Any]] = None,
     page_evidence: Optional[Dict[str, Any]] = None,
+    fidelity: str = "exact",
 ) -> Dict[str, Any]:
-    """生成符合 B7 审计规范的构建元数据 build-metadata.json 内容。"""
+    """生成符合 B7 审计规范的构建元数据 build-metadata.json 内容。
+
+    ``fidelity`` 为 ``draft`` 时，交付物页码未经 Word 测量，文件名为实际发布的
+    ``*_draft.docx``。
+    """
     from datetime import datetime, timezone
     import platform
     from .build_plan import compute_config_contract_hash
@@ -1035,7 +1054,8 @@ def generate_build_metadata(
         file_path = staged.get(doc_id)
         if file_path and file_path.is_file():
             delivery_info = {
-                "filename": spec["filename"],
+                "filename": file_path.name,
+                "fidelity": fidelity,
                 "parts": spec.get("parts", []),
                 "sha256": compute_file_sha256(file_path),
             }
@@ -1080,6 +1100,7 @@ def generate_build_metadata(
         "schema_version": getattr(config, "schema_version", 3 if is_v3 else 2),
         "project_name": getattr(config, "project_name", "unknown"),
         "build_timestamp": datetime.now(timezone.utc).isoformat(),
+        "fidelity": fidelity,
         "format": format_info,
         "cover": getattr(getattr(config, "cover_spec", None), "to_dict", lambda: {})(),
         "configuration": {

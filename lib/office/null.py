@@ -13,7 +13,7 @@ class NullBackend:
     fidelity: str = "unsupported"
 
     def static_status(self) -> BackendStatus:
-        available_now = "当前可使用 --plan、格式分析类命令和 smoke_test.py --structure-only。"
+        available_now = "当前可使用 --plan、格式分析类命令和 smoke_test.py --structure-only，或用 --allow-draft 生成页码由 Word 打开时更新的草稿。"
         if sys.platform == "win32":
             # Windows + Word 由 WinComBackend 负责；走到这里说明 Office 后端被显式设为 none，
             # 或 Windows COM 后端模块无法导入。未安装 Word 的提示由 WinComBackend 给出。

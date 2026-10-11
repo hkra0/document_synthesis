@@ -247,8 +247,10 @@ class _ComplexFieldState:
 class FieldUpdater:
     """在不破坏 OMML 和未知字段的前提下更新受控字段。"""
 
-    def __init__(self, page_map: Optional[Dict[str, Any]] = None):
+    def __init__(self, page_map: Optional[Dict[str, Any]] = None, *, defer_pagerefs: bool = False):
         self.page_map = page_map or {}
+        # 草稿构建没有页码测量：PAGEREF 保留原缓存，由 Word 打开时更新。
+        self.defer_pagerefs = defer_pagerefs
         self.counters: Dict[str, int] = {}
         self.bookmark_text_cache: Dict[str, str] = {}
 
@@ -275,6 +277,8 @@ class FieldUpdater:
         if cmd == "SEQ":
             return self._evaluate_seq(tokens, normalised)
         if cmd == "PAGEREF":
+            if self.defer_pagerefs:
+                return None
             return self._evaluate_pageref(tokens, normalised)
         if cmd == "REF":
             if len(tokens) < 2:

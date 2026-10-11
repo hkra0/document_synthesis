@@ -228,7 +228,8 @@ class OfficeBackendContractTests(unittest.TestCase):
         with self.assertRaises(OfficeUnsupportedError):
             get_backend("libreoffice")
         self.assertNotIn("libreoffice", NullBackend().static_status().reason)
-        self.assertNotIn("--allow-draft", NullBackend().static_status().reason)
+        # P5 起无 Word 时可用页码域草稿，提示应指向它。
+        self.assertIn("--allow-draft", NullBackend().static_status().reason)
 
     def test_doctor_exit_codes(self) -> None:
         """测试 --doctor 退出码规范: 0 (exact 就绪), 2 (草稿/分析就绪), 1 (依赖缺失或参数错误)。"""

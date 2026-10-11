@@ -78,7 +78,7 @@ document_synthesis/
 - Python 3.10 以上版本
 - macOS + Microsoft Word：通过 AppleScript 完成导出和页级检查，页码已核验
 - Windows + Microsoft Word：通过 COM（pywin32，随 `requirements.txt` 在 Windows 上自动安装）完成导出和页级检查。已在 Windows 11 + Microsoft 365 Word（64 位，Current Channel）上通过三个示例与 WW01–WW12 验收矩阵，同一组夹具的页码与 macOS Word 逐项一致；仅验证过 Microsoft 365，Office 2019/2021 等较旧版本未验证。页码只对生成它的 Word 环境有效（字体、Word 版本不同可能导致分页不同）
-- 没有 Word 的 Windows 与 Linux 可用于其他处理，但不能把 LibreOffice 的版面当作 Word 的等价结果
+- 没有 Word 的 Windows 与 Linux：可运行 `--plan`、格式分析类命令，并可用 `--allow-draft` 生成草稿（见下文“草稿模式”）；不能把 LibreOffice 的版面当作 Word 的等价结果
 - Windows 上把文中的 `python3` 换成 `python`（或 `py`）
 
 ### 2. 安装依赖
@@ -111,7 +111,7 @@ python3 synthesize.py --project 示例项目 --plan
 
 `--doctor` 返回标准退出码：
 - `0`：环境完全就绪，支持 `exact` 精确构建（Python 依赖齐全、输入合法、Office 探针通过）。
-- `2`：Python 依赖就绪，但无可用精确 Office 自动化（例如 Linux，或没有 Word 的 Windows / macOS）；可运行 `--plan`、格式分析类命令和 `smoke_test.py --structure-only`，不能构建带目录页码的交付物。
+- `2`：Python 依赖就绪，但无可用精确 Office 自动化（例如 Linux，或没有 Word 的 Windows / macOS）；可运行 `--plan`、格式分析类命令和 `smoke_test.py --structure-only`，也可用 `--allow-draft` 生成草稿，但不能构建页码已核验的交付物。
 - `1`：缺少 Python 核心依赖（`docx`、`pymupdf` 等）、输入无效，或 Office 后端配置无效。
 
 可用 `--office-backend {auto,word,none}` 或环境变量 `DOCUMENT_SYNTHESIS_OFFICE_BACKEND` 指定后端；命令行参数优先。在 Windows 上，`--doctor` 还会报告 Word 版本与位数、安装方式，以及 PowerPoint 是否可用；没有 PowerPoint 时只有 `.pptx` 转换不可用。
@@ -195,6 +195,21 @@ python3 smoke_test.py --source examples/custom-format-demo/manuscript.docx \
 若 `--doctor` 报告“未获准控制 Microsoft Word”，请在 macOS“系统设置 → 隐私与安全性 → 自动化”中允许实际运行构建的宿主应用控制 Word。Full Disk Access 只处理文件访问，不能替代 Automation 权限；若报告“受限上下文”，请改从可访问 macOS 图形自动化服务的本机 Codex 或终端运行。
 
 Automation 探针成功不代表 Word 已能读写工作目录。若导出出现 “Grant File Access”，需由用户确认并授予所需输出目录的访问权限；未完成导出与最终 QA 前，不能声称分页验收通过。
+
+### 草稿模式（没有 Word 时）
+
+没有可精确分页的 Microsoft Word 时（例如 Linux），加 `--allow-draft` 可以生成草稿：
+
+```bash
+python3 synthesize.py --allow-draft --source examples/minimal-demo/source --manifest examples/minimal-demo/manifest.json --output-dir output/demo-draft
+python3 smoke_test.py --allow-draft --source examples/minimal-demo/source --manifest examples/minimal-demo/manifest.json --output-dir output/demo-draft
+```
+
+- 草稿不调用 Word，也不推算页码：目录条目的格式不变，页码位置是指向对应标题的 `PAGEREF` 域。用 Word 打开时按提示更新域（或全选后按 F9），目录页码才会填入；在 macOS Word 上更新域后，示例的目录页码与精确构建逐项一致。
+- 草稿交付物文件名带 `_draft` 后缀（例如 `demo_complete_draft.docx`），v3 工程的元数据写入 `build-metadata_draft.json`（`fidelity` 为 `draft`），终端最后一行是草稿提示。草稿永远不会覆盖已有的精确交付物。
+- 目录在另一份交付物中（拆分打印目录）时，跨文件的域无法更新，页码位置保留为“?”，需要精确构建。
+- 草稿仍执行结构核验与 v3 的内容、格式核验，但跳过分页测量、目录收敛和逐页版式检查。
+- 能精确分页时 `--allow-draft` 不起作用，照常精确构建。
 
 ### 5. 自动化测试
 
