@@ -78,12 +78,15 @@ class FakeDocument:
         self.path = path
         self.bookmark_starts = dict(app.bookmark_starts)
         self.pages_by_start = dict(app.pages_by_start)
+        self.FullName = path
         self.Bookmarks = FakeBookmarks(self)
         self.calls: List[Any] = []
         self.closed_with = None
 
     def Repaginate(self) -> None:  # noqa: N802
         self.calls.append("Repaginate")
+        if self.app.on_repaginate:
+            self.app.on_repaginate(self)
 
     def Range(self, start: int, end: int) -> FakeRange:  # noqa: N802
         assert start == end
@@ -101,17 +104,38 @@ class FakeDocument:
 
     def Close(self, SaveChanges: int) -> None:  # noqa: N802,N803
         self.closed_with = SaveChanges
+        if self in self.app.open_documents:
+            self.app.open_documents.remove(self)
 
 
 class FakeDocuments:
     def __init__(self, app: "FakeWordApp") -> None:
         self.app = app
 
+    @property
+    def Count(self) -> int:  # noqa: N802
+        return len(self.app.open_documents)
+
+    def __call__(self, index: int) -> FakeDocument:
+        return self.app.open_documents[index - 1]
+
     def Open(self, **kwargs: Any) -> FakeDocument:  # noqa: N802
         self.app.open_kwargs = kwargs
         doc = FakeDocument(self.app, kwargs["FileName"])
         self.app.documents.append(doc)
+        self.app.open_documents.append(doc)
         return doc
+
+
+class FakeUserDocument:
+    """用户经资源管理器打开、被系统路由进自动化实例的文档。"""
+
+    def __init__(self, path: str) -> None:
+        self.FullName = path
+        self.closed_with = None
+
+    def Close(self, SaveChanges: int) -> None:  # noqa: N802,N803
+        raise AssertionError("worker 不应关闭用户的文档")
 
 
 class FakeWordApp:
@@ -119,19 +143,23 @@ class FakeWordApp:
     Build = "16.0.99999"
     Path = r"C:\Program Files\Microsoft Office\root\Office16"
 
-    def __init__(self, bookmark_starts=None, pages_by_start=None, fail_export=None) -> None:
+    def __init__(self, bookmark_starts=None, pages_by_start=None, fail_export=None, on_repaginate=None) -> None:
         self.bookmark_starts = bookmark_starts or {}
         self.pages_by_start = pages_by_start or {}
         self.fail_export = fail_export
+        self.on_repaginate = on_repaginate
         self.Documents = FakeDocuments(self)
         self.documents: List[FakeDocument] = []
+        self.open_documents: List[Any] = []
         self.quit_with = None
+        self.quit_count = 0
         self.Visible = True
         self.DisplayAlerts = -1
         self.open_kwargs: Dict[str, Any] = {}
 
     def Quit(self, SaveChanges: int = None) -> None:  # noqa: N802,N803
         self.quit_with = SaveChanges
+        self.quit_count += 1
 
 
 class FakePresentation:
@@ -617,7 +645,8 @@ class RunWorkerProcessTests(unittest.TestCase):
             self.assertIn("最后一次 COM 调用: Document.Repaginate", message)
             logs = list((Path(tmp) / "diagnostics").glob("timeout-*-inspect-*.log"))
             self.assertEqual(len(logs), 1)
-            self.assertIn(str(logs[0]), message)
+            # 父进程会解析长路径；CI 的临时目录可能是 8.3 短路径（RUNNER~1），只比较文件名。
+            self.assertIn(logs[0].name, message)
             self.assertIn("Documents.Open", logs[0].read_text(encoding="utf-8"))
 
     def test_worker_receives_timeout_and_dumps_stack_before_it(self) -> None:
