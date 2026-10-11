@@ -1,9 +1,9 @@
 # P3 实施记录：Windows COM 后端
 
-> **文档状态**：已实施；macOS 回归已通过（45 项基线全部通过），补充项待复核  
+> **文档状态**：已完成 (Completed)  
 > **基线依赖**：P2（Office 后端抽象，`main` = `335a821`）  
 > **核心目标**：按[执行计划](windows-and-public-release-plan.md)第 3.3 节与第 8 节，在 Windows 上用 Microsoft Word / PowerPoint COM 实现 `OfficeBackend` 协议，使 Windows + Word 能以 `exact` 完成构建；四种故障（强制结束 Word、目标文件被占用、书签缺失、超时）都给出可读报错，且不残留 `WINWORD.EXE` 和半成品交付物。  
-> **验收分工**：Windows 侧由本批次在本机完成；macOS 真实 Word 回归（45 项基线）由 macOS 环境复核后，才能把状态改为“已完成”。
+> **验收分工**：Windows 侧由本批次在本机完成；macOS 真实 Word 回归（45 项基线）与补充项复核已在 macOS 环境通过（2026-10-11）。
 
 ---
 
@@ -84,6 +84,6 @@ COM 调用、数值常量和导出参数见 [Office 后端对照](office-backend
 
 ## 6. 未完成与后续
 
-- **macOS 回归**：已在 macOS 上通过（离线 383 项通过、14 项跳过；真实 Word 45 项基线全部通过，`test_win_word_faults` 的 6 项在 macOS 上按设计跳过）。本轮补充的用户文档隔离测试与文档修改提交后，需再做一轮 macOS 复核。
+- **macOS 回归**：已在 macOS 上通过（离线 383 项通过、14 项跳过；真实 Word 45 项基线全部通过，`test_win_word_faults` 的 6 项在 macOS 上按设计跳过）。补充的用户文档隔离测试与已知事项记录（`ed21034`）复核通过：离线 384 项通过、15 项跳过（Windows 专属用例按设计跳过）；该轮未改动共用生产代码，45 项基线结论不变。
 - **P4**：WW01–WW12 验收矩阵、跨平台页码对照、较旧 Office 版本、`environment.json` 证据，均不在本批次范围内。在 P4 完成前，README 中 Windows 只写“预览支持”。
 - **未实现的计划项**：超过 259 字符的输入路径目前依赖工作目录较短（输入总是先复制到短路径的工作目录），没有单独测试；字体检查属于 P6。
