@@ -9,7 +9,7 @@
     "body": "FangSong_GB2312"
   },
   "cover": {
-    "template": "examples/chinese-demo/templates/cover.docx",
+    "template": "templates/cover.docx",
     "main_title": "文档合成"
   },
   "output": {

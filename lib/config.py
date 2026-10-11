@@ -101,27 +101,24 @@ def clean_match_key(text: str) -> str:
 def find_template_file(template_hint: Optional[Union[str, Path]] = None, project_dir: Optional[Path] = None) -> Optional[Path]:
     """
     智能动态查找封面与目录模板文件，不硬编码文件名：
-    1. 优先使用显式指定的 template_hint（若文件存在）
-    2. 动态扫描 templates 目录下的所有 .docx 模板文件：
+    1. 显式指定的 template_hint 必须存在（相对路径按 project_dir 解析），否则抛出 ConfigError，
+       绝不静默回退到其他模板
+    2. 未指定模板时，动态扫描 templates 目录下的所有 .docx 模板文件：
        - 若目录下仅有 1 个 .docx 文件，直接作为模板使用（无论其为何名称）
        - 若有多个，按文件名相关度评分匹配（优先匹配包含 封面/目录/模版/模板/cover/template 的文档）
     3. 在项目目录或根目录下兜底查找相关的 .docx 模板
     """
     project_root = Path(__file__).resolve().parent.parent
 
-    # 1. 显式指定的提示路径
+    # 1. 显式指定的模板：找不到即为配置错误，不能退回扫描到的其他（可能是私有的）模板。
     if template_hint:
         p = Path(template_hint)
-        if p.is_file():
-            return p.resolve()
-        for base in [project_root, project_root / "templates", project_dir, project_dir / "templates" if project_dir else None, Path(".")]:
-            if base:
-                cand = (base / p.name).resolve()
-                if cand.is_file():
-                    return cand
-                cand2 = (base / p).resolve()
-                if cand2.is_file():
-                    return cand2
+        if not p.is_absolute():
+            p = Path(project_dir or ".") / p
+        p = p.resolve()
+        if not p.is_file():
+            raise ConfigError(f"封面模板不存在: {p}")
+        return p
 
     # 2. 动态扫描 templates 目录（优先查找项目专属 templates，次之全局 templates）。
     # 不扫描项目材料根目录，避免把任意支撑 Word 文档误当作封面模板。
@@ -872,7 +869,8 @@ class ProjectConfig:
             if not path.is_file():
                 raise ConfigError(f"封面模板不存在: {path}")
             return path
-        return find_template_file(self.cover.get("template"), self.project_dir)
+        template = self.cover.get("template")
+        return find_template_file(template if isinstance(template, str) else None, self.project_dir)
 
     def _is_ignored(self, node: Dict[str, Any]) -> bool:
         rel = node.get("file") or node.get("folder", "")
