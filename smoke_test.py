@@ -149,7 +149,23 @@ def test_project(
     override_paths=None,
     structure_only=False,
 ) -> bool:
-    """所有来源策略共用计划和交付验证；任一声明交付物缺失即失败。"""
+    """所有来源策略共用计划和交付验证；任一声明交付物缺失即失败。
+
+    同一项目的全部页码核验共用一个 Office 会话（Windows 上只启动一次 Word）。
+    """
+    from lib.office import office_session
+
+    with office_session():
+        return _test_project(source_dir, output_dir, manifest_path, override_paths, structure_only)
+
+
+def _test_project(
+    source_dir: Path,
+    output_dir: Optional[Path] = None,
+    manifest_path: Optional[Path] = None,
+    override_paths=None,
+    structure_only=False,
+) -> bool:
     try:
         import json
         from lib.delivery import validate_delivery, validate_delivery_structure

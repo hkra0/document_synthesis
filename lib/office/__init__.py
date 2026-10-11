@@ -6,7 +6,8 @@
 
 import os
 import sys
-from typing import Optional
+from contextlib import contextmanager
+from typing import Iterator, Optional
 
 from .base import (
     BackendStatus,
@@ -27,6 +28,7 @@ __all__ = [
     "OfficeUnsupportedError",
     "NullBackend",
     "get_backend",
+    "office_session",
     "set_backend",
 ]
 
@@ -37,6 +39,29 @@ def set_backend(backend: Optional[OfficeBackend]) -> None:
     """显式设置全局活动后端（用于单元测试与依赖注入）。"""
     global _ACTIVE_BACKEND
     _ACTIVE_BACKEND = backend
+
+
+@contextmanager
+def office_session() -> Iterator[OfficeBackend]:
+    """一次构建（或一次 smoke 检查）内复用同一个 Office 实例。
+
+    后端提供 ``session()`` 时（Windows COM），块内 :func:`get_backend` 都返回同一个后端
+    实例，Word 操作共用一个 worker 与一个 Word；其他后端（macOS、空后端）原样执行，
+    行为不变。
+    """
+    global _ACTIVE_BACKEND
+    backend = get_backend()
+    start = getattr(backend, "session", None)
+    if start is None:
+        yield backend
+        return
+    previous = _ACTIVE_BACKEND
+    _ACTIVE_BACKEND = backend
+    try:
+        with start():
+            yield backend
+    finally:
+        _ACTIVE_BACKEND = previous
 
 
 def get_backend(name: Optional[str] = None) -> OfficeBackend:

@@ -8,12 +8,12 @@
 | --- | --- | --- |
 | 实现文件 | `lib/office/mac_applescript.py` | `lib/office/win_com.py`（父进程）、`lib/office/win_com_worker.py`（子进程） |
 | 驱动 | `osascript` 执行 AppleScript | pywin32 COM，`DispatchEx("Word.Application")` |
-| Word 实例 | 用户正在运行的 Word（AppleScript 只能连接单实例） | 每次操作启动一个独立、隐藏的 Word 实例，结束时 `Quit` |
-| 隔离 | 每次一个 `osascript` 子进程 | 每次一个 worker 子进程，stdin/stdout 各一行 JSON，日志走 stderr |
-| 超时 | AppleScript `with timeout of 600 seconds`，`subprocess` 620 秒 | 父进程 600 秒（`DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT` 可调），超时后结束 worker，并按 pid 文件结束本次启动的 `WINWORD.EXE` |
+| Word 实例 | 用户正在运行的 Word（AppleScript 只能连接单实例） | 一次构建（或一次 `smoke_test.py` 项目检查）共用一个独立、隐藏的 Word 实例，会话结束时 `Quit`；会话外（如 `--doctor`）每次操作启动一个；`DOCUMENT_SYNTHESIS_WORD_SESSION=0` 恢复每次操作一个实例。实例中出现用户经资源管理器打开的文档时，不 `Quit`，改为显示并移交给用户 |
+| 隔离 | 每次一个 `osascript` 子进程 | worker 子进程：单次模式 stdin/stdout 各一行 JSON；会话模式每个请求一行 JSON、一行带同一 `id` 的结果。日志走 stderr。PowerPoint 转换始终是单次模式 |
+| 超时 | AppleScript `with timeout of 600 seconds`，`subprocess` 620 秒 | 父进程每个请求 600 秒（`DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT` 可调；会话中逐请求计时），超时后结束 worker，并按 pid 文件结束本次启动的 `WINWORD.EXE`；下一个请求启动新的 worker |
 | 静态检查 | `/usr/bin/osascript` 与 `/Applications/Microsoft Word.app` 是否存在 | 注册表 `HKCR\Word.Application\CLSID` 与 pywin32 是否可导入 |
 | `--doctor` 探针 | `tell application "Microsoft Word" to get name` | 启动隔离实例读取 `Version`、`Build`、`Path`（推断位数与 Click-to-Run）后退出 |
-| 工作目录 | 固定的 `/private/tmp/document-synthesis-word-access`（避免每次弹出文件夹授权） | `%TEMP%\document-synthesis-word-access\job-<随机>`，每次操作结束删除 |
+| 工作目录 | 固定的 `/private/tmp/document-synthesis-word-access`（避免每次弹出文件夹授权） | `%TEMP%\document-synthesis-word-access\job-<随机>`，每次操作结束删除；会话的 pid 文件在 `job-session-<随机>`，会话结束删除 |
 | 宏 | 沿用 Word 设置 | `AutomationSecurity = 3`（强制禁用） |
 
 `DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR` 在两个平台上都可以覆盖工作目录。

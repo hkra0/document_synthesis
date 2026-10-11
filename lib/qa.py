@@ -55,6 +55,20 @@ def word_automation_status() -> Tuple[bool, str]:
     return stat.available, stat.reason
 
 
+def word_build_status() -> Tuple[bool, str]:
+    """构建元数据用的 Word 可用性；不启动 Word。
+
+    后端记录了本次构建实际调用过的 Word（Windows 会话）时用该结果，
+    否则用静态前置条件检查。字段含义与 :func:`word_automation_status` 相同。
+    """
+    backend = get_backend()
+    recorded = getattr(backend, "session_status", None)
+    stat = recorded() if callable(recorded) else None
+    if stat is None:
+        stat = backend.static_status()
+    return stat.available, stat.reason
+
+
 def _applescript_string(value: str) -> str:
     """将 POSIX 路径安全嵌入 AppleScript 字符串。"""
     return value.replace("\\", "\\\\").replace('"', '\\"')

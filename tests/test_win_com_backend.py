@@ -10,6 +10,9 @@
 4. PowerPoint 单实例：用户已打开时不退出应用
 5. 父进程：成功、失败、异常退出、超时；失败时不替换目标文件、不留工作目录
 6. 只按 pid 文件中的 PID + 映像名 + 创建时间结束进程
+7. 会话：多个请求复用同一个 worker 与 Word；请求间校验失败保留实例，COM 错误、崩溃、
+   超时后回收并在下一个请求时重启；超时只报告当前请求的挂起步骤；用户文档移交而不退出；
+   构建元数据不再启动 Word
 """
 
 import json
@@ -78,12 +81,15 @@ class FakeDocument:
         self.path = path
         self.bookmark_starts = dict(app.bookmark_starts)
         self.pages_by_start = dict(app.pages_by_start)
+        self.FullName = path
         self.Bookmarks = FakeBookmarks(self)
         self.calls: List[Any] = []
         self.closed_with = None
 
     def Repaginate(self) -> None:  # noqa: N802
         self.calls.append("Repaginate")
+        if self.app.on_repaginate:
+            self.app.on_repaginate(self)
 
     def Range(self, start: int, end: int) -> FakeRange:  # noqa: N802
         assert start == end
@@ -101,17 +107,38 @@ class FakeDocument:
 
     def Close(self, SaveChanges: int) -> None:  # noqa: N802,N803
         self.closed_with = SaveChanges
+        if self in self.app.open_documents:
+            self.app.open_documents.remove(self)
 
 
 class FakeDocuments:
     def __init__(self, app: "FakeWordApp") -> None:
         self.app = app
 
+    @property
+    def Count(self) -> int:  # noqa: N802
+        return len(self.app.open_documents)
+
+    def __call__(self, index: int) -> FakeDocument:
+        return self.app.open_documents[index - 1]
+
     def Open(self, **kwargs: Any) -> FakeDocument:  # noqa: N802
         self.app.open_kwargs = kwargs
         doc = FakeDocument(self.app, kwargs["FileName"])
         self.app.documents.append(doc)
+        self.app.open_documents.append(doc)
         return doc
+
+
+class FakeUserDocument:
+    """用户经资源管理器打开、被系统路由进自动化实例的文档。"""
+
+    def __init__(self, path: str) -> None:
+        self.FullName = path
+        self.closed_with = None
+
+    def Close(self, SaveChanges: int) -> None:  # noqa: N802,N803
+        raise AssertionError("worker 不应关闭用户的文档")
 
 
 class FakeWordApp:
@@ -119,19 +146,23 @@ class FakeWordApp:
     Build = "16.0.99999"
     Path = r"C:\Program Files\Microsoft Office\root\Office16"
 
-    def __init__(self, bookmark_starts=None, pages_by_start=None, fail_export=None) -> None:
+    def __init__(self, bookmark_starts=None, pages_by_start=None, fail_export=None, on_repaginate=None) -> None:
         self.bookmark_starts = bookmark_starts or {}
         self.pages_by_start = pages_by_start or {}
         self.fail_export = fail_export
+        self.on_repaginate = on_repaginate
         self.Documents = FakeDocuments(self)
         self.documents: List[FakeDocument] = []
+        self.open_documents: List[Any] = []
         self.quit_with = None
+        self.quit_count = 0
         self.Visible = True
         self.DisplayAlerts = -1
         self.open_kwargs: Dict[str, Any] = {}
 
     def Quit(self, SaveChanges: int = None) -> None:  # noqa: N802,N803
         self.quit_with = SaveChanges
+        self.quit_count += 1
 
 
 class FakePresentation:
@@ -694,6 +725,595 @@ class RunWorkerProcessTests(unittest.TestCase):
                     proc.kill()
                     proc.wait()
 
+
+
+# ---------------------------------------------------------------------------
+# 会话：一次构建复用同一个 worker 与 Word 实例
+# ---------------------------------------------------------------------------
+
+def _paged_app(cls=None) -> "FakeWordApp":
+    return (cls or FakeWordApp)(bookmark_starts={"cover": 1, "body": 9}, pages_by_start={1: (1, 1), 9: (3, 1)})
+
+
+class SessionWorkerLoopTests(unittest.TestCase):
+    """worker 会话主循环：用内存中的请求行与假 COM 对象驱动 ``serve_session``。"""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.apps: List[FakeWordApp] = []
+        self.output: List[Dict[str, Any]] = []
+        self.dumps: List[Any] = []
+        self.consumed: List[str] = []
+        self.patches = [
+            patch.object(win_com_worker, "_completion", win_com_worker._Completion()),
+            patch.object(win_com_worker, "_opened_paths", set()),
+        ]
+        for item in self.patches:
+            item.start()
+
+    def tearDown(self) -> None:
+        for item in reversed(self.patches):
+            item.stop()
+        self.tmp.cleanup()
+
+    def _dispatch(self, factory=None):
+        def dispatch(progid: str) -> Any:
+            self.assertEqual(progid, "Word.Application")
+            app = (factory or _paged_app)()
+            self.apps.append(app)
+            return app
+        return dispatch
+
+    def _serve(self, requests, dispatch=None, pid_file=None, **kwargs) -> int:
+        """``requests`` 可以是生成器：在两次请求之间修改假 Word 的状态。"""
+        lines = (json.dumps(item) + "\n" for item in requests)
+
+        def read_line() -> str:
+            line = next(lines, "")
+            if line:
+                self.consumed.append(line)
+            return line
+
+        return win_com_worker.serve_session(
+            {"op": "session", "pid_file": pid_file},
+            read_line,
+            lambda text: self.output.append(json.loads(text)),
+            dispatch or self._dispatch(),
+            _no_pid,
+            arm_stack_dump=lambda seconds: self.dumps.append(("arm", seconds)),
+            cancel_stack_dump=lambda: self.dumps.append("cancel"),
+            **kwargs,
+        )
+
+    def _inspect(self, request_id: int, names=("cover", "body"), timeout: float = 600) -> Dict[str, Any]:
+        return {"op": "inspect", "id": request_id, "timeout": timeout, "names": list(names),
+                "docx": str(self.dir / f"p{request_id}.docx"), "pdf": str(self.dir / f"p{request_id}.pdf")}
+
+    def test_requests_reuse_one_word_instance(self) -> None:
+        code = self._serve([
+            self._inspect(1),
+            {"op": "export_pdf", "id": 2, "timeout": 600, "docx": str(self.dir / "e.docx"), "pdf": str(self.dir / "e.pdf")},
+            {"op": "convert_doc", "id": 3, "timeout": 600, "src": str(self.dir / "a.doc"), "dst": str(self.dir / "a.docx")},
+            self._inspect(4),
+            {"op": "close"},
+        ])
+        self.assertEqual(code, 0)
+        self.assertEqual(len(self.apps), 1, "整个会话只启动一次 Word")
+        app = self.apps[0]
+        self.assertEqual([item["id"] for item in self.output], [1, 2, 3, 4])
+        self.assertTrue(all(item["ok"] for item in self.output))
+        self.assertEqual(self.output[0]["page_map"], "cover\t1\t1\nbody\t3\t1\n")
+        self.assertEqual(self.output[0]["word"]["word_version"], "16.0", "首个请求带回 Word 版本，供构建元数据复用")
+        self.assertNotIn("word", self.output[1])
+        self.assertEqual(len(app.documents), 4)
+        self.assertTrue(all(doc.closed_with == 0 for doc in app.documents), "每个请求结束时关闭自己的文档")
+        self.assertEqual(app.open_documents, [])
+        self.assertEqual(app.quit_count, 1, "会话结束时退出一次 Word")
+        self.assertEqual(app.quit_with, 0)
+        self.assertFalse(app.Visible)
+        self.assertEqual(self.dumps, [("arm", 597.0), "cancel"] * 4, "每个请求在超时前 3 秒导出调用栈，结束后取消")
+
+    def test_end_of_input_also_quits_word(self) -> None:
+        self._serve([self._inspect(1)])
+        self.assertEqual(self.apps[0].quit_count, 1)
+
+    def test_session_without_requests_never_starts_word(self) -> None:
+        self.assertEqual(self._serve([{"op": "close"}]), 0)
+        self.assertEqual(self.apps, [])
+
+    def test_validation_failure_keeps_the_instance(self) -> None:
+        """书签缺失等校验失败只影响当前请求；下一个请求仍在同一个 Word 中执行。"""
+        self._serve([self._inspect(1, names=("cover", "absent")), self._inspect(2), {"op": "close"}])
+        self.assertFalse(self.output[0]["ok"])
+        self.assertIn("缺少书签: absent", self.output[0]["error"])
+        self.assertNotIn("restart", self.output[0])
+        self.assertFalse((self.dir / "p1.pdf").exists())
+        self.assertTrue(self.output[1]["ok"])
+        self.assertEqual(len(self.apps), 1)
+        self.assertTrue(all(doc.closed_with == 0 for doc in self.apps[0].documents))
+        self.assertEqual(self.apps[0].quit_count, 1)
+
+    def test_unsupported_operation_keeps_the_instance(self) -> None:
+        self._serve([{"op": "convert_pptx", "id": 1}, self._inspect(2), {"op": "close"}])
+        self.assertIn("会话不支持", self.output[0]["error"])
+        self.assertTrue(self.output[1]["ok"])
+
+    def test_com_error_retires_the_instance_and_ends_the_session(self) -> None:
+        """COM 错误之后实例状态不可信：结果带 restart，退出 Word，不再读取后续请求。"""
+        error = FakeComError(-2147023174, "The RPC server is unavailable.", None, None)
+        code = self._serve([
+            {"op": "export_pdf", "id": 1, "timeout": 600, "docx": "x.docx", "pdf": str(self.dir / "o.pdf")},
+            self._inspect(2),
+        ], dispatch=self._dispatch(lambda: FakeWordApp(fail_export=error)))
+        self.assertEqual(code, 1)
+        self.assertEqual(len(self.output), 1)
+        self.assertTrue(self.output[0]["restart"])
+        self.assertIn("意外退出", self.output[0]["error"])
+        self.assertEqual(len(self.consumed), 1, "失败后不再处理后续请求")
+        self.assertEqual(self.apps[0].documents[0].closed_with, 0)
+        self.assertEqual(self.apps[0].quit_count, 1)
+        self.assertEqual(self.dumps, [("arm", 597.0), "cancel"])
+
+    def test_launch_failure_retires_the_session(self) -> None:
+        def dispatch(progid):
+            raise FakeComError(-2146959355, "Server execution failed", None, None)  # CO_E_SERVER_EXEC_FAILURE
+
+        self.assertEqual(self._serve([self._inspect(1), self._inspect(2)], dispatch=dispatch), 1)
+        self.assertTrue(self.output[0]["restart"])
+        self.assertIn("首次运行", self.output[0]["error"])
+
+    def test_exited_word_between_requests_is_replaced(self) -> None:
+        """两个请求之间 Word 已退出（被用户或其他程序结束）：启动新实例继续，不再调用旧实例。"""
+
+        class ExitedApp(FakeWordApp):
+            exited = False
+
+            @property
+            def Version(self):  # noqa: N802
+                if self.exited:
+                    raise FakeComError(-2147023174, "The RPC server is unavailable.", None, None)
+                return "16.0"
+
+        def requests():
+            yield self._inspect(1)
+            self.apps[0].exited = True
+            yield self._inspect(2)
+            yield {"op": "close"}
+
+        self._serve(requests(), dispatch=self._dispatch(lambda: _paged_app(ExitedApp)),
+                    instance_alive=lambda pid_file: False)
+        self.assertTrue(all(item["ok"] for item in self.output))
+        self.assertEqual(len(self.apps), 2)
+        self.assertIn("word", self.output[1], "新实例的版本信息随结果返回")
+        self.assertEqual(self.apps[0].quit_count, 0)
+        self.assertEqual(self.apps[1].quit_count, 1)
+
+    def test_unresponsive_word_between_requests_retires_the_session(self) -> None:
+        """Word 进程仍在却无法调用：不另起实例，结束会话，由父进程按 pid 文件回收。"""
+
+        class HungApp(FakeWordApp):
+            hung = False
+
+            @property
+            def Version(self):  # noqa: N802
+                if self.hung:
+                    raise FakeComError(-2147023170, "The remote procedure call failed.", None, None)
+                return "16.0"
+
+        def requests():
+            yield self._inspect(1)
+            self.apps[0].hung = True
+            yield self._inspect(2)
+
+        code = self._serve(requests(), dispatch=self._dispatch(lambda: _paged_app(HungApp)),
+                           instance_alive=lambda pid_file: True)
+        self.assertEqual(code, 1)
+        self.assertTrue(self.output[1]["restart"])
+        self.assertEqual(len(self.apps), 1)
+
+    def test_user_document_in_the_instance_is_handed_over_not_quit(self) -> None:
+        """用户在构建期间双击打开的文档会被系统路由进隐藏实例：退出时移交而不是 Quit。"""
+        pid_file = self.dir / "office.pid"
+        pid_file.write_text(json.dumps({"pid": 4242, "image": "winword.exe", "created": 7}), encoding="utf-8")
+
+        def requests():
+            yield self._inspect(1)
+            self.apps[0].open_documents.append(FakeUserDocument(r"C:\Users\someone\报告.docx"))
+            yield self._inspect(2)
+            yield {"op": "close"}
+
+        self._serve(requests(), pid_file=str(pid_file))
+        app = self.apps[0]
+        self.assertTrue(all(item["ok"] for item in self.output))
+        self.assertEqual(app.quit_count, 0, "有用户文档时不能退出 Word")
+        self.assertTrue(app.Visible)
+        self.assertEqual(app.DisplayAlerts, -1)
+        self.assertEqual(len(app.open_documents), 1)
+        self.assertIsNone(win_com.read_pid_record(pid_file), "pid 记录被撤销，父进程不会结束这个 Word")
+        killed = []
+        self.assertIsNone(cleanup_recorded_office(pid_file, 0, terminate=killed.append))
+        self.assertEqual(killed, [])
+
+    def test_leftover_own_document_is_closed_before_quit(self) -> None:
+        """本次打开却未能关闭的文档不算用户文档：退出前再关闭一次，然后正常 Quit。"""
+        app = FakeWordApp()
+        leftover = FakeDocument(app, str(self.dir / "pagination.docx"))
+        app.open_documents.append(leftover)
+        win_com_worker._opened_paths.add(win_com_worker._normalized(leftover.FullName))
+        win_com_worker.shutdown_word(app, None)
+        self.assertEqual(leftover.closed_with, 0)
+        self.assertEqual(app.quit_count, 1)
+
+    def test_one_shot_mode_also_hands_over_user_documents(self) -> None:
+        class Routed(FakeWordApp):
+            def __init__(self) -> None:
+                super().__init__()
+                self.open_documents.append(FakeUserDocument(r"C:\Users\someone\a.docx"))
+
+        result = handle({"op": "probe"}, dispatch=self._dispatch(Routed), word_pid_of=_no_pid)
+        self.assertTrue(result["ok"])
+        self.assertEqual(self.apps[0].quit_count, 0)
+        self.assertTrue(self.apps[0].Visible)
+
+
+FAKE_SESSION_WORKER = [sys.executable, str(ROOT / "tests" / "fake_word_session_worker.py")]
+
+
+class WordSessionProcessTests(unittest.TestCase):
+    """父进程 WordSession + 替身会话 worker 子进程（真实 serve_session、假 COM）。"""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.work = self.dir / "word-access"
+        self.env = patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR": str(self.work)})
+        self.env.start()
+        self.sessions: List[win_com.WordSession] = []
+
+    def tearDown(self) -> None:
+        for session in self.sessions:
+            session.close()
+        self.env.stop()
+        self.tmp.cleanup()
+
+    def _session(self, **env: str) -> win_com.WordSession:
+        session = win_com.WordSession(command=FAKE_SESSION_WORKER)
+        self.sessions.append(session)
+        self.fault_env = env
+        return session
+
+    def _inspect(self, session, index: int, names=("cover", "body"), timeout: float = 30) -> Dict[str, Any]:
+        # 替身 worker 读取的环境变量在 Popen 时确定，所以每次请求都带上（只影响新启动的 worker）。
+        with patch.dict(os.environ, self.fault_env):
+            return session.request({"op": "inspect", "names": list(names), "docx": str(self.dir / f"p{index}.docx"),
+                                    "pdf": str(self.dir / f"p{index}.pdf")}, timeout)
+
+    def _jobs(self) -> List[Path]:
+        return list(self.work.glob("job-*")) if self.work.exists() else []
+
+    def test_requests_share_one_worker_and_close_cleans_up(self) -> None:
+        session = self._session()
+        self.assertEqual(self._jobs(), [], "第一个请求之前不启动 worker")
+        first = self._inspect(session, 1)
+        self.assertEqual(first["page_map"], "cover\t1\t1\nbody\t3\t1\n")
+        self.assertEqual(first["word"]["word_version"], "16.0")
+        for index in (2, 3):
+            self.assertTrue(self._inspect(session, index)["ok"])
+        self.assertTrue((self.dir / "p3.pdf").is_file())
+        self.assertEqual(session.workers_started, 1)
+        self.assertEqual(session._stderr_text().count("step: DispatchEx(Word.Application)"), 1)
+        self.assertEqual([path.name.startswith("job-session-") for path in self._jobs()], [True])
+        proc = session._proc
+        session.close()
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(self._jobs(), [], "会话结束后删除工作目录")
+
+    def test_failure_between_requests_keeps_the_session(self) -> None:
+        session = self._session()
+        self.assertTrue(self._inspect(session, 1)["ok"])
+        with self.assertRaises(OfficeBackendError) as ctx:
+            self._inspect(session, 2, names=("cover", "absent"))
+        self.assertIn("缺少书签: absent", str(ctx.exception))
+        self.assertTrue(self._inspect(session, 3)["ok"])
+        self.assertEqual(session.workers_started, 1)
+
+    def test_com_error_restarts_worker_for_next_request(self) -> None:
+        session = self._session(FAKE_WORD_FAULT="2:com")
+        self.assertTrue(self._inspect(session, 1)["ok"])
+        first_proc = session._proc
+        with self.assertRaises(OfficeBackendError) as ctx:
+            self._inspect(session, 2)
+        self.assertNotIsInstance(ctx.exception, OfficeTimeoutError)
+        self.assertIn("意外退出", str(ctx.exception))
+        self.assertIsNotNone(first_proc.poll(), "失败的 worker 已退出")
+        self.assertFalse((self.dir / "p2.pdf").exists())
+        self.assertEqual(self._jobs(), [])
+        result = self._inspect(session, 3)
+        self.assertTrue(result["ok"])
+        self.assertIn("word", result, "新 worker 启动了新的 Word")
+        self.assertEqual(session.workers_started, 2)
+
+    def test_worker_crash_is_readable_and_next_request_restarts(self) -> None:
+        session = self._session(FAKE_WORD_FAULT="2:crash")
+        self.assertTrue(self._inspect(session, 1)["ok"])
+        with self.assertRaises(OfficeBackendError) as ctx:
+            self._inspect(session, 2)
+        self.assertIn("异常退出（退出码 3）", str(ctx.exception))
+        self.assertEqual(self._jobs(), [])
+        self.assertTrue(self._inspect(session, 3)["ok"])
+        self.assertEqual(session.workers_started, 2)
+
+    def test_timeout_in_second_request_reports_its_own_step(self) -> None:
+        """第二个请求超时：报错只给出该请求的最后一步，保存诊断日志，下一个请求启动新 worker。"""
+        session = self._session(FAKE_WORD_FAULT="2:hang")
+        self.assertTrue(self._inspect(session, 1)["ok"])
+        started = time.monotonic()
+        with self.assertRaises(OfficeTimeoutError) as ctx:
+            self._inspect(session, 2, timeout=5)
+        self.assertLess(time.monotonic() - started, 20)
+        message = str(ctx.exception)
+        self.assertIn("超时（5 秒）", message)
+        self.assertIn("最后一次 COM 调用: Document.Repaginate", message)
+        logs = list((self.work / "diagnostics").glob("timeout-*-inspect-*.log"))
+        self.assertEqual(len(logs), 1)
+        self.assertIn(logs[0].name, message)
+        log = logs[0].read_text(encoding="utf-8")
+        self.assertIn("request: inspect #2", log)
+        self.assertIn("Timeout", log, "超时前导出了调用栈")
+        self.assertFalse((self.dir / "p2.pdf").exists())
+        self.assertEqual(self._jobs(), [])
+        self.assertTrue(self._inspect(session, 3)["ok"])
+        self.assertEqual(session.workers_started, 2)
+
+    def test_stalled_quit_at_close_is_bounded(self) -> None:
+        """会话结束时 Word 关闭阶段卡住：worker 的 Quit 看门狗结束 worker，close 不会等满超时。"""
+        session = self._session(FAKE_WORD_QUIT_HANG="1", FAKE_WORD_QUIT_GRACE="1")
+        self.assertTrue(self._inspect(session, 1)["ok"])
+        proc = session._proc
+        started = time.monotonic()
+        session.close()
+        self.assertLess(time.monotonic() - started, 20)
+        self.assertEqual(proc.returncode, 0)
+        self.assertIn("Quit 之后", session._stderr_text())
+        self.assertEqual(self._jobs(), [])
+
+    def test_close_without_requests_is_a_no_op(self) -> None:
+        session = self._session()
+        session.close()
+        self.assertEqual(session.workers_started, 0)
+
+    def test_last_step_ignores_previous_request(self) -> None:
+        stderr = (
+            "[win_com_worker] request: inspect #1 @ 10:00:00\n"
+            "[win_com_worker] step: Document.ExportAsFixedFormat @ 10:00:01\n"
+            "[win_com_worker] request: inspect #2 @ 10:00:02\n"
+        )
+        self.assertIsNone(win_com.last_worker_step(stderr))
+        self.assertEqual(win_com.last_worker_step(stderr + "[win_com_worker] step: Documents.Open @ 10:00:03\n"),
+                         "Documents.Open")
+
+    @unittest.skipUnless(sys.platform == "win32", "按 PID 结束进程只在 Windows 上实现")
+    def test_session_timeout_terminates_only_the_recorded_process(self) -> None:
+        """会话中超时只结束 pid 文件记录的实例；另一个同名进程代表用户自己的 Word。"""
+        sleeper = [sys.executable, "-c", "import time; time.sleep(120)"]
+        owned = subprocess.Popen(sleeper)
+        user = subprocess.Popen(sleeper)
+        try:
+            session = self._session(FAKE_WORD_FAULT="2:hang", FAKE_WORD_RECORD_PID=str(owned.pid))
+            self.assertTrue(self._inspect(session, 1)["ok"])
+            time.sleep(1)
+            self.assertIsNone(owned.poll(), "请求之间不结束会话中的实例")
+            with self.assertRaises(OfficeTimeoutError):
+                self._inspect(session, 2, timeout=3)
+            owned.wait(timeout=15)
+            self.assertIsNotNone(owned.returncode)
+            self.assertIsNone(user.poll(), "未记录的同名进程不应被结束")
+        finally:
+            for proc in (owned, user):
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.wait()
+
+
+class FakeSession:
+    """替代 WordSession：记录请求，产物与 FakeRunner 相同。"""
+
+    instances: List["FakeSession"] = []
+
+    def __init__(self) -> None:
+        self.requests: List[Dict[str, Any]] = []
+        self.closed = 0
+        self.runner = FakeRunner(page_map="_Synth_body\t2\t1\n")
+        FakeSession.instances.append(self)
+
+    def request(self, request: Dict[str, Any], timeout: float) -> Dict[str, Any]:
+        self.requests.append(dict(request, timeout=timeout))
+        result = dict(self.runner(request, timeout, Path("unused")))
+        details = {"word_version": "16.0", "word_build": "16.0.20430", "word_bitness": 64}
+        if request["op"] == "probe":
+            result.update(details)
+        if len(self.requests) == 1:
+            result["word"] = details
+        return result
+
+    def close(self) -> None:
+        self.closed += 1
+
+
+class BackendSessionTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.work = self.dir / "word-access"
+        self.patches = [
+            patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR": str(self.work)}),
+            patch.object(win_com, "on_windows", lambda: True),
+            patch.object(win_com, "progid_registered", lambda progid: True),
+            patch.object(win_com, "pywin32_available", lambda: True),
+        ]
+        for item in self.patches:
+            item.start()
+        FakeSession.instances = []
+        self.docx = self.dir / "final.docx"
+        self.docx.write_bytes(b"PK-docx")
+        self.runner = FakeRunner(page_map="_Synth_body\t2\t1\n")
+        self.backend = WinComBackend(runner=self.runner, session_factory=FakeSession)
+
+    def tearDown(self) -> None:
+        for item in reversed(self.patches):
+            item.stop()
+        set_backend(None)
+        self.tmp.cleanup()
+
+    def test_word_operations_in_session_share_it(self) -> None:
+        pptx = self.dir / "slides.pptx"
+        pptx.write_bytes(b"pptx")
+        with self.backend.session():
+            for _ in range(3):
+                report = self.backend.inspect_bookmarks(self.docx, self.dir / "final.pdf", ["_Synth_body"])
+            self.assertEqual(report.bookmarks, {"_Synth_body": {"physical_page": 2, "printed_page": 1}})
+            self.backend.export_pdf(self.docx, self.dir / "export.pdf")
+            self.backend.convert_pptx_to_pdf(pptx, self.dir / "slides.pdf")
+            self.assertEqual(self.backend.probe().details["word_version"], "16.0")
+        session = FakeSession.instances[0]
+        self.assertEqual([item["op"] for item in session.requests], ["inspect"] * 3 + ["export_pdf", "probe"])
+        self.assertTrue(all(item["timeout"] == 600 for item in session.requests[:4]), "每个请求仍有自己的超时")
+        self.assertEqual(session.requests[4]["timeout"], 120)
+        self.assertNotEqual(Path(session.requests[0]["docx"]), self.docx.resolve(), "Word 只能打开私有副本")
+        self.assertEqual([item["op"] for item in self.runner.requests], ["convert_pptx"], "PowerPoint 仍走单次模式")
+        self.assertEqual(session.closed, 1)
+        self.assertEqual(list(self.work.glob("job-*")), [])
+
+    def test_failed_request_in_session_keeps_existing_pdf(self) -> None:
+        pdf = self.dir / "final.pdf"
+        pdf.write_bytes(b"previous")
+        with self.backend.session():
+            self.backend._session.runner.error = OfficeTimeoutError("等待超时")
+            with self.assertRaises(OfficeTimeoutError):
+                self.backend.inspect_bookmarks(self.docx, pdf, ["_Synth_body"])
+        self.assertEqual(pdf.read_bytes(), b"previous")
+        self.assertEqual(list(self.work.glob("job-*")), [])
+
+    def test_outside_session_each_operation_is_one_shot(self) -> None:
+        self.backend.inspect_bookmarks(self.docx, self.dir / "final.pdf", ["_Synth_body"])
+        self.assertEqual(FakeSession.instances, [])
+        self.assertEqual([item["op"] for item in self.runner.requests], ["inspect"])
+
+    def test_session_is_closed_when_the_block_fails(self) -> None:
+        with self.assertRaises(RuntimeError):
+            with self.backend.session():
+                self.backend.export_pdf(self.docx, self.dir / "export.pdf")
+                raise RuntimeError("构建失败")
+        self.assertEqual(FakeSession.instances[0].closed, 1)
+        self.backend.export_pdf(self.docx, self.dir / "after.pdf")
+        self.assertEqual([item["op"] for item in self.runner.requests], ["export_pdf"], "会话结束后回到单次模式")
+
+    def test_nested_session_reuses_outer(self) -> None:
+        with self.backend.session():
+            with self.backend.session():
+                self.backend.export_pdf(self.docx, self.dir / "a.pdf")
+            self.backend.export_pdf(self.docx, self.dir / "b.pdf")
+        self.assertEqual(len(FakeSession.instances), 1)
+        self.assertEqual(FakeSession.instances[0].closed, 1)
+        self.assertEqual(len(FakeSession.instances[0].requests), 2)
+
+    def test_session_can_be_disabled(self) -> None:
+        with patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_WORD_SESSION": "0"}), self.backend.session():
+            self.backend.export_pdf(self.docx, self.dir / "a.pdf")
+        self.assertEqual(FakeSession.instances, [])
+        self.assertEqual([item["op"] for item in self.runner.requests], ["export_pdf"])
+
+    def test_injected_runner_without_factory_never_starts_a_real_session(self) -> None:
+        backend = WinComBackend(runner=self.runner)
+        with backend.session():
+            backend.export_pdf(self.docx, self.dir / "a.pdf")
+        self.assertEqual([item["op"] for item in self.runner.requests], ["export_pdf"])
+
+    def test_session_status_reuses_recorded_word_without_launching(self) -> None:
+        self.assertIsNone(self.backend.session_status(), "未调用过 Word 时没有可复用的结果")
+        with self.backend.session():
+            self.backend.inspect_bookmarks(self.docx, self.dir / "final.pdf", ["_Synth_body"])
+        status = self.backend.session_status()
+        self.assertTrue(status.available)
+        self.assertEqual(status.fidelity, "exact")
+        self.assertIn("Microsoft Word 16.0 (build 16.0.20430), 64 位", status.reason)
+        self.assertTrue(status.details["powerpoint_registered"])
+        self.assertEqual(len(FakeSession.instances[0].requests), 1, "取状态不发出任何请求")
+
+    def test_office_session_shares_backend_and_restores(self) -> None:
+        from lib.office import office_session
+
+        with patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_OFFICE_BACKEND": "win-word"}), \
+                patch.object(win_com, "WordSession", FakeSession):
+            self.assertIsNot(get_backend(), get_backend(), "会话外每次得到新的后端实例")
+            with office_session() as backend:
+                self.assertIsInstance(backend, WinComBackend)
+                self.assertIs(get_backend(), backend)
+                get_backend().export_pdf(self.docx, self.dir / "a.pdf")
+                get_backend().export_pdf(self.docx, self.dir / "b.pdf")
+            self.assertIsNot(get_backend(), backend)
+        self.assertEqual(len(FakeSession.instances), 1)
+        self.assertEqual(len(FakeSession.instances[0].requests), 2)
+        self.assertEqual(FakeSession.instances[0].closed, 1)
+
+    def test_office_session_passes_through_backends_without_sessions(self) -> None:
+        from lib.office import NullBackend, office_session
+        from lib.office.mac_applescript import MacAppleScriptBackend
+
+        self.assertFalse(hasattr(MacAppleScriptBackend(), "session"), "macOS 后端不参与会话")
+        null = NullBackend()
+        set_backend(null)
+        with office_session() as backend:
+            self.assertIs(backend, null)
+        self.assertIs(get_backend(), null)
+
+
+class BuildMetadataWordStatusTests(unittest.TestCase):
+    """构建元数据记录 Word 可用性时不再启动 Word。"""
+
+    class NoProbeBackend:
+        name = "fake"
+        fidelity = "exact"
+
+        def __init__(self, recorded=None) -> None:
+            self.recorded = recorded
+
+        def static_status(self):
+            from lib.office import BackendStatus
+            return BackendStatus(True, "Microsoft Word 精确分页可用。", "exact")
+
+        def probe(self):
+            raise AssertionError("构建元数据不应再启动 Word 探针")
+
+        def session_status(self):
+            return self.recorded
+
+    def tearDown(self) -> None:
+        set_backend(None)
+
+    def test_static_status_when_no_word_was_used(self) -> None:
+        from lib.qa import word_build_status
+
+        set_backend(self.NoProbeBackend())
+        self.assertEqual(word_build_status(), (True, "Microsoft Word 精确分页可用。"))
+
+    def test_recorded_session_status_is_reused(self) -> None:
+        from lib.office import BackendStatus
+        from lib.qa import word_build_status
+
+        set_backend(self.NoProbeBackend(BackendStatus(True, "Automation 会话成功: Microsoft Word 16.0。", "exact")))
+        self.assertEqual(word_build_status(), (True, "Automation 会话成功: Microsoft Word 16.0。"))
+
+    def test_generate_build_metadata_keeps_fields_without_probe(self) -> None:
+        from types import SimpleNamespace
+        from lib.engine import generate_build_metadata
+
+        set_backend(self.NoProbeBackend())
+        config = SimpleNamespace(documents=[], project_name="demo", schema_version=3, override_paths=[])
+        environment = generate_build_metadata(config, {}, {})["environment"]
+        self.assertIs(environment["word_available"], True)
+        self.assertEqual(environment["word_automation"], {"available": True, "reason": "Microsoft Word 精确分页可用。"})
 
 if __name__ == "__main__":
     unittest.main()
