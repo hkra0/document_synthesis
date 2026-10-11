@@ -179,8 +179,9 @@ def find_template_file(template_hint: Optional[Union[str, Path]] = None, project
         if not f_dir or not f_dir.exists():
             continue
         candidates = [
-            f for f in f_dir.glob("*.docx")
-            if not f.name.startswith("~$") and not f.name.startswith(".")
+            f for f in f_dir.iterdir()
+            if f.is_file() and f.suffix.lower() == ".docx"
+            and not f.name.startswith(("~$", "."))
             and ("封面" in f.name or "模版" in f.name or "模板" in f.name)
         ]
         if candidates:
@@ -193,15 +194,34 @@ def _is_comment_key(key: str) -> bool:
     return isinstance(key, str) and key.startswith("_comment")
 
 
+WINDOWS_RESERVED_NAMES = frozenset({
+    "CON", "PRN", "AUX", "NUL",
+    *(f"COM{i}" for i in range(1, 10)),
+    *(f"LPT{i}" for i in range(1, 10)),
+})
+WINDOWS_FORBIDDEN_CHARS = frozenset('<>:"/\\|?*')
+
+
+def _is_windows_reserved_name(name: str) -> bool:
+    stem = name.split(".")[0].strip().upper()
+    return stem in WINDOWS_RESERVED_NAMES
+
+
 def _validate_filename(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ConfigError(f"output.{field_name} 必须是非空 DOCX 文件名。")
     candidate = Path(value)
     if (candidate.is_absolute() or candidate.name != value or candidate.suffix.lower() != ".docx"
-            or any(char in value for char in ("/", "\\", ":"))
+            or any(char in WINDOWS_FORBIDDEN_CHARS for char in value)
             or any(ord(char) < 32 for char in value)
-            or value.startswith((".", "~$")) or value != value.strip()):
-        raise ConfigError(f"output.{field_name} 只能是输出目录内的 .docx 文件名，不能包含路径。")
+            or any(unicodedata.category(char) == "Cc" for char in value)
+            or value.startswith((".", "~$"))
+            or value.endswith((".", " "))
+            or candidate.stem.endswith((".", " "))
+            or value != value.strip()):
+        raise ConfigError(f"output.{field_name} 只能是输出目录内的合法 .docx 文件名，不能包含路径、Windows 非法字符或尾部空格/点。")
+    if _is_windows_reserved_name(value) or _is_windows_reserved_name(candidate.stem):
+        raise ConfigError(f"output.{field_name} 不能使用 Windows 保留设备名称 ({candidate.stem})。")
     return candidate.name
 
 
@@ -213,9 +233,13 @@ def _validate_project_name(value: Any) -> str:
     """The name also becomes an output directory and profile lookup component."""
     if (not isinstance(value, str) or not value or value != value.strip()
             or value.startswith((".", "~$"))
-            or any(char in value for char in ("/", "\\", ":"))
+            or value.endswith((".", " "))
+            or any(char in WINDOWS_FORBIDDEN_CHARS for char in value)
+            or any(ord(char) < 32 for char in value)
             or any(unicodedata.category(char) == "Cc" for char in value)):
-        raise ConfigError("project_name 必须是安全的单级目录名，不能包含路径、控制字符、首尾空白或以 .、~$ 开头。")
+        raise ConfigError("project_name 必须是安全的单级目录名，不能包含路径、Windows 非法字符、控制字符、首尾空白/点或以 .、~$ 开头。")
+    if _is_windows_reserved_name(value):
+        raise ConfigError(f"project_name 不能使用 Windows 保留设备名称 ({value})。")
     return value
 
 

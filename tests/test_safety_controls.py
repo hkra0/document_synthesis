@@ -12,12 +12,32 @@ sys.path.insert(0, str(ROOT))
 from lib.config import ConfigError, ProjectConfig
 from lib.engine import UnifiedSynthesizer
 from lib.qa import OfficeExportError, get_exact_printed_heading_pages, word_automation_status
+from lib.office import BackendStatus, set_backend
+from lib.office.mac_applescript import MacAppleScriptBackend
 from lib.scanner import flatten_tree_nodes
 from lib.source_strategies import build_outline
 from lib.renderers import render_docx_file, render_pdf_file, sanitize_ole_and_external_links, set_pdf_render_cache_dir
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls, qn
 from docx import Document
+
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def _mac_word_backend_ready():
+    """Drive the macOS backend's probe on any host, with Word reported installed."""
+    backend = MacAppleScriptBackend()
+    set_backend(backend)
+    try:
+        with patch.object(
+            MacAppleScriptBackend, "static_status",
+            return_value=BackendStatus(True, "Word 已安装", "exact"),
+        ):
+            yield backend
+    finally:
+        set_backend(None)
 
 
 class SafetyControlsTest(unittest.TestCase):
@@ -33,8 +53,8 @@ class SafetyControlsTest(unittest.TestCase):
             "stdout": "",
             "stderr": "Not authorized to send Apple events to Microsoft Word. (-1743)",
         })()
-        with patch("lib.qa.word_export_status", return_value=(True, "Word 已安装")), patch(
-            "lib.qa.subprocess.run", return_value=completed
+        with _mac_word_backend_ready(), patch(
+            "lib.office.mac_applescript.subprocess.run", return_value=completed
         ):
             passed, message = word_automation_status()
         self.assertFalse(passed)
@@ -47,8 +67,8 @@ class SafetyControlsTest(unittest.TestCase):
             "stdout": "",
             "stderr": 'Can’t get application id "com.microsoft.Word". (-1728)',
         })()
-        with patch("lib.qa.word_export_status", return_value=(True, "Word 已安装")), patch(
-            "lib.qa.subprocess.run", return_value=completed
+        with _mac_word_backend_ready(), patch(
+            "lib.office.mac_applescript.subprocess.run", return_value=completed
         ):
             passed, message = word_automation_status()
         self.assertFalse(passed)
@@ -60,8 +80,8 @@ class SafetyControlsTest(unittest.TestCase):
             "stdout": "Microsoft Word\n",
             "stderr": "",
         })()
-        with patch("lib.qa.word_export_status", return_value=(True, "Word 已安装")), patch(
-            "lib.qa.subprocess.run", return_value=completed
+        with _mac_word_backend_ready(), patch(
+            "lib.office.mac_applescript.subprocess.run", return_value=completed
         ) as run:
             passed, message = word_automation_status()
         self.assertTrue(passed)

@@ -6,7 +6,8 @@ Verifies:
    addresses exist in any tracked repository text files (excluding the LICENSE copyright line).
 2. Proper .gitattributes line ending (eol=lf) and binary definitions are configured.
 3. Required exclusion rules in .gitignore exist.
-4. All evidence-hashes.json records strictly match current disk files.
+4. Evidence-hashes.json records match: tracked files strictly; ignored raw
+   evidence (logs, DOCX/PDF exports kept only locally) when present.
 """
 
 from __future__ import annotations
@@ -47,6 +48,8 @@ class RepoHygieneTest(unittest.TestCase):
                 ["git", "ls-files"],
                 cwd=REPO_ROOT,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
             tracked_files = [line.strip() for line in out.splitlines() if line.strip()]
         except Exception as exc:
@@ -94,6 +97,7 @@ class RepoHygieneTest(unittest.TestCase):
         self.assertIn("*.json", text)
         self.assertIn("*.md", text)
         self.assertIn("*.py", text)
+        self.assertIn("*.toml", text)
         self.assertIn("eol=lf", text)
         self.assertIn("*.docx binary", text)
         self.assertIn("*.png binary", text)
@@ -115,19 +119,38 @@ class RepoHygieneTest(unittest.TestCase):
             REPO_ROOT / "docs" / "acceptance" / "word-followup" / "evidence-hashes.json",
         ]
 
+        try:
+            out = subprocess.check_output(
+                ["git", "ls-files"], cwd=REPO_ROOT, text=True,
+                encoding="utf-8", errors="replace",
+            )
+        except Exception as exc:
+            self.skipTest(f"git ls-files unavailable: {exc}")
+        tracked = {line.strip() for line in out.splitlines() if line.strip()}
+
         mismatches: list[str] = []
+        checked_tracked = 0
         for hash_file in evidence_hash_files:
             self.assertTrue(hash_file.is_file(), f"Missing hash file: {hash_file}")
             records = json.loads(hash_file.read_text(encoding="utf-8"))
 
             for file_key, expected_hash in records.items():
-                target = REPO_ROOT / file_key
-                if not target.is_file():
-                    target = hash_file.parent / file_key
+                candidates = [REPO_ROOT / file_key, hash_file.parent / file_key]
+                rel_candidates = {
+                    c.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+                    for c in candidates
+                }
+                is_tracked = bool(rel_candidates & tracked)
+                target = next((c for c in candidates if c.is_file()), None)
 
-                if not target.is_file():
-                    mismatches.append(f"File not found: {file_key} (in {hash_file.name})")
+                if target is None:
+                    # Raw evidence is gitignored and exists only where it was
+                    # produced; a tracked file must always be present.
+                    if is_tracked:
+                        mismatches.append(f"File not found: {file_key} (in {hash_file.name})")
                     continue
+                if is_tracked:
+                    checked_tracked += 1
 
                 actual_hash = hashlib.sha256(target.read_bytes()).hexdigest()
                 if actual_hash != expected_hash:
@@ -141,6 +164,7 @@ class RepoHygieneTest(unittest.TestCase):
             [],
             "Evidence hashes do not match current disk files:\n" + "\n".join(mismatches),
         )
+        self.assertGreater(checked_tracked, 0, "No tracked evidence file was verified.")
 
 
 if __name__ == "__main__":

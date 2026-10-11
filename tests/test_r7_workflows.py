@@ -337,6 +337,8 @@ class R7WorkflowTest(unittest.TestCase):
             cwd=Path(__file__).resolve().parents[1],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("hard-case-target", result.stdout)

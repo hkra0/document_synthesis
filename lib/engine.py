@@ -10,6 +10,7 @@ import json
 import re
 import hashlib
 import subprocess
+import time
 import uuid
 import shutil
 from pathlib import Path
@@ -22,6 +23,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.enum.section import WD_SECTION_START, WD_ORIENT
 from docx.oxml.ns import qn
 
+from .office import get_backend, OfficeBackendError
 from .config import ConfigError, load_project_config
 from .scanner import flatten_tree_nodes
 from .source_strategies import SourceStrategyError, build_outline
@@ -44,6 +46,10 @@ class BuildError(RuntimeError):
     """构建无法安全完成时抛出的错误。"""
 
 
+class DeliveryLockError(PermissionError, BuildError):
+    """交付文件被锁（如在 Word 中打开）时抛出的异常，兼具 PermissionError 与 BuildError 语义。"""
+
+
 def _source_docx_paths(source_path: Path, config) -> List[Path]:
     """返回本次内容门禁可追溯的 DOCX 源节点。"""
     if source_path.is_file():
@@ -57,14 +63,14 @@ def _source_docx_paths(source_path: Path, config) -> List[Path]:
             candidate = (source_path / file_name).resolve()
             return [candidate] if candidate.is_file() and candidate.suffix.lower() == ".docx" else []
         candidates = sorted(
-            p.resolve() for p in source_path.glob("*.docx")
-            if not p.name.startswith(("~$", "."))
+            p.resolve() for p in source_path.iterdir()
+            if p.is_file() and p.suffix.lower() == ".docx" and not p.name.startswith(("~$", "."))
         )
         return candidates if len(candidates) == 1 else []
 
     return sorted(
-        p.resolve() for p in source_path.rglob("*.docx")
-        if not p.name.startswith(("~$", "."))
+        p.resolve() for p in source_path.rglob("*")
+        if p.is_file() and p.suffix.lower() == ".docx" and not p.name.startswith(("~$", "."))
     )
 
 
@@ -214,47 +220,45 @@ def _scoped_role_map(assignments, policy, source_file: Path) -> Dict[str, str]:
 
 
 def _applescript_string(value: str) -> str:
-    return value.replace("\\", "\\\\").replace('"', '\\"')
+    from .office.mac_applescript import _applescript_string as _as
+    return _as(value)
 
 
 def _run_applescript(script: str, label: str):
-    if sys.platform != "darwin" or not os.path.exists("/usr/bin/osascript"):
-        raise BuildError(f"{label} 需要 macOS 上的 Microsoft Office。")
-    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-    if result.returncode != 0:
-        detail = (result.stderr or result.stdout).strip()
-        raise BuildError(f"{label}失败: {detail or '未知错误'}")
+    from .office.mac_applescript import _run_applescript as _ras
+    try:
+        _ras(script, label)
+    except Exception as exc:
+        raise BuildError(str(exc)) from exc
 
 
-def prepare_conversions(source_dir: Path, work_dir: Path) -> Dict[str, Path]:
+def prepare_conversions(source_dir: Path, work_dir: Path, backend=None) -> Dict[str, Path]:
     """把必要转换写入本次工作目录，绝不修改输入材料目录。"""
+    if backend is None:
+        backend = get_backend()
     converted_root = work_dir / "converted"
     resolved: Dict[str, Path] = {}
 
-    for doc_path in source_dir.rglob("*.doc"):
+    for doc_path in sorted(source_dir.rglob("*")):
+        if not doc_path.is_file() or doc_path.suffix.lower() != ".doc":
+            continue
         if doc_path.name.startswith("~$") or doc_path.with_suffix(".docx").exists():
             continue
         relative = doc_path.relative_to(source_dir)
         output_path = (converted_root / relative).with_suffix(".docx")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         print(f"  [转换] {relative} → 工作目录中的 DOCX")
-        script = f'''
-        with timeout of 600 seconds
-            tell application "Microsoft Word"
-                set display alerts to none
-                open (POSIX file "{_applescript_string(str(doc_path.resolve()))}") confirm conversions false
-                set sourceDoc to active document
-                save as active document file name "{_applescript_string(str(output_path.resolve()))}" file format format document default
-                close sourceDoc saving no
-            end tell
-        end timeout
-        '''
-        _run_applescript(script, f"转换 DOC 文件 {relative}")
+        try:
+            backend.convert_doc_to_docx(doc_path.resolve(), output_path.resolve())
+        except OfficeBackendError as exc:
+            raise BuildError(str(exc)) from exc
         if not output_path.exists():
             raise BuildError(f"转换 DOC 文件后未找到产物: {output_path}")
         resolved[relative.as_posix()] = output_path
 
-    for pptx_path in source_dir.rglob("*.pptx"):
+    for pptx_path in sorted(source_dir.rglob("*")):
+        if not pptx_path.is_file() or pptx_path.suffix.lower() != ".pptx":
+            continue
         if pptx_path.name.startswith("~$"):
             continue
         relative = pptx_path.relative_to(source_dir)
@@ -265,17 +269,10 @@ def prepare_conversions(source_dir: Path, work_dir: Path) -> Dict[str, Path]:
         output_path = (converted_root / relative).with_suffix(".pdf")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         print(f"  [转换] {relative} → 工作目录中的 PDF")
-        script = f'''
-        with timeout of 600 seconds
-            tell application "Microsoft PowerPoint"
-                open (POSIX file "{_applescript_string(str(pptx_path.resolve()))}")
-                set sourcePresentation to active presentation
-                save active presentation in (POSIX file "{_applescript_string(str(output_path.resolve()))}") as save as PDF
-                close sourcePresentation saving no
-            end tell
-        end timeout
-        '''
-        _run_applescript(script, f"转换 PPTX 文件 {relative}")
+        try:
+            backend.convert_pptx_to_pdf(pptx_path.resolve(), output_path.resolve())
+        except OfficeBackendError as exc:
+            raise BuildError(str(exc)) from exc
         if not output_path.exists():
             raise BuildError(f"转换 PPTX 文件后未找到产物: {output_path}")
         resolved[relative.as_posix()] = output_path
@@ -584,7 +581,10 @@ class UnifiedSynthesizer:
         prepared = cls.prepare_build(source_dir, manifest_path, override_paths=override_paths)
         selected = {spec["filename"] for spec in prepared.deliveries}
         existing = Path("output") / prepared.config.project_name
-        unselected = sorted(p.name for p in existing.glob("*.docx") if p.name not in selected)
+        unselected = sorted(
+            p.name for p in existing.iterdir()
+            if p.is_file() and p.suffix.lower() == ".docx" and p.name not in selected
+        ) if existing.is_dir() else []
         if unselected:
             # 不修改 PreparedBuild；只在公共计划中附加环境提示。
             public = prepared.to_public_dict()
@@ -726,11 +726,14 @@ class UnifiedSynthesizer:
         for warning in plan["warnings"]:
             print(f"[提示] {warning}")
         selected = {spec["filename"] for spec in config.documents}
-        extras = sorted(p.name for p in out_base.glob("*.docx") if p.name not in selected)
+        extras = sorted(
+            p.name for p in out_base.iterdir()
+            if p.is_file() and p.suffix.lower() == ".docx" and p.name not in selected
+        ) if out_base.is_dir() else []
         if extras:
             print("[保留] 以下文件不属于本次交付，不会删除: " + ", ".join(extras))
         out_base.mkdir(parents=True, exist_ok=True)
-        run_dir = out_base / ".work" / f"run-{uuid.uuid4().hex}"
+        run_dir = out_base / ".work" / f"run-{uuid.uuid4().hex[:8]}"
         run_dir.mkdir(parents=True, exist_ok=False)
         from . import renderers
         from .composition import normalize_body_sections
@@ -1089,6 +1092,33 @@ def generate_build_metadata(
     }
 
 
+def _replace_with_retry(
+    source: Path,
+    target: Path,
+    max_retries: int = 5,
+    initial_delay: float = 0.1,
+    backoff_factor: float = 2.0,
+    sleep_func: Any = time.sleep,
+) -> None:
+    """原子替换目标文件。若因文件锁（如在 Word 中打开）导致 PermissionError，执行退避重试。"""
+    delay = initial_delay
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError as exc:
+            last_exc = exc
+            if attempt < max_retries - 1:
+                sleep_func(delay)
+                delay *= backoff_factor
+            else:
+                break
+    raise DeliveryLockError(
+        f"无法替换交付文件（目标文件可能正在 Word 中打开或被其他进程占用）: {target}"
+    ) from last_exc
+
+
 def _publish_deliveries(staged, output_dir, run_dir):
     """Rollback per-file replacement failures; no files change before all QA succeeds."""
     backups = Path(run_dir) / "publish-backups"
@@ -1106,14 +1136,14 @@ def _publish_deliveries(staged, output_dir, run_dir):
     replaced = []
     try:
         for key, source in staged.items():
-            os.replace(source, targets[key])
+            _replace_with_retry(source, targets[key])
             replaced.append(key)
     except BaseException as publication_error:
         recovery_errors = []
         for key in reversed(replaced):
             try:
                 if key in originals:
-                    os.replace(originals[key], targets[key])
+                    _replace_with_retry(originals[key], targets[key])
                 else:
                     targets[key].unlink()
             except OSError as exc:

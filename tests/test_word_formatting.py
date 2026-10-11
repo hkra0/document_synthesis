@@ -53,6 +53,8 @@ class WordFormattingIntegrationTest(unittest.TestCase):
             cwd=str(REPO),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
         )
 
     def test_W04_real_word_publishes_configured_A4_geometry(self):
@@ -115,6 +117,8 @@ class WordFormattingIntegrationTest(unittest.TestCase):
                 cwd=str(REPO),
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 check=False,
             )
             self.assertEqual(fixture.returncode, 0, fixture.stdout + fixture.stderr)

@@ -68,13 +68,22 @@ def _manifest(root: Path, filename: str, project: str, *, formatting=None, sourc
 
 def _cli(source: Path, manifest: Path, output: Path) -> Path:
     common = [sys.executable, "synthesize.py", "--source", str(source), "--manifest", str(manifest)]
-    plan = subprocess.run(common + ["--plan"], cwd=REPO, capture_output=True, text=True, timeout=120)
+    plan = subprocess.run(
+        common + ["--plan"], cwd=REPO, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=120,
+    )
     if plan.returncode:
         raise AssertionError(plan.stdout + plan.stderr)
-    doctor = subprocess.run(common + ["--doctor"], cwd=REPO, capture_output=True, text=True, timeout=120)
+    doctor = subprocess.run(
+        common + ["--doctor"], cwd=REPO, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=120,
+    )
     if doctor.returncode:
         raise AssertionError(doctor.stdout + doctor.stderr)
-    build = subprocess.run(common + ["--output-dir", str(output)], cwd=REPO, capture_output=True, text=True, timeout=900)
+    build = subprocess.run(
+        common + ["--output-dir", str(output)], cwd=REPO, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=900,
+    )
     if build.returncode:
         raise AssertionError(build.stdout + build.stderr)
     delivered = output / json.loads(manifest.read_text(encoding="utf-8"))["output"]["documents"][0]["filename"]
@@ -331,6 +340,8 @@ class RemediationWordTest(unittest.TestCase):
                 [sys.executable, str(REPO / "docs" / "acceptance" / "create_complete_thesis_fixture.py"), str(fixture)],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
             self.assertEqual(created.returncode, 0, created.stdout + created.stderr)
             manifest = fixture / "manifest.json"
@@ -678,7 +689,8 @@ class RemediationWordTest(unittest.TestCase):
                 [
                     sys.executable, "synthesize.py", "--analyze-format", str(source),
                     "--analysis-dir", str(review_dir), "--replace-output",
-                ], cwd=REPO, capture_output=True, text=True, timeout=120,
+                ], cwd=REPO, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=120,
             )
             self.assertEqual(analysis.returncode, 0, analysis.stdout + analysis.stderr)
             analysis_data = json.loads((review_dir / "analysis.json").read_text(encoding="utf-8"))
@@ -711,7 +723,8 @@ class RemediationWordTest(unittest.TestCase):
                     sys.executable, "synthesize.py", "--compile-mapping",
                     str(review_dir / "analysis.json"), "--decisions", str(decisions_path),
                     "--mapping-out", str(mapping_path), "--replace-output",
-                ], cwd=REPO, capture_output=True, text=True, timeout=120,
+                ], cwd=REPO, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=120,
             )
             self.assertEqual(compiled.returncode, 0, compiled.stdout + compiled.stderr)
             mapping = json.loads(mapping_path.read_text(encoding="utf-8"))

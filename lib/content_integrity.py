@@ -18,7 +18,7 @@ import hashlib
 import re
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Any, Counter, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Counter, Dict, Iterable, List, Mapping, Optional, Set, Tuple, Union
 import zipfile
 
 from docx import Document

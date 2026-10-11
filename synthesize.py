@@ -8,6 +8,7 @@
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -18,6 +19,18 @@ from lib.qa import OfficeExportError, word_automation_status
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_INPUT_DIR = ROOT / "input"
+
+
+def configure_console_encoding() -> None:
+    """确保标准输入输出在各平台终端（如 Windows CP936）下使用 UTF-8 编码。"""
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if stream and hasattr(stream, "reconfigure"):
+            try:
+                if getattr(stream, "encoding", "").lower() != "utf-8":
+                    stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
 
 
 def discover_all_input_projects(input_dir: Path) -> List[Path]:
@@ -35,7 +48,9 @@ def discover_standalone_input_files(input_dir: Path) -> List[Path]:
     if not input_dir.exists():
         return []
     projects = []
-    for item in sorted(input_dir.glob("*.docx")):
+    for item in sorted(input_dir.iterdir()):
+        if not item.is_file() or item.suffix.lower() != ".docx":
+            continue
         if item.name.startswith((".", "~$")):
             continue
         try:
@@ -107,36 +122,74 @@ def print_plan(source_dir: Path, manifest_path: Optional[Path], override_paths: 
 
 
 def run_doctor(source_dir: Optional[Path] = None, manifest_path: Optional[Path] = None,
-               override_paths: Optional[List[Path]] = None) -> bool:
-    """检查精确构建所需的运行环境，不产生或修改项目文件。"""
+               override_paths: Optional[List[Path]] = None) -> int:
+    """检查精确构建所需的运行环境，返回退出码:
+    0: 环境完全就绪，可进行 exact 精确构建
+    2: 仅支持 draft 或分析类功能（Python 依赖就绪，但 Office exact 不可用）
+    1: 缺少 Python 依赖或输入配置错误
+    """
     print("\n" + "=" * 65)
     print("document_synthesis 环境检查")
     print("=" * 65)
 
     checks = []
-    checks.append((sys.version_info >= (3, 8), f"Python {sys.version.split()[0]}"))
+    dep_ok = True
+    input_ok = True
+
+    py_ok = sys.version_info >= (3, 10)
+    checks.append((py_ok, f"Python {sys.version.split()[0]} (要求 >= 3.10)"))
+    if not py_ok:
+        dep_ok = False
+
     for module_name in ("docx", "pymupdf", "PIL", "pypdf", "lxml"):
         try:
             __import__(module_name)
             checks.append((True, f"Python 依赖: {module_name}"))
         except ImportError:
             checks.append((False, f"缺少 Python 依赖: {module_name}"))
+            dep_ok = False
 
-    word_ready, word_message = word_automation_status()
-    checks.append((word_ready, f"Word Automation 与精确分页: {word_message}"))
+    if sys.platform == "win32":
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\FileSystem") as key:
+                val, _ = winreg.QueryValueEx(key, "LongPathsEnabled")
+                long_paths = bool(val)
+        except Exception:
+            long_paths = False
+        checks.append((long_paths, "Windows 长路径支持 (LongPathsEnabled 已启用)" if long_paths else "Windows 长路径支持 (未启用 LongPathsEnabled；如遇路径超限可在注册表启用)"))
+
+    from lib.office import get_backend
+    backend = get_backend()
+    probe_stat = backend.probe()
+    office_exact = probe_stat.available and probe_stat.fidelity == "exact"
+    checks.append((office_exact, f"Office Automation ({backend.name}): {probe_stat.reason}"))
 
     if source_dir:
+        resolved_src = str(source_dir.resolve())
+        is_path_safe = len(resolved_src) <= 240
+        checks.append((is_path_safe, f"输入路径长度安全 ({len(resolved_src)} 字符 <= 240)" if is_path_safe else f"输入路径过长 ({len(resolved_src)} 字符 > 240)，Windows 下容易超出 MAX_PATH 限制: {resolved_src[:60]}..."))
+        if not is_path_safe:
+            input_ok = False
         try:
             plan = UnifiedSynthesizer.plan(source_dir, manifest_path, override_paths=override_paths)
             has_content = plan.get("content_block_count", 0) > 0 or plan.get("node_count", 0) > 0
             detail = f"{plan.get('content_block_count', 0)} 个内容块, {plan.get('heading_count', plan.get('node_count', 0))} 个标题" if "content_block_count" in plan else f"{plan['node_count']} 个大纲节点"
             checks.append((has_content, f"输入材料: {detail}"))
+            if not has_content:
+                input_ok = False
         except BuildError as exc:
-            checks.append((False, str(exc)))
+            checks.append((False, f"输入材料: {exc}"))
+            input_ok = False
 
     for passed, message in checks:
         print(f"[{'通过' if passed else '未通过'}] {message}")
-    return all(passed for passed, _ in checks)
+
+    if not dep_ok or not input_ok:
+        return 1
+    if not office_exact:
+        return 2
+    return 0
 
 
 def _print_project_resolution_error(target_name: str) -> None:
@@ -155,6 +208,7 @@ def _print_project_resolution_error(target_name: str) -> None:
 
 
 def main() -> int:
+    configure_console_encoding()
     parser = argparse.ArgumentParser(description="多源公文排版与材料合成统一主程序")
     parser.add_argument("--project", help="指定项目名称或目录路径；模糊匹配必须唯一")
     parser.add_argument("--all", action="store_true", help="构建 input/ 下全部项目")
@@ -165,6 +219,10 @@ def main() -> int:
     parser.add_argument("--output-dir", help="指定成果输出根目录")
     parser.add_argument("--plan", action="store_true", help="只读扫描并打印构建计划，不调用 Office")
     parser.add_argument("--doctor", action="store_true", help="检查 Python、Office 和可选输入目录")
+    parser.add_argument(
+        "--office-backend", choices=["auto", "word", "none"], default=None,
+        help="指定 Office 自动化后端；未指定时读取 DOCUMENT_SYNTHESIS_OFFICE_BACKEND，默认 auto",
+    )
 
     # B6 格式分析与编译参数
     parser.add_argument("--analyze-format", metavar="DOCX", help="分析参考样本文档，生成样式聚类与 HTML 校正报告")
@@ -188,6 +246,15 @@ def main() -> int:
     parser.add_argument("--manifest-out", metavar="JSON", help="迁移后的 manifest 输出路径")
 
     args = parser.parse_args()
+
+    if args.office_backend is not None:
+        os.environ["DOCUMENT_SYNTHESIS_OFFICE_BACKEND"] = args.office_backend
+    from lib.office import OfficeUnsupportedError, get_backend
+    try:
+        get_backend()
+    except (OfficeUnsupportedError, ValueError) as exc:
+        print(f"[错误] Office 后端配置无效: {exc}")
+        return 1
 
     # B6 互斥检查
     b6_actions = [
@@ -402,7 +469,7 @@ def main() -> int:
     if args.doctor:
         if (manifest_path or override_paths) and not source_dir:
             parser.error("带配置的 --doctor 需要 --source 或 --project")
-        return 0 if run_doctor(source_dir, manifest_path, override_paths) else 1
+        return run_doctor(source_dir, manifest_path, override_paths)
     if args.plan:
         if not source_dir:
             print("[错误] --plan 需要 --source 或 --project。")

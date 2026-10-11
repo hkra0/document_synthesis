@@ -196,8 +196,7 @@ class BuildMetadataTest(unittest.TestCase):
             replace_count = [0]
 
             def faulty_replace(src, dst):
-                replace_count[0] += 1
-                if replace_count[0] == 2:
+                if Path(src).name == "build-metadata.json":
                     raise PermissionError("模拟第 2 个文件替换时磁盘权限故障")
                 original_replace(src, dst)
 

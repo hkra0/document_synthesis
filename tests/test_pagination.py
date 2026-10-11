@@ -15,6 +15,8 @@ from pypdf import PdfWriter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.pagination import _parse_page_map, inspect_document, validate_document_structure
+from lib.office import BackendStatus, set_backend
+from lib.office.mac_applescript import MacAppleScriptBackend
 from lib.qa import OfficeExportError, _word_access_directory
 
 
@@ -99,8 +101,17 @@ class PaginationTest(unittest.TestCase):
                 self.assertIn("start bookmarkStart end bookmarkStart", args[0][-1])
                 return type("Completed", (), {"returncode": 0, "stdout": "body\t1\t1\n", "stderr": ""})()
 
-            with patch("lib.pagination.word_export_status", return_value=(True, "ok")), patch("lib.pagination.subprocess.run", side_effect=export):
-                self.assertEqual(inspect_document(source, output, ["body"]), {"body": {"physical_page": 1, "printed_page": 1}})
+            # Drive the macOS backend on any host: Word is reported installed and
+            # osascript is replaced, so this checks the backend wiring offline.
+            set_backend(MacAppleScriptBackend())
+            try:
+                with patch.object(
+                    MacAppleScriptBackend, "static_status",
+                    return_value=BackendStatus(True, "ok", "exact"),
+                ), patch("lib.office.mac_applescript.subprocess.run", side_effect=export):
+                    self.assertEqual(inspect_document(source, output, ["body"]), {"body": {"physical_page": 1, "printed_page": 1}})
+            finally:
+                set_backend(None)
             self.assertTrue(output.is_file())
             self.assertEqual(source.read_bytes(), original)
 

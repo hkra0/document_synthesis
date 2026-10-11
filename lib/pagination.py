@@ -10,12 +10,15 @@ import os
 import re
 import shutil
 import subprocess
+import time
 import uuid
 import zipfile
+from typing import Any, Dict
 
 from lxml import etree
 from pypdf import PdfReader
 
+from .office import get_backend, OfficeBackendError
 from .qa import (
     OfficeExportError,
     _applescript_string,
@@ -90,47 +93,8 @@ def _parse_page_map(output, bookmark_names, total_pages):
 
 
 def _inspection_script(docx_path, pdf_path, bookmark_names):
-    names = ", ".join('"' + _applescript_string(name) + '"' for name in bookmark_names)
-    return f'''
-with timeout of 600 seconds
-    tell application "Microsoft Word"
-        set previousAlerts to display alerts
-        set inspectionDoc to missing value
-        try
-            set display alerts to none
-            open (POSIX file "{_applescript_string(str(docx_path))}")
-            set inspectionDoc to document "{_applescript_string(Path(docx_path).name)}"
-            repaginate inspectionDoc
-            set pageReport to ""
-            repeat with bookmarkName in {{{names}}}
-                set bookmarkName to bookmarkName as text
-                set bookmarkStart to start of bookmark of bookmark bookmarkName of inspectionDoc
-                set bookmarkRange to create range inspectionDoc start bookmarkStart end bookmarkStart
-                set physicalPage to get range information bookmarkRange information type active end page number
-                set printedPage to get range information bookmarkRange information type active end adjusted page number
-                set pageReport to pageReport & bookmarkName & tab & (physicalPage as text) & tab & (printedPage as text) & linefeed
-            end repeat
-            -- Keep the document handle explicit.  Word's AppleScript
-            -- dictionary accepts `save as` on a document reference, while
-            -- the `active document` property expression can reject the same
-            -- command with error -1708 during a real automation run.
-            save as inspectionDoc file name "{_applescript_string(str(pdf_path))}" file format format PDF
-            close inspectionDoc saving no
-            set inspectionDoc to missing value
-            set display alerts to previousAlerts
-            return pageReport
-        on error errorMessage number errorNumber
-            if inspectionDoc is not missing value then
-                try
-                    close inspectionDoc saving no
-                end try
-            end if
-            set display alerts to previousAlerts
-            error errorMessage number errorNumber
-        end try
-    end tell
-end timeout
-'''
+    from .office.mac_applescript import _inspection_script as _is
+    return _is(docx_path, pdf_path, bookmark_names)
 
 
 def _normalise_pdf_label(line: str) -> str:
@@ -229,6 +193,32 @@ def page_records_from_map(
     return result
 
 
+def _replace_pdf_with_retry(
+    source: Path,
+    target: Path,
+    max_retries: int = 5,
+    initial_delay: float = 0.1,
+    backoff_factor: float = 2.0,
+    sleep_func=time.sleep,
+) -> None:
+    delay = initial_delay
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError as exc:
+            last_exc = exc
+            if attempt < max_retries - 1:
+                sleep_func(delay)
+                delay *= backoff_factor
+            else:
+                break
+    raise OfficeExportError(
+        f"无法更新分页诊断文件（目标文件可能正在 Word 或 PDF 阅读器中打开）: {target}"
+    ) from last_exc
+
+
 def inspect_document(docx_path, pdf_path, bookmark_names):
     """Export final DOCX and return 1-based physical/printed pages by bookmark.
 
@@ -251,48 +241,27 @@ def inspect_document(docx_path, pdf_path, bookmark_names):
     available, reason = word_export_status()
     if not available:
         raise OfficeExportError(reason)
-    access_dir = _word_access_directory()
-    access_token = uuid.uuid4().hex
-    working_docx = access_dir / f"pagination-{access_token}.docx"
-    working_pdf = access_dir / f"pagination-{access_token}.pdf"
+
+    backend = get_backend()
     try:
-        shutil.copy2(source, working_docx)
-        result = subprocess.run(
-            ["osascript", "-e", _inspection_script(working_docx, working_pdf, names)],
-            capture_output=True, text=True, timeout=620,
+        report = backend.inspect_bookmarks(source, destination, names)
+    except (OfficeBackendError, OSError) as exc:
+        raise OfficeExportError(str(exc)) from exc
+
+    # 草稿交付需要在文件名、诊断文件和终端输出中统一标注（计划 P5）。
+    # 在该标注落地前，任何非 exact 结果都不能进入目录回填与发布。
+    if report.fidelity != "exact":
+        raise OfficeExportError(
+            f"当前 Office 后端只能提供 {report.fidelity} 保真度的页码，"
+            "草稿交付尚未支持；为避免发布未经 Word 核验的目录页码，已停止构建。"
         )
-        if result.returncode:
-            detail = (result.stderr or result.stdout).strip()
-            message = _automation_failure_message(detail)
-            if "-1708" in detail:
-                message += " 请检查 Word 是否出现 Grant File Access（文件夹访问授权）提示；该权限与 Automation 权限不同。"
-            raise OfficeExportError(message)
-        if not working_pdf.is_file():
-            raise OfficeExportError("Word 未生成本次分页核验的 PDF，已停止构建。")
-        try:
-            total_pages = len(PdfReader(str(working_pdf)).pages)
-        except Exception as exc:
-            raise OfficeExportError(f"Word 导出 PDF 无法读取: {exc}") from exc
-        if total_pages < 1:
-            raise OfficeExportError("Word 导出的 PDF 没有页面。")
-        page_map = _parse_page_map(result.stdout, names, total_pages)
-        os.replace(working_pdf, destination)
-        pdf_labels = extract_pdf_page_labels(destination)
-        for name, record in page_map.items():
-            phys = record["physical_page"]
+
+    page_map = report.bookmarks
+    pdf_labels = extract_pdf_page_labels(destination)
+    for name, record in page_map.items():
+        phys = record.get("physical_page")
+        if phys:
             observed = pdf_labels.get(phys)
             if observed:
                 record["observed_label"] = observed
-        return page_map
-    except subprocess.TimeoutExpired as exc:
-        raise OfficeExportError("等待 Word 最终分页核验超时；请检查 Word 是否有模态对话框。") from exc
-    except OSError as exc:
-        raise OfficeExportError(f"Word 最终分页核验失败: {exc}") from exc
-    finally:
-        for temporary in (working_docx, working_pdf):
-            try:
-                temporary.unlink()
-            except FileNotFoundError:
-                pass
-            except OSError:
-                pass
+    return page_map

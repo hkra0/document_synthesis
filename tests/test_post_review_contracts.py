@@ -36,6 +36,18 @@ from lib.verification_contracts import (
 from lib.content_integrity import verify_generated_content
 
 
+def can_symlink() -> bool:
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "target.txt"
+            src.write_text("ok", encoding="utf-8")
+            link = Path(tmp) / "link.txt"
+            link.symlink_to(src)
+            return True
+    except (OSError, NotImplementedError):
+        return False
+
+
 def _config(source: Path, *, mode: str = "restyle", page_policy: str = "target", cover=None, parts=None):
     data = {
         "schema_version": 3,
@@ -763,7 +775,7 @@ class PostReviewContractsTest(unittest.TestCase):
                 {"main_title", "author"},
             )
 
-    def test_N6_C06_migration_rejects_path_alias_symlink_and_hardlink(self):
+    def test_N6_C06_migration_rejects_path_alias_and_hardlink(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             source = root / "manifest.json"
@@ -773,13 +785,7 @@ class PostReviewContractsTest(unittest.TestCase):
             }), encoding="utf-8")
             before = source.read_bytes()
             aliases = [root / "nested" / ".." / "manifest.json"]
-            symlink = root / "manifest-link.json"
             hardlink = root / "manifest-hardlink.json"
-            try:
-                symlink.symlink_to(source)
-                aliases.append(symlink)
-            except OSError:
-                pass
             try:
                 hardlink.hardlink_to(source)
                 aliases.append(hardlink)
@@ -798,6 +804,22 @@ class PostReviewContractsTest(unittest.TestCase):
             migrate_manifest_file(source, destination, replace=True)
             self.assertEqual(source.read_bytes(), before)
             self.assertNotEqual(destination.read_text(encoding="utf-8"), "old")
+
+    @unittest.skipUnless(can_symlink(), "系统不支持符号链接或无权限（Windows 需开启开发者模式）")
+    def test_N6_C06_migration_rejects_symlink_alias(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "manifest.json"
+            source.write_text(json.dumps({
+                "schema_version": 2,
+                "project_name": "migration-contract",
+            }), encoding="utf-8")
+            before = source.read_bytes()
+            symlink = root / "manifest-link.json"
+            symlink.symlink_to(source)
+            with self.assertRaisesRegex(ConfigError, "MIGRATION_SOURCE_EQUALS_OUTPUT"):
+                migrate_manifest_file(source, symlink, replace=True)
+            self.assertEqual(source.read_bytes(), before)
 
     def test_N7_C07_unstructured_analysis_returns_ranked_evidence_not_a_single_signal(self):
         with tempfile.TemporaryDirectory() as tmp:
