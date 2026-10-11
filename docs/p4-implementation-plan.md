@@ -1,6 +1,6 @@
 # P4 实施记录：Windows 真实 Word 验收矩阵
 
-> **文档状态**：Windows 侧已完成；跨平台页码对照待 macOS 运行同一矩阵后补齐  
+> **文档状态**：已完成 (Completed)；退出条件全部满足：WW01–WW12 在 Windows 上全部 `verified`，跨平台页码差异为 0，README 只列出已验证的 Word 版本  
 > **基线依赖**：P3（Windows COM 后端，`main` = `2ae6e63`）  
 > **核心目标**：按[执行计划](windows-and-public-release-plan.md)第 9 节，在 Windows 上建立与 NW01–NW12 对应的 WW01–WW12，按 plan → doctor → build → smoke 串行执行；记录环境；与 macOS 对照同一夹具的书签页码；覆盖较旧 Office 版本或如实说明；在有/无第三方 COM 插件两种环境下复现并定位 P3 中出现过的挂起。
 
@@ -16,6 +16,8 @@
 | `docs/acceptance/public-release/windows-word/ww-results.json` | WW01–WW12 结果（插件按用户设置加载） |
 | `docs/acceptance/public-release/windows-word/ww-results-addins-disabled.json` | WW01–WW12 结果（第三方插件临时禁用） |
 | `tests/test_public_release_matrix.py` | 对照逻辑与证据脱敏的离线测试 |
+| `docs/acceptance/public-release/macos-word/environment.json`、`ww-results.json` | macOS 环境记录与 WW01–WW12 结果（由 macOS 会话在 `8f53eca` 上生成） |
+| `docs/acceptance/public-release/cross-platform-pages.json` | macOS 与 Windows 的逐用例页码对照 |
 
 证据中的仓库路径、临时目录与用户目录替换为 `<repo>`、`<work>`、`<tmp>`、`<user-home>`，不含个人信息；交付物 DOCX/PDF 不入库，只记录 SHA-256、页码与检查结果。
 
@@ -76,7 +78,28 @@ WW01–WW12 与 `tests/test_post_review_word.py` 的 NW01–NW12 使用同一组
 
 Windows 后端每次 Office 操作都启动一个独立的隐藏 Word（约 4–6 秒），一次构建会因目录回填的多趟分页与构建元数据中的 Word 探针启动多次；macOS 后端连接已运行的 Word，没有这部分开销。一次构建复用一个 Word 实例、元数据不再启动 Word 的优化另行处理，不在本批次范围内。
 
-## 5. 未覆盖与待办
+## 5. 跨平台页码对照
+
+| 项目 | macOS | Windows |
+| --- | --- | --- |
+| 系统 | macOS 27.0.1（arm64） | Windows 11 Pro 26H2（10.0.26300，x64） |
+| Word | 16.113.4（16.113.26100421） | Microsoft 365 16.0.20430.20146（Current Channel，64 位） |
+| 默认打印机 | 无（no system default destination） | Microsoft Print to PDF |
+| 字体 | 8 个字体族全部检测为已安装 | 8 个字体族全部检测为已安装 |
+| 结果文件提交 | `8f53eca` | `561c9de`（插件加载组） |
+| WW01–WW12 | 12/12 `verified` | 12/12 `verified` |
+| 矩阵总耗时 | 83 秒 | 350 秒 |
+
+`compare macos-word windows-word` 的结论：12 个用例全部可比、全部一致，**差异为 0**。对照内容包括每个书签的物理页、打印页码与 PDF 中观察到的页码标签（共 49 个书签，WW06 与 WW10 各 10 个），以及 Word 导出交付物 PDF 的页数与逐页页码标签。两平台默认打印机不同（macOS 没有默认打印机），但没有影响分页。
+
+macOS 侧还确认：两个 smoke 修复在 macOS 上同样生效（12 个用例的 smoke 步骤全部通过）；本批次改动了共用代码（`smoke_test.py`、`lib/delivery.py`），macOS 真实 Word 45 项基线全部通过，离线 402 项通过、15 项跳过（Windows 专属与未开启真实 Word 的用例）。Windows 侧在 `8f53eca` 之后只修改了 Windows 专属测试（`2a83560`、`aa1f57b`），不影响对照结论。
+
+macOS 的字体按文件名匹配：楷体_GB2312 对应 `楷体_GB2312.ttf`，方正小标宋简体对应 `方正小标宋_GBK.ttf` 与 `方正小标宋简体.ttf`；Windows 按字体注册表名称匹配（`KaiTi_GB2312`、`FZXiaoBiaoSong-B05S`）。两个平台的字体来源不同，但本矩阵的分页结果一致。字体可移植性的系统处理属于 P6。
+
+耗时差异来自后端设计：macOS 连接已运行的 Word；Windows 每次 Office 操作启动一个独立的隐藏 Word（约 4–6 秒），一次构建会启动多次。一次构建复用一个 Word 实例的优化另行处理。
+
+## 6. 未覆盖与后续
 
 - **较旧 Office 版本**：没有可用的 Office 2019/2021 环境。README 的支持范围如实写“仅验证过 Microsoft 365”。
-- **跨平台页码对照**：需在 macOS 上运行 `python3 docs/acceptance/public-release/word_matrix.py run --label macos-word` 与 `environment --label macos-word`，提交结果后运行 `compare macos-word windows-word`。按计划，字体完全一致时页码应相同；出现差异要逐项记录原因（字体替换、Word 版本、打印机驱动或默认纸张），不能直接接受为“正常差异”。macOS 的字体检测按字体文件名匹配，若与 Windows 注册表名称不一致，需在 macOS 侧补充别名。
+- **插件禁用组的代码版本**：见第 4.1 节，运行于包含第 3 节第 1–4 条修复的中间版本，未在最终提交上重跑。
+- **偶发挂起**：两次挂起都发生在插件加载的环境中，其中一次已定位到 Word 关闭阶段并由看门狗兜底；另一次（P3 首轮）未取到调用栈。之后遇到挂起时，按诊断日志中的最后一次 COM 调用与调用栈继续定位。
