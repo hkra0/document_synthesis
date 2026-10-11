@@ -253,6 +253,7 @@ class OfficeBackend(Protocol):
 2. **跨平台页码对照**：对同一夹具，比较 macOS Word 与 Windows Word 的书签物理页和打印页码。在字体完全一致的前提下，**页码应该相同**；出现差异时逐项记录原因（字体替换、Word 版本、打印机驱动或默认纸张），不能直接接受为“正常差异”。
 3. 记录环境：Windows 版本、Word 版本号与通道、默认打印机、已安装的相关字体清单（只记名称），写入 `docs/acceptance/public-release/windows-word/environment.json`。
 4. 至少再覆盖一个较旧版本（例如 Office 2019 或 2021），作为兼容下限；无法取得时，在 README 的支持范围中如实写“仅验证过 Microsoft 365”。
+5. **第三方 COM 插件导致的挂起**：P3 首轮全量测试在加载 iSlide Tools 与 Acrobat PDFMaker 插件的环境中挂起过一次，未取到调用栈（见 [P3 实施记录](p3-implementation-plan.md)第 5 节）。分别在“有插件”与“禁用插件”两种环境下重复全量测试与 WW 矩阵，尝试复现并定位；为此在超时前取得诊断信息，例如让 worker 在超时前导出线程栈（`faulthandler.dump_traceback_later`），或在 stderr 中记录最后一次 COM 调用及其参数，并随超时报错一并输出。
 
 ### 退出条件
 

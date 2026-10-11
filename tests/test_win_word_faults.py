@@ -193,10 +193,156 @@ class WindowsWordFaultTests(unittest.TestCase):
         output_dir = self.dir / "output"
         with patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT": "3"}):
             with self.assertRaises((BuildError, OfficeExportError)) as ctx:
-                UnifiedSynthesizer.synthesize(ROOT / "examples" / "minimal-demo", output_dir=output_dir)
+                demo = ROOT / "examples" / "minimal-demo"
+                UnifiedSynthesizer.synthesize(demo / "source", output_dir, demo / "manifest.json")
         self.assertIn("超时", str(ctx.exception))
         self.assertFalse((output_dir / "demo_complete.docx").exists())
         self.assertNoWordLeft()
+
+
+def _find_open_document(path: Path):
+    """在运行对象表中查找已打开的文档；找不到时返回 None。
+
+    不用 ``GetObject(path)``：文档未打开时它会启动新的 Word 实例去打开文件。
+    """
+    import pythoncom
+    import win32com.client
+
+    target = os.path.normcase(str(path))
+    rot = pythoncom.GetRunningObjectTable()
+    context = pythoncom.CreateBindCtx(0)
+    for moniker in rot.EnumRunning():
+        try:
+            name = moniker.GetDisplayName(context, None)
+        except pythoncom.com_error:
+            continue
+        if os.path.normcase(name) == target:
+            return win32com.client.Dispatch(rot.GetObject(moniker).QueryInterface(pythoncom.IID_IDispatch))
+    return None
+
+
+@unittest.skipUnless(sys.platform == "win32", "Windows Word COM 故障注入只在 Windows 上运行")
+class UserWordIsolationTests(unittest.TestCase):
+    """用户自己打开、带未保存修改的文档，在构建、超时和 Word 被结束后都不受影响。"""
+
+    MARKER = "【未保存的用户修改】"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        WindowsWordFaultTests.setUpClass()
+
+    def setUp(self) -> None:
+        import win32process
+
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.work = self.dir / "word-access"
+        self.env = patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR": str(self.work)})
+        self.env.start()
+        self.backend = WinComBackend()
+
+        # 以与构建无关的方式打开“用户文档”：和双击文件一样经由 Shell 启动 Word。
+        self.word_before = _word_pids()
+        self.user_path = self.dir / "用户正在编辑.docx"
+        user_doc = Document()
+        user_doc.add_paragraph("用户正在编辑的文档")
+        user_doc.save(self.user_path)
+        self.user_bytes = self.user_path.read_bytes()
+        os.startfile(str(self.user_path))
+        self.user_document = None
+        deadline = time.monotonic() + 90
+        while self.user_document is None and time.monotonic() < deadline:
+            self.user_document = _find_open_document(self.user_path)
+            if self.user_document is None:
+                time.sleep(0.5)
+        if self.user_document is None:
+            self.fail("无法打开模拟的用户文档")
+        hwnd = int(self.user_document.Windows(1).Hwnd)
+        self.user_pid = int(win32process.GetWindowThreadProcessId(hwnd)[1])
+        self.user_identity = win_com.process_identity(self.user_pid)
+        self.assertIsNotNone(self.user_identity)
+        self.assertFalse(win_com.is_automation_instance(self.user_pid), "模拟的用户 Word 不应是 COM 启动的实例")
+        self.user_document.Content.InsertAfter(self.MARKER)
+        self.assertFalse(self.user_document.Saved)
+
+    def tearDown(self) -> None:
+        try:
+            document = _find_open_document(self.user_path)
+            if document is not None:
+                application = document.Application
+                document.Close(0)
+                # 只退出本测试启动的 Word；用户原本就在运行的 Word 只关闭这份文档。
+                if self.user_pid not in self.word_before and application.Documents.Count == 0:
+                    application.Quit(0)
+                del application, document
+            self.user_document = None
+        finally:
+            self.env.stop()
+            set_backend(None)
+            deadline = time.monotonic() + 30
+            while self.user_pid not in self.word_before and win_com.process_identity(self.user_pid) and time.monotonic() < deadline:
+                time.sleep(0.5)
+            self.tmp.cleanup()
+
+    def assertUserWordUntouched(self, step: str) -> None:  # noqa: N802
+        self.assertEqual(win_com.process_identity(self.user_pid), self.user_identity, f"{step}: 用户 Word 进程被结束或替换")
+        document = _find_open_document(self.user_path)
+        self.assertIsNotNone(document, f"{step}: 用户文档不再处于打开状态")
+        self.assertFalse(document.Saved, f"{step}: 用户文档的未保存状态丢失")
+        self.assertIn(self.MARKER, document.Content.Text, f"{step}: 用户的未保存修改丢失")
+        self.assertEqual(self.user_path.read_bytes(), self.user_bytes, f"{step}: 用户文档文件被改写")
+        leftover = _word_pids() - self.word_before - {self.user_pid}
+        deadline = time.monotonic() + 30
+        while leftover and time.monotonic() < deadline:
+            time.sleep(0.5)
+            leftover = _word_pids() - self.word_before - {self.user_pid}
+        self.assertEqual(leftover, set(), f"{step}: 本次启动的 WINWORD.EXE 未被回收")
+
+    def test_user_document_survives_build_timeout_and_killed_word(self) -> None:
+        from lib.engine import UnifiedSynthesizer
+
+        # 1. 正常的 exact 构建
+        output_dir = self.dir / "output"
+        demo = ROOT / "examples" / "minimal-demo"
+        UnifiedSynthesizer.synthesize(demo / "source", output_dir, demo / "manifest.json")
+        self.assertTrue((output_dir / "demo_complete.docx").is_file())
+        self.assertUserWordUntouched("正常构建")
+
+        # 2. 超时：启动阶段（孤儿判定路径）与处理阶段（按 PID 结束路径）
+        big = self.dir / "big.docx"
+        build_sample(big, filler_pages=150)
+        for seconds in ("1", "8"):
+            with patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT": seconds}):
+                with self.assertRaises(OfficeTimeoutError):
+                    self.backend.inspect_bookmarks(big, self.dir / "timeout.pdf", ["cover"])
+            self.assertUserWordUntouched(f"{seconds} 秒超时")
+
+        # 3. 操作进行中强制结束本次启动的 Word
+        outcome = {}
+
+        def run() -> None:
+            try:
+                self.backend.inspect_bookmarks(big, self.dir / "killed.pdf", ["cover"])
+            except Exception as exc:  # noqa: BLE001 - 断言在主线程进行
+                outcome["error"] = exc
+
+        worker = threading.Thread(target=run)
+        worker.start()
+        killed = None
+        deadline = time.monotonic() + 120
+        while worker.is_alive() and killed is None and time.monotonic() < deadline:
+            for pid_file in self.work.glob("job-*/office.pid"):
+                record = win_com.read_pid_record(pid_file)
+                if record:
+                    self.assertNotEqual(record["pid"], self.user_pid, "pid 文件记录了用户的 Word")
+                    win_com.terminate_process(record["pid"])
+                    killed = record["pid"]
+                    break
+            time.sleep(0.05)
+        worker.join(timeout=300)
+        self.assertIsNotNone(killed)
+        self.assertIsInstance(outcome.get("error"), OfficeBackendError)
+        self.assertUserWordUntouched("Word 被强制结束")
 
 
 if __name__ == "__main__":

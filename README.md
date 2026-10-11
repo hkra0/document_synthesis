@@ -116,7 +116,7 @@ python3 synthesize.py --project 示例项目 --plan
 
 可用 `--office-backend {auto,word,none}` 或环境变量 `DOCUMENT_SYNTHESIS_OFFICE_BACKEND` 指定后端；命令行参数优先。在 Windows 上，`--doctor` 还会报告 Word 版本与位数、安装方式，以及 PowerPoint 是否可用；没有 PowerPoint 时只有 `.pptx` 转换不可用。
 
-Windows 上每次 Office 操作都在独立子进程中启动隐藏的 Word 实例，默认 600 秒超时（可用环境变量 `DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT` 调整）。超时或失败时只结束本次启动的 Word 进程，不影响你自己打开的 Word 文档。
+Windows 上每次 Office 操作都在独立子进程中启动隐藏的 Word 实例，默认 600 秒超时（可用环境变量 `DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT` 调整）。超时或失败时只结束本次启动的 Word 进程，不影响你自己打开的 Word 文档。Word 的第三方 COM 插件（例如 iSlide、Acrobat PDFMaker）在自动化实例中也会加载，可能导致偶发挂起；超时后会自动清理本次启动的 Word。如果频繁发生，可以在 Word 的“文件 → 选项 → 加载项 → COM 加载项”中禁用相关插件后重试。
 
 ### 4. 合成
 
