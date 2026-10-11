@@ -163,7 +163,7 @@ worker 在每个请求开始时向 stderr 写一行 `request: <op> #<id>`，之�
 
 ## 7. 已知事项与后续
 
-- **全量测试（含真实 Word）**：`DOCUMENT_SYNTHESIS_WORD_TEST=1 python -m unittest discover -s tests`，共 466 项：465 项通过，1 项跳过（`test_N6_C06_migration_rejects_symlink_alias`：未开启开发者模式，无权创建符号链接，与 P3 相同；跳过不计为通过）。`tests/test_win_word_faults.py` 10 项（原 7 项 + 会话 3 项）全部通过，结束后无 `WINWORD.EXE` 残留。离线全量见第 4 节末的全新克隆结果。
+- **全量测试（含真实 Word）**：`DOCUMENT_SYNTHESIS_WORD_TEST=1 python -m unittest discover -s tests`，共 466 项：465 项通过，1 项跳过（`test_N6_C06_migration_rejects_symlink_alias`：未开启开发者模式，无权创建符号链接，与 P3 相同；跳过不计为通过）。`tests/test_win_word_faults.py` 10 项（原 7 项 + 会话 3 项）全部通过，结束后无 `WINWORD.EXE` 残留。推送前在全新克隆（`c60edfc`）中运行离线全量（不设 `DOCUMENT_SYNTHESIS_WORD_TEST`）：429 项，`OK (skipped=9)`；跳过的是需要真实 Word 的用例类与符号链接用例。
 - **macOS**：`mac_applescript.py` 未改动；`office_session()` 对没有 `session()` 的后端原样执行。唯一的行为变化是构建元数据的 `word_automation.reason` 由探针结果（`Automation 探针成功: Microsoft Word。`）变为静态检查结果（`Microsoft Word 精确分页可用。`），构建不再为此执行 `tell application "Microsoft Word" to get name`。需要 macOS 会话跑一次离线全量与真实 Word 回归确认。
 - **超时中的用户文档**：见 2.4 的局限。
 - **会话外的调用**：`--doctor`、`lib.qa.export_docx_to_pdf`、直接调用 `inspect_document` 的测试仍是单次模式；如有需要可在调用方包一层 `office_session()`。
