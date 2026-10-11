@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "label": "macos-word",
+  "recorded_at": "2026-10-11T09:02:08+00:00",
+  "python": "3.14.0",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "packages": {
+    "python-docx": "1.2.0",
+    "pymupdf": "1.28.2",
+    "pypdf": "6.14.2",
+    "Pillow": "12.1.0",
+    "lxml": "6.0.2",
+    "jsonschema": "4.26.0",
+    "numpy": "2.3.5"
+  },
+  "os": {
+    "system": "macOS",
+    "release": "27.0.1",
+    "machine": "arm64"
+  },
+  "word": {
+    "CFBundleShortVersionString": "16.113.4",
+    "CFBundleVersion": "16.113.26100421"
+  },
+  "default_printer": "no system default destination",
+  "fonts": {
+    "method": "字体文件名",
+    "families": {
+      "宋体": {
+        "installed": true,
+        "matched_names": [
+          "Simsun.ttc",
+          "Songti.ttc",
+          "simsunb.ttf",
+          "宋体.ttc"
+        ]
+      },
+      "黑体": {
+        "installed": true,
+        "matched_names": [
+          "STHeiti Light.ttc",
+          "STHeiti Medium.ttc",
+          "SimHei.ttf",
+          "方正黑体_GBK.ttf"
+        ]
+      },
+      "仿宋": {
+        "installed": true,
+        "matched_names": [
+          "Fangsong.ttf",
+          "仿宋.ttf",
+          "仿宋_GB2312.ttf",
+          "方正仿宋_GBK.ttf"
+        ]
+      },
+      "楷体": {
+        "installed": true,
+        "matched_names": [
+          "Kaiti.ttf",
+          "方正楷体_GBK.ttf",
+          "方正楷体简体.ttf",
+          "楷体.ttf"
+        ]
+      },
+      "仿宋_GB2312": {
+        "installed": true,
+        "matched_names": [
+          "仿宋_GB2312.ttf"
+        ]
+      },
+      "楷体_GB2312": {
+        "installed": true,
+        "matched_names": [
+          "楷体_GB2312.ttf"
+        ]
+      },
+      "方正小标宋简体": {
+        "installed": true,
+        "matched_names": [
+          "方正小标宋_GBK.ttf",
+          "方正小标宋简体.ttf"
+        ]
+      },
+      "Times New Roman": {
+        "installed": true,
+        "matched_names": [
+          "Times New Roman Bold Italic.ttf",
+          "Times New Roman Bold.ttf",
+          "Times New Roman Italic.ttf",
+          "Times New Roman.ttf"
+        ]
+      }
+    }
+  }
+}
