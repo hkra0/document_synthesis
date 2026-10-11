@@ -205,7 +205,8 @@ python3 synthesize.py --allow-draft --source examples/minimal-demo/source --mani
 python3 smoke_test.py --allow-draft --source examples/minimal-demo/source --manifest examples/minimal-demo/manifest.json --output-dir output/demo-draft
 ```
 
-- 草稿不调用 Word，也不推算页码：目录条目的格式不变，页码位置是指向对应标题的 `PAGEREF` 域。用 Word 打开时按提示更新域（或全选后按 F9），目录页码才会填入；在 macOS Word 上更新域后，示例的目录页码与精确构建逐项一致。
+- 草稿不调用 Word，也不推算页码：目录条目的格式不变，页码位置是指向对应标题的 `PAGEREF` 域，打开时显示为“?”。在 Word 中打开后，**等排版完成**（状态栏页数不再变化），全选并按 F9 更新域，页码才会填入；macOS 为 Command+A 后按 F9（部分键盘需同时按 fn）。在 macOS 与 Windows 的 Word 中按此操作后，示例的目录页码与精确构建逐项一致。
+- 草稿不会在打开时自动更新域：Word 打开时会在分页完成前求值，得到看似合理的错误页码（全是 1），所以页码必须由你在排版完成后手动更新。更新前就按 F9 同样可能得到错误页码；如果目录页码全是 1，请稍等后再按一次 F9。
 - 草稿交付物文件名带 `_draft` 后缀（例如 `demo_complete_draft.docx`），v3 工程的元数据写入 `build-metadata_draft.json`（`fidelity` 为 `draft`），终端最后一行是草稿提示。草稿永远不会覆盖已有的精确交付物。
 - 目录在另一份交付物中（拆分打印目录）时，跨文件的域无法更新，页码位置保留为“?”，需要精确构建。
 - 草稿仍执行结构核验与 v3 的内容、格式核验，但跳过分页测量、目录收敛和逐页版式检查。

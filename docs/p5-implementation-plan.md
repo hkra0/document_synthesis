@@ -1,8 +1,8 @@
 # P5 实施记录：草稿模式（目录页码域）
 
-> **文档状态**：已实施，macOS 已验证；Windows 复核：精确构建不受影响，排版完成后更新域的页码正确，但发现双击打开草稿时目录页码显示为 1 的问题，待修复（见第 6、7 节）  
+> **文档状态**：已实施；Windows 复核发现的“双击打开后页码显示为 1”已修复（第 8 节），macOS 已复验；修复后的 Windows 交互式复验待完成（第 7 节）  
 > **基线依赖**：P4 与 Word 会话复用（`main` = `838db05`）  
-> **核心目标**：按[执行计划](windows-and-public-release-plan.md)第 10 节，在没有可精确分页的 Microsoft Word 时（主要是 Linux），用 `--allow-draft` 生成草稿交付物：不调用 Word、不推算页码，目录页码由 Word 打开时更新；草稿标注不可关闭，永远不覆盖精确交付物。
+> **核心目标**：按[执行计划](windows-and-public-release-plan.md)第 10 节，在没有可精确分页的 Microsoft Word 时（主要是 Linux），用 `--allow-draft` 生成草稿交付物：不调用 Word、不推算页码，目录页码显示“?”，由用户在 Word 排版完成后手动更新域；草稿标注不可关闭，永远不覆盖精确交付物。
 > **范围决定（2026-10-11）**：只做页码域草稿，不实现 LibreOffice 后端。
 
 ---
@@ -13,7 +13,7 @@
 | --- | --- |
 | 能精确分页（macOS / Windows + Word） | 照常 `exact` 构建；`--allow-draft` 不起作用 |
 | 不能精确分页，没有 `--allow-draft` | 构建失败，提示可用 `--allow-draft`；已有交付物不被替换 |
-| 不能精确分页，有 `--allow-draft` | 生成 `*_draft.docx`，目录页码为 dirty 的 `PAGEREF` 域，打开时由 Word 更新 |
+| 不能精确分页，有 `--allow-draft` | 生成 `*_draft.docx`，目录页码为显示“?”的 `PAGEREF` 域，用户排版完成后全选并按 F9 更新 |
 | 后端自称只能给出 `draft` 保真度的测量页码 | 仍一律拒绝（P2 的门禁不变）；草稿只来自“不测量、交给 Word 更新”这一条路径 |
 
 保真度由 `lib/drafting.py` 的 `build_fidelity()` 决定：当前后端 `static_status()` 可用且为 `exact` 时总是 `exact`；否则只有显式 `--allow-draft`（环境变量 `DOCUMENT_SYNTHESIS_ALLOW_DRAFT=1`）才是 `draft`。
@@ -23,11 +23,11 @@
 | 文件 | 改动 |
 | --- | --- |
 | `lib/drafting.py` | 新增：保真度判定、`*_draft` 文件名、草稿元数据文件名、终端提示 |
-| `lib/composition.py` | `append_toc(..., draft=True)`：目录条目格式不变，页码换成指向书签、`w:dirty="true"` 的 `PAGEREF <书签> \h` 复杂域，更新前显示“?”；目录引用另一份交付物时只写“?”。`enable_update_fields_on_open()` 按 ECMA-376 `CT_Settings` 顺序写入 `w:updateFields` |
-| `lib/field_updater.py` | `FieldUpdater(defer_pagerefs=True)`：草稿中保留 `PAGEREF` 原缓存，`SEQ`/`REF` 照常更新 |
+| `lib/composition.py` | `append_toc(..., draft=True)`：目录条目格式不变，页码换成指向书签的 `PAGEREF <书签> \h` 复杂域，更新前显示“?”；目录引用另一份交付物时只写“?”。不标记 dirty、不写 `updateFields`（第 8 节） |
+| `lib/field_updater.py` | `FieldUpdater(defer_pagerefs=True)`：草稿中所有 `PAGEREF`（含来源文档遗留的页码缓存）一律显示“?”，`SEQ`/`REF` 照常更新 |
 | `lib/delivery.py` | `build_deliveries(draft=True)`：每份交付物只装配一次；执行结构核验与 v3 出现位置标记；跳过分页测量、目录收敛、`PAGEREF` 缓存核验与 PDF 页级 QA；引用另一份交付物的目录在终端说明页码保留“?” |
 | `lib/engine.py` | 决定保真度并传给交付；v3 草稿元数据写入 `build-metadata_draft.json`（顶层与每个交付物均有 `fidelity`，`filename` 为实际发布的文件名）；终端最后一行为草稿提示。精确构建的元数据也新增 `fidelity: "exact"` |
-| `smoke_test.py` | `--allow-draft`：检查 `*_draft.docx` 与草稿元数据，强制只做结构与文字核验，并确认 `updateFields` 已设置、没有残留占位标记；精确 smoke 拒绝 `fidelity` 不是 `exact` 的元数据 |
+| `smoke_test.py` | `--allow-draft`：检查 `*_draft.docx` 与草稿元数据，强制只做结构与文字核验；草稿不得含 `updateFields` 或 dirty 域，每个 `PAGEREF` 的显示结果必须是“?”，不得残留占位标记；精确 smoke 拒绝 `fidelity` 不是 `exact` 的元数据 |
 | `synthesize.py` | 新增 `--allow-draft` |
 | `lib/office/null.py`、`lib/office/win_com.py` | 没有 Word 时的提示指向 `--allow-draft` |
 | `.github/workflows/ci.yml` | 三平台（CI 没有 Word）对三个示例执行 `--allow-draft` 构建与 `smoke_test.py --allow-draft` |
@@ -37,17 +37,19 @@
 `tests/test_draft_mode.py`（离线，三平台都运行）：
 
 1. 没有 `--allow-draft` 时构建失败，已有交付物字节不变。
-2. 草稿标注：只发布 `demo_complete_draft.docx`；每个目录条目一个 dirty `PAGEREF`；`updateFields` 已设置；没有占位标记残留；终端最后一行是草稿提示。
+2. 草稿标注：只发布 `demo_complete_draft.docx`；每个目录条目一个 `PAGEREF`，显示“?”；没有 dirty 标记与 `updateFields`；没有占位标记残留；终端最后一行是草稿提示。
 3. 草稿不覆盖同目录下已有的精确交付物。
 4. 能精确分页（假后端）时 `--allow-draft` 不起作用，产出精确文件名且目录不含 `PAGEREF`。
 5. v3 草稿：没有 `build-metadata.json`，`build-metadata_draft.json` 的 `fidelity` 为 `draft`，交付物记录无 `page_map`。
 6. 拆分打印目录：目录在另一份交付物中时没有 `PAGEREF`，只有“?”，终端给出说明。
-7. `smoke --allow-draft` 通过；把草稿改名冒充精确交付物时，精确 smoke 因保真度不符失败；删除 `updateFields` 后草稿 smoke 失败。
-8. `FieldUpdater(defer_pagerefs=True)` 保留 `PAGEREF` 缓存、更新 `SEQ`；`updateFields` 排在 `compat` 之前且不重复。
+7. `smoke --allow-draft` 通过；把草稿改名冒充精确交付物时，精确 smoke 因保真度不符失败；草稿被加上 `updateFields`，或某个 `PAGEREF` 显示了数字时，草稿 smoke 失败。
+8. `FieldUpdater(defer_pagerefs=True)` 把来源文档遗留的 `PAGEREF` 页码改为“?”，`SEQ` 照常更新。
 
 `tests/test_office_backends.py`：无 Word 的提示现在应包含 `--allow-draft`。
 
 ## 4. 验证记录（macOS 27.0.1 arm64，Word 16.113.4，Python 3.14.0；Python 3.10 离线另测）
+
+> 本节记录的是首个版本（`13dc4c4`，目录 `PAGEREF` 标记 dirty 并写入 `updateFields`）的验证结果；该做法已在第 8 节修复。
 
 1. **离线全量**：450 项通过，19 项跳过（均为 Windows 专属或需手动开启的真实 Word 用例）；Python 3.10 且 `DOCUMENT_SYNTHESIS_OFFICE_BACKEND=none` 下同样 450 项通过、19 项跳过。
 2. **三个示例的草稿构建与草稿 smoke**（`--office-backend none --allow-draft`）：全部通过。最小示例 2 个、中文示例 11 个目录条目均为 dirty `PAGEREF`；custom-format 示例只有正文部件，没有目录。
@@ -93,6 +95,16 @@
 
 ## 7. 未完成与后续
 
-1. **修复双击打开时页码显示为 1 的问题**（见第 6 节第 5 项）：需要决定修复方式，例如不在打开时自动更新，改为明确提示用户全选后按 F9，或采用其他能保证在分页之后求值的做法；修复后需在 Windows 与 macOS 上重新验证交互式打开。
-2. **交互式打开的人工确认**：Windows 上弹出的“更新域”对话框中点击“是”之后的结果、以及对话框无人点击自行消失的原因，都尚未人工确认；macOS 上交互式打开也没有人工验证。
-3. **已发现的独立问题（不属于 P5）**：中文示例清单中的封面模板路径按清单目录解析后不存在，引擎静默改用全局 `templates/` 目录中的任意 `.docx`；在有私有模板的本机上，中文示例的精确 smoke 因多出两张图片失败。已作为独立任务记录，修复后需重新核对依赖中文示例输出的证据。
+1. **Windows 交互式复验**（第 8 节的修复之后）：用 `os.startfile` 打开草稿，确认不再弹出“更新域”对话框、目录显示“?”；排版完成后全选并更新域，页码与精确构建一致。
+2. **已发现的独立问题（不属于 P5）**：中文示例封面模板路径与静默回退的问题由 PR #6 单独修复。
+
+## 8. 修复：不在打开时自动更新域（2026-10-11）
+
+第 6 节第 5 项表明：只要文档带 `w:dirty="true"` 或 `w:updateFields`，Windows Word 打开时就会在分页完成前更新域，得到看似合理的错误页码（全是 `1`）。这违背“不推算、不显示未经核验的页码”的原则，因此改为：
+
+1. 目录 `PAGEREF` 不再标记 dirty，文档设置不再写 `updateFields`；更新前显示“?”。
+2. 草稿中来源文档自带的 `PAGEREF` 也改为显示“?”。不再在打开时自动更新后，否则会保留来源文档中可能已过时的页码。
+3. 终端提示与 README 改为：排版完成（状态栏页数不再变化）后全选并按 F9；macOS 为 Command+A 后按 F9。并说明在排版完成前更新也可能得到错误页码。
+4. `smoke_test.py --allow-draft` 反过来要求：不得有 `updateFields` 或 dirty 域，每个 `PAGEREF` 只能显示“?”。
+
+**macOS 复验**（Word 16.113.4）：用 `open -a "Microsoft Word"`（与双击相同）打开中文示例草稿，等待 20 秒，没有弹出对话框，11 个目录 `PAGEREF` 都显示“?”；随后在同一窗口逐个更新域，结果为 `1,1,1,2,2,2,2,3,3,3,3`，与精确构建一致。离线全量与真实 Word 回归见提交记录。

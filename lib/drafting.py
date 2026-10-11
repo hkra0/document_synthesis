@@ -13,8 +13,9 @@ ALLOW_DRAFT_ENV = "DOCUMENT_SYNTHESIS_ALLOW_DRAFT"
 DRAFT_SUFFIX = "_draft"
 DRAFT_METADATA_NAME = "build-metadata_draft.json"
 DRAFT_NOTICE = (
-    "草稿：目录页码与版式未经 Microsoft Word 核验。"
-    "在 Word 中打开交付物并按提示更新域（或全选后按 F9），目录页码才会填入。"
+    "草稿：目录页码与版式未经 Microsoft Word 核验，目前显示为“?”。"
+    "在 Word 中打开后，等排版完成（状态栏页数不再变化），全选并按 F9 更新域，页码才会填入"
+    "（macOS 为 Command+A 后按 F9，部分键盘需同时按 fn）。"
 )
 
 

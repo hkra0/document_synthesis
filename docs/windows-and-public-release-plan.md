@@ -266,7 +266,7 @@ WW01–WW12 全部 `verified`（`skip` 不算）；跨平台页码差异为 0，
 ### 执行动作
 
 1. 新增 `--allow-draft`：只有当前 Office 后端无法 `exact` 构建（例如 Linux，或 `--office-backend none`）时才生效；能 `exact` 时照常精确构建，该参数不起作用。
-2. 草稿构建不调用 Word、不推算页码：目录条目保持引擎原有格式，只把页码换成指向对应书签的 `PAGEREF` 域（标记为 dirty），并在文档设置中写入 `updateFields`，由用户在 Word 中打开时更新。目录引用另一份交付物（拆分打印目录）时，跨文件的 `PAGEREF` 无法成立，页码位置写占位符并在诊断中说明。
+2. 草稿构建不调用 Word、不推算页码：目录条目保持引擎原有格式，只把页码换成指向对应书签的 `PAGEREF` 域，更新前显示“?”；由用户在 Word 排版完成后全选并按 F9 更新。不标记 dirty、不写 `updateFields`：Windows 复核发现，打开时自动更新会在分页完成前求值，得到看似合理的错误页码（全是 1）。目录引用另一份交付物（拆分打印目录）时，跨文件的 `PAGEREF` 无法成立，页码位置写占位符并在诊断中说明。
 3. 草稿标注不可关闭：
    - 交付物文件名加 `_draft` 后缀（`demo_complete.docx` → `demo_complete_draft.docx`），因此永远不会覆盖已有的精确交付物；
    - v3 工程的元数据写入 `build-metadata_draft.json`，顶层 `fidelity: "draft"`，不覆盖精确构建的 `build-metadata.json`；

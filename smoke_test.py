@@ -151,17 +151,57 @@ def _metadata_contract_violations(metadata, plan, prepared, paths, fidelity="exa
     return violations
 
 
+def _draft_pageref_results(document_xml: bytes):
+    """按文档顺序返回每个 PAGEREF 域（简单域与复杂域）的 (指令, 显示结果)。"""
+    import re
+    from lxml import etree
+
+    w = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    root = etree.fromstring(document_xml)
+    results, state, instruction, shown = [], None, "", []
+    for el in root.iter(w + "fldSimple", w + "fldChar", w + "instrText", w + "t"):
+        if el.tag == w + "fldSimple":
+            instr = el.get(w + "instr") or ""
+            if re.match(r"\s*PAGEREF\b", instr, re.IGNORECASE):
+                results.append((instr.strip(), "".join(t.text or "" for t in el.iter(w + "t"))))
+        elif el.tag == w + "fldChar":
+            kind = el.get(w + "fldCharType")
+            if kind == "begin":
+                state, instruction, shown = "instr", "", []
+            elif kind == "separate" and state == "instr":
+                state = "result"
+            elif kind == "end" and state:
+                if re.match(r"\s*PAGEREF\b", instruction, re.IGNORECASE):
+                    results.append((instruction.strip(), "".join(shown)))
+                state = None
+        elif el.tag == w + "instrText" and state == "instr":
+            instruction += el.text or ""
+        elif el.tag == w + "t" and state == "result":
+            shown.append(el.text or "")
+    return results
+
+
 def _check_draft_markers(path):
-    """草稿交付物必须让 Word 打开时更新域，且不留下页码占位标记。"""
+    """草稿的页码域在用户更新前只能显示“?”，且不能在打开时自动更新。
+
+    打开时自动更新（w:updateFields 或 w:dirty）会在分页完成前求值，得到看似合理的
+    错误页码；来源文档里遗留的页码缓存同样不能保留。
+    """
     import zipfile
 
     with zipfile.ZipFile(path) as package:
         settings = package.read("word/settings.xml").decode("utf-8")
-        document = package.read("word/document.xml").decode("utf-8")
-    if '<w:updateFields w:val="true"/>' not in settings:
-        raise ValueError(f"草稿 {path.name} 没有设置打开时更新域（w:updateFields）")
-    if "DRAFTPAGEREFTOKEN" in document:
+        document = package.read("word/document.xml")
+    if "w:updateFields" in settings:
+        raise ValueError(f"草稿 {path.name} 设置了打开时更新域（w:updateFields），会在分页前得到错误页码")
+    text = document.decode("utf-8")
+    if 'w:dirty="true"' in text or "w:dirty=\"1\"" in text:
+        raise ValueError(f"草稿 {path.name} 含有标记为 dirty 的域，打开时会在分页前更新")
+    if "DRAFTPAGEREFTOKEN" in text:
         raise ValueError(f"草稿 {path.name} 残留目录页码占位标记")
+    shown = [result for _, result in _draft_pageref_results(document) if result != "?"]
+    if shown:
+        raise ValueError(f"草稿 {path.name} 的 PAGEREF 显示了未经核验的页码: {shown[:5]}")
 
 
 def test_project(

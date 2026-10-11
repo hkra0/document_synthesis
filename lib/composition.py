@@ -314,16 +314,18 @@ def _field_run(rpr, *children):
     return run
 
 
-def _fld_char(kind, dirty=False):
+def _fld_char(kind):
     element = OxmlElement("w:fldChar")
     element.set(qn("w:fldCharType"), kind)
-    if dirty:
-        element.set(qn("w:dirty"), "true")
     return element
 
 
 def _replace_token_with_pageref(paragraph_element, bookmark_name):
-    """把目录条目中的页码占位文本换成指向书签、标记为 dirty 的 PAGEREF 域。"""
+    """把目录条目中的页码占位文本换成指向书签的 PAGEREF 域，结果显示“?”。
+
+    不标记 dirty，文档也不设置 updateFields：Word 在打开时会于分页完成前求值，
+    得到看似合理的错误页码（全是 1）。页码只在用户排版完成后手动更新域时填入。
+    """
     for text in reversed(list(paragraph_element.iter(qn("w:t")))):
         if text.text != _DRAFT_PAGE_TOKEN:
             continue
@@ -337,7 +339,7 @@ def _replace_token_with_pageref(paragraph_element, bookmark_name):
         cached.text = DRAFT_PAGE_PLACEHOLDER
         anchor = run
         for new_run in (
-            _field_run(rpr, _fld_char("begin", dirty=True)),
+            _field_run(rpr, _fld_char("begin")),
             _field_run(rpr, instruction),
             _field_run(rpr, _fld_char("separate")),
             _field_run(rpr, cached),
@@ -690,34 +692,5 @@ def assemble_document(config, spec, body_path, nodes, pages, out_path, odd_page_
     # 更新文档内的受控字段（题注序列 SEQ、书签引用 REF、页码引用 PAGEREF）
     from .field_updater import FieldUpdater
     FieldUpdater(pages if isinstance(pages, dict) else {}, defer_pagerefs=draft).update_document_fields(result)
-    if draft:
-        enable_update_fields_on_open(result)
 
     result.save(str(out_path))
-
-
-# CT_Settings 中 w:updateFields 之后的元素（ECMA-376 顺序）；插入时排在它们之前。
-_SETTINGS_AFTER_UPDATE_FIELDS = (
-    "hdrShapeDefaults", "footnotePr", "endnotePr", "compat", "docVars", "rsids", "mathPr",
-    "attachedSchema", "themeFontLang", "clrSchemeMapping", "doNotIncludeSubdocsInStats",
-    "doNotAutoCompressPictures", "forceUpgrade", "captions", "readModeInkLockDown",
-    "smartTagType", "schemaLibrary", "shapeDefaults", "doNotEmbedSmartTags",
-    "decimalSymbol", "listSeparator",
-)
-
-
-def enable_update_fields_on_open(doc):
-    """让 Word 打开文档时更新全部域（草稿目录的 PAGEREF 由此得到页码）。"""
-    settings = doc.settings.element
-    existing = settings.find(qn("w:updateFields"))
-    if existing is None:
-        existing = OxmlElement("w:updateFields")
-        later = next(
-            (child for child in settings if child.tag in {qn(f"w:{name}") for name in _SETTINGS_AFTER_UPDATE_FIELDS}),
-            None,
-        )
-        if later is not None:
-            later.addprevious(existing)
-        else:
-            settings.append(existing)
-    existing.set(qn("w:val"), "true")

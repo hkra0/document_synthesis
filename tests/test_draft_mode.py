@@ -3,13 +3,13 @@
 
 覆盖：
 1. 没有 --allow-draft 时构建失败，已有交付物不被替换
-2. 草稿标注：*_draft.docx、dirty PAGEREF、updateFields、终端最后一行
+2. 草稿标注：*_draft.docx、显示“?”的 PAGEREF、不在打开时自动更新、终端最后一行
 3. 草稿永远不覆盖精确交付物
 4. 能精确分页时 --allow-draft 不起作用
 5. v3 草稿元数据写入 build-metadata_draft.json，fidelity 为 draft
 6. 引用另一份交付物的目录只写占位符
 7. smoke --allow-draft 通过；精确 smoke 拒绝草稿元数据
-8. FieldUpdater 在草稿中保留 PAGEREF 缓存；updateFields 按 schema 顺序插入
+8. FieldUpdater 在草稿中把所有 PAGEREF 显示为“?”（含来源文档遗留的页码）
 """
 
 import contextlib
@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
-from lib.composition import DRAFT_PAGE_PLACEHOLDER, enable_update_fields_on_open
+from lib.composition import DRAFT_PAGE_PLACEHOLDER
 from lib.drafting import ALLOW_DRAFT_ENV, DRAFT_METADATA_NAME, DRAFT_NOTICE, draft_filename
 from lib.engine import BuildError, UnifiedSynthesizer
 from lib.field_updater import FieldUpdater
@@ -87,9 +87,14 @@ class DraftModeTests(unittest.TestCase):
         draft = self.out / "demo_complete_draft.docx"
         document = _document_xml(draft)
         self.assertEqual(document.count("PAGEREF _Toc_auto_"), 2)
-        self.assertEqual(document.count('w:dirty="true"'), 2)
+        # 打开时自动更新会在分页前求值，得到看似合理的错误页码：两种触发方式都不能有。
+        self.assertNotIn("w:dirty", document)
+        self.assertNotIn("w:updateFields", _settings_xml(draft))
         self.assertNotIn("DRAFTPAGEREFTOKEN", document)
-        self.assertIn('<w:updateFields w:val="true"/>', _settings_xml(draft))
+        from smoke_test import _draft_pageref_results
+        with zipfile.ZipFile(draft) as package:
+            results = _draft_pageref_results(package.read("word/document.xml"))
+        self.assertEqual([shown for _, shown in results], ["?", "?"])
         self.assertEqual(output.strip().splitlines()[-1], DRAFT_NOTICE)
 
     def test_draft_never_replaces_exact_delivery(self) -> None:
@@ -159,25 +164,45 @@ class DraftModeTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("保真度", output.getvalue())
 
-    def test_smoke_rejects_draft_without_update_fields(self) -> None:
+    def test_smoke_rejects_open_time_update_and_unverified_numbers(self) -> None:
         import smoke_test
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
 
         with self.env:
             self._build(MINIMAL / "source", MINIMAL / "manifest.json")
         draft = self.out / "demo_complete_draft.docx"
+        pristine = draft.read_bytes()
+
+        def smoke_output():
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                passed = smoke_test.test_project(MINIMAL / "source", self.out, MINIMAL / "manifest.json", draft=True)
+            return passed, output.getvalue()
+
+        self.assertTrue(smoke_output()[0])
+
+        # 打开时自动更新域
         doc = Document(str(draft))
-        node = doc.settings.element.find(
-            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}updateFields"
-        )
-        doc.settings.element.remove(node)
+        flag = OxmlElement("w:updateFields")
+        flag.set(qn("w:val"), "true")
+        doc.settings.element.append(flag)
         doc.save(str(draft))
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output):
-            passed = smoke_test.test_project(
-                MINIMAL / "source", self.out, MINIMAL / "manifest.json", draft=True,
-            )
+        passed, output = smoke_output()
         self.assertFalse(passed)
-        self.assertIn("updateFields", output.getvalue())
+        self.assertIn("updateFields", output)
+
+        # 页码域显示了未经核验的数字
+        draft.write_bytes(pristine)
+        doc = Document(str(draft))
+        for text in doc.element.body.iter(qn("w:t")):
+            if text.text == DRAFT_PAGE_PLACEHOLDER:
+                text.text = "1"
+                break
+        doc.save(str(draft))
+        passed, output = smoke_output()
+        self.assertFalse(passed)
+        self.assertIn("未经核验的页码", output)
 
 
 class DraftHelpersTests(unittest.TestCase):
@@ -194,20 +219,8 @@ class DraftHelpersTests(unittest.TestCase):
         FieldUpdater({}, defer_pagerefs=True).update_document_fields(doc)
         texts = ["".join(t.text or "" for t in p._p.iter(
             "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t")) for p in doc.paragraphs]
-        self.assertEqual(texts, ["7", "1"])
-
-    def test_update_fields_is_inserted_before_compat(self) -> None:
-        doc = Document()
-        enable_update_fields_on_open(doc)
-        tags = [child.tag.split("}")[1] for child in doc.settings.element]
-        self.assertIn("updateFields", tags)
-        if "compat" in tags:
-            self.assertLess(tags.index("updateFields"), tags.index("compat"))
-        enable_update_fields_on_open(doc)
-        self.assertEqual(tags.count("updateFields"), 1)
-        self.assertEqual(
-            [child.tag.split("}")[1] for child in doc.settings.element].count("updateFields"), 1
-        )
+        # 来源文档遗留的页码（7）也不能保留：草稿中一律显示“?”。
+        self.assertEqual(texts, ["?", "1"])
 
 
 def _simple_field(instruction: str, cached: str):

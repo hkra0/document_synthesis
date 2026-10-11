@@ -437,8 +437,8 @@ def build_deliveries(
     """Reassemble cheap prefixes, never re-render sources to make output variants.
 
     ``draft=True`` assembles each delivery once without Word: TOC page numbers
-    become dirty PAGEREF fields that Word fills in on open, and every check that
-    needs a measured page map is skipped rather than guessed.
+    become PAGEREF fields showing "?" until the user updates fields in Word,
+    and every check that needs a measured page map is skipped, not guessed.
     """
     published_maps, staged = {}, {}
     parts_registry = parts_registry or getattr(config, "parts", {})
