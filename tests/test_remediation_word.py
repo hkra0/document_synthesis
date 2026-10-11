@@ -346,7 +346,8 @@ class RemediationWordTest(unittest.TestCase):
             self.assertEqual(created.returncode, 0, created.stdout + created.stderr)
             manifest = fixture / "manifest.json"
             source = fixture / "source" / "thesis-source.docx"
-            source_xml = __import__("zipfile").ZipFile(source).read("word/document.xml")
+            with __import__("zipfile").ZipFile(source) as package:
+                source_xml = package.read("word/document.xml")
             for token in ("声明", "中文摘要", "Abstract", "参考文献", "附录 A"):
                 self.assertIn(token, source_xml.decode("utf-8"))
             manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
@@ -359,9 +360,11 @@ class RemediationWordTest(unittest.TestCase):
             body_text = _part_text(delivered, "body")
             for token in ("声明", "中文摘要", "Abstract", "参考文献", "附录 A"):
                 self.assertIn(token, body_text)
-            package = __import__("zipfile").ZipFile(delivered)
-            self.assertIn("word/footnotes.xml", package.namelist())
-            self.assertIn("word/endnotes.xml", package.namelist())
+            # 显式关闭压缩包：Windows 上仍被打开的文件无法随临时目录删除。
+            with __import__("zipfile").ZipFile(delivered) as package:
+                names = package.namelist()
+            self.assertIn("word/footnotes.xml", names)
+            self.assertIn("word/endnotes.xml", names)
             pdf = root / "sw03.pdf"
             self.assertTrue(export_docx_to_pdf(str(delivered), str(pdf)))
             import pymupdf

@@ -241,9 +241,10 @@ class PostReviewWordMatrixTest(unittest.TestCase):
             created = subprocess.run([sys.executable, str(REPO / "docs" / "acceptance" / "create_complete_thesis_fixture.py"), str(fixture)], capture_output=True, text=True)
             self.assertEqual(created.returncode, 0, created.stdout + created.stderr)
             delivered = self._cli(fixture, fixture / "manifest.json", root / "out")
-            package = __import__("zipfile").ZipFile(delivered)
-            names = set(package.namelist())
-            document_xml = package.read("word/document.xml")
+            # 显式关闭压缩包：Windows 上仍被打开的文件无法随临时目录删除。
+            with __import__("zipfile").ZipFile(delivered) as package:
+                names = set(package.namelist())
+                document_xml = package.read("word/document.xml")
             self.assertIn("word/footnotes.xml", names)
             self.assertIn("word/endnotes.xml", names)
             for token in (b"PAGEREF ", b"SEQ Figure", b"SEQ Table", b"w:drawing", b"w:tbl", b"oMath"):
@@ -302,9 +303,11 @@ class PostReviewWordMatrixTest(unittest.TestCase):
             shutil.copy2(generated / "source" / "thesis-source.docx", sources / "two.docx")
             manifest = _write_manifest(root, filename="notes.docx", project="NW09", source_strategy="directory_tree")
             delivered = self._cli(sources, manifest, root / "out")
-            package = __import__("zipfile").ZipFile(delivered)
-            self.assertIn("word/footnotes.xml", package.namelist())
-            self.assertGreaterEqual(package.read("word/footnotes.xml").count("匿名论文第一条虚构脚注".encode("utf-8")), 2)
+            with __import__("zipfile").ZipFile(delivered) as package:
+                names = package.namelist()
+                footnotes = package.read("word/footnotes.xml") if "word/footnotes.xml" in names else b""
+            self.assertIn("word/footnotes.xml", names)
+            self.assertGreaterEqual(footnotes.count("匿名论文第一条虚构脚注".encode("utf-8")), 2)
 
     def test_NW10_objects_and_field_instructions_survive_production_cli(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -315,7 +318,8 @@ class PostReviewWordMatrixTest(unittest.TestCase):
             index = build_field_index(delivered)
             self.assertIn("PAGEREF", [item.command for item in index.observations])
             self.assertIn("SEQ", [item.command for item in index.observations])
-            xml = __import__("zipfile").ZipFile(delivered).read("word/document.xml")
+            with __import__("zipfile").ZipFile(delivered) as package:
+                xml = package.read("word/document.xml")
             for token in (b"w:drawing", b"w:tbl", b"oMath", b"w:numPr"):
                 self.assertIn(token, xml)
 

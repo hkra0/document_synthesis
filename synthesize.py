@@ -164,6 +164,15 @@ def run_doctor(source_dir: Optional[Path] = None, manifest_path: Optional[Path] 
     probe_stat = backend.probe()
     office_exact = probe_stat.available and probe_stat.fidelity == "exact"
     checks.append((office_exact, f"Office Automation ({backend.name}): {probe_stat.reason}"))
+    infos = []
+    details = probe_stat.details or {}
+    if "click_to_run" in details:
+        infos.append("Word 安装方式: " + ("Click-to-Run（Microsoft 365 / 零售版）" if details["click_to_run"] else "MSI"))
+    if "powerpoint_registered" in details:
+        infos.append(
+            "PowerPoint: 已安装，可转换 .pptx" if details["powerpoint_registered"]
+            else "PowerPoint: 未安装；.pptx 需先手动导出同名 PDF，其他功能不受影响"
+        )
 
     if source_dir:
         resolved_src = str(source_dir.resolve())
@@ -184,6 +193,8 @@ def run_doctor(source_dir: Optional[Path] = None, manifest_path: Optional[Path] 
 
     for passed, message in checks:
         print(f"[{'通过' if passed else '未通过'}] {message}")
+    for message in infos:
+        print(f"[信息] {message}")
 
     if not dep_ok or not input_ok:
         return 1

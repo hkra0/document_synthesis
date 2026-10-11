@@ -15,7 +15,9 @@ class NullBackend:
     def static_status(self) -> BackendStatus:
         available_now = "当前可使用 --plan、格式分析类命令和 smoke_test.py --structure-only。"
         if sys.platform == "win32":
-            reason = "Windows 上的 Microsoft Word 自动化尚未支持，无法取得精确页码；" + available_now
+            # Windows + Word 由 WinComBackend 负责；走到这里说明 Office 后端被显式设为 none，
+            # 或 Windows COM 后端模块无法导入。未安装 Word 的提示由 WinComBackend 给出。
+            reason = "未启用 Microsoft Word 自动化（Office 后端为 none），无法取得精确页码；" + available_now
         elif sys.platform.startswith("linux"):
             reason = "Linux 上没有可用的 Microsoft Word 自动化，无法取得精确页码；" + available_now
         else:
