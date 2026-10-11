@@ -5,6 +5,10 @@ COM 调用是同步的，进程内无法中断，所以所有 Office 操作都�
 （``python -m lib.office.win_com_worker``）中执行：父进程通过 stdin 发送一行 JSON
 请求，worker 在 stdout 只返回一行结果 JSON，日志写到 stderr。
 
+在 :meth:`WinComBackend.session` 内（构建与 smoke 检查经 ``lib.office.office_session``
+进入），Word 操作改由 :class:`WordSession` 交给同一个 worker 与同一个 Word 实例，
+一次构建只启动一次 Word；每个请求仍有独立超时，超时与失败的回收规则与单次模式相同。
+
 可靠性约定：
 
 - worker 用 ``DispatchEx`` 启动独立的 Word 实例，并把该实例的 PID 与创建时间写入
@@ -12,6 +16,8 @@ COM 调用是同步的，进程内无法中断，所以所有 Office 操作都�
   并核对映像名与创建时间，绝不按进程名结束用户自己打开的 Word。
 - Word 只读打开工作目录中的私有副本；目标文件只在全部检查通过后才被替换，
   失败时不会留下半成品。
+- 用户在资源管理器中打开的文档可能被系统路由进运行中的隐藏实例。worker 退出 Word
+  前若发现不是本次打开的文档，就显示 Word、恢复提示并撤销 pid 记录，不退出也不结束它。
 - 只使用数值常量，不依赖 ``gencache`` 生成的 ``gen_py`` 缓存。
 
 本模块在任何平台都可以导入；``winreg``、``ctypes.windll`` 与 pywin32 只在
@@ -31,7 +37,8 @@ import sys
 import tempfile
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from contextlib import contextmanager
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple
 
 from .base import (
     BackendStatus,
@@ -449,15 +456,7 @@ def run_worker(
 
     label = request.get("app_label", "Microsoft Word")
     if timed_out:
-        step = last_worker_step(stderr or "")
-        log_path = save_timeout_diagnostics(request, stderr or "")
-        raise OfficeTimeoutError(
-            f"等待 {label} 响应超时（{int(timeout)} 秒），已结束本次启动的 Office 进程。"
-            f"请检查文档是否会触发 {label} 的对话框（密码、修复、宏或许可证提示），"
-            f"或在 {label} 中禁用第三方 COM 加载项后重试。"
-            + (f"最后一次 COM 调用: {step}。" if step else "")
-            + (f"诊断日志: {log_path}" if log_path else "")
-        )
+        raise _timeout_error(request, timeout, stderr or "")
 
     result = None
     for line in reversed((stdout or "").splitlines()):
@@ -468,11 +467,32 @@ def run_worker(
                 result = None
             break
     if not isinstance(result, dict):
-        tail = (stderr or "").strip().splitlines()[-5:]
-        raise OfficeBackendError(
-            f"{label} 自动化子进程异常退出（退出码 {proc.returncode}）"
-            + (": " + " | ".join(tail) if tail else "。")
-        )
+        raise _crash_error(label, proc.returncode, stderr or "")
+    return _checked_result(result, label)
+
+
+def _timeout_error(request: Dict[str, Any], timeout: float, stderr: str) -> OfficeTimeoutError:
+    label = request.get("app_label", "Microsoft Word")
+    step = last_worker_step(stderr)
+    log_path = save_timeout_diagnostics(request, stderr)
+    return OfficeTimeoutError(
+        f"等待 {label} 响应超时（{int(timeout)} 秒），已结束本次启动的 Office 进程。"
+        f"请检查文档是否会触发 {label} 的对话框（密码、修复、宏或许可证提示），"
+        f"或在 {label} 中禁用第三方 COM 加载项后重试。"
+        + (f"最后一次 COM 调用: {step}。" if step else "")
+        + (f"诊断日志: {log_path}" if log_path else "")
+    )
+
+
+def _crash_error(label: str, returncode: Optional[int], stderr: str) -> OfficeBackendError:
+    tail = stderr.strip().splitlines()[-5:]
+    return OfficeBackendError(
+        f"{label} 自动化子进程异常退出（退出码 {returncode}）"
+        + (": " + " | ".join(tail) if tail else "。")
+    )
+
+
+def _checked_result(result: Dict[str, Any], label: str) -> Dict[str, Any]:
     if not result.get("ok"):
         message = str(result.get("error") or f"{label} 自动化失败。")
         if result.get("kind") == "unsupported":
@@ -481,13 +501,180 @@ def run_worker(
     return result
 
 
+#: 会话 worker 收到 close 或请求失败后，等待其退出 Word 并结束的最长时间（秒）。
+#: worker 自身的 Quit 看门狗在 30 秒后结束 worker，这里多留余量。
+SESSION_EXIT_SECONDS = 45.0
+
+
+class WordSession:
+    """一次构建内复用的 Word worker：同一个 worker 子进程、同一个 Word 实例处理多个请求。
+
+    worker 与 Word 在第一个请求时才启动。每个请求仍有独立超时；超时、worker 崩溃或
+    请求失败后实例不可信时，按与单次模式相同的规则回收本次启动的 Word（pid 文件、
+    孤儿判定、诊断日志），会话随后在下一个请求时启动新的 worker。
+    """
+
+    def __init__(self, command: Optional[Sequence[str]] = None) -> None:
+        self._command = list(command or WORKER_COMMAND)
+        self._proc: Optional[subprocess.Popen] = None
+        self._job: Optional[Path] = None
+        self._lines: Any = None
+        self._stderr: List[str] = []
+        self._readers: List[Any] = []
+        self._next_id = 0
+        self.workers_started = 0
+
+    @property
+    def pid_file(self) -> Optional[Path]:
+        return self._job / "office.pid" if self._job is not None else None
+
+    def _start(self) -> None:
+        import queue
+        import threading
+
+        job = _work_root() / f"job-session-{uuid.uuid4().hex[:16]}"
+        job.mkdir(parents=True)
+        try:
+            proc = subprocess.Popen(
+                self._command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=_worker_env(),
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except OSError as exc:
+            shutil.rmtree(job, ignore_errors=True)
+            raise OfficeBackendError(f"无法启动 Office 自动化子进程: {exc}") from exc
+        lines: "queue.Queue[Optional[str]]" = queue.Queue()
+        stderr: List[str] = []
+
+        def pump_stdout() -> None:
+            for line in proc.stdout:
+                lines.put(line)
+            lines.put(None)
+
+        def pump_stderr() -> None:
+            for line in proc.stderr:
+                stderr.append(line)
+
+        self._readers = [threading.Thread(target=target, daemon=True) for target in (pump_stdout, pump_stderr)]
+        for reader in self._readers:
+            reader.start()
+        self._proc, self._job, self._lines, self._stderr = proc, job, lines, stderr
+        self.workers_started += 1
+        try:
+            self._send({"op": "session", "pid_file": str(self.pid_file)})
+        except OSError:
+            pass  # worker 已退出：第一个请求读到 EOF 后按异常退出处理并回收
+
+    def _send(self, message: Dict[str, Any]) -> None:
+        assert self._proc is not None and self._proc.stdin is not None
+        self._proc.stdin.write(json.dumps(message, ensure_ascii=False) + "\n")
+        self._proc.stdin.flush()
+
+    def _stderr_text(self) -> str:
+        return "".join(self._stderr)
+
+    def _finish(self, *, killed: bool, abnormal: bool) -> None:
+        """回收 worker 与它启动的 Word，删除会话工作目录。"""
+        proc, job = self._proc, self._job
+        self._proc = self._job = self._lines = None
+        if proc is None or job is None:
+            return
+        try:
+            if killed:
+                proc.kill()
+            try:
+                proc.wait(timeout=None if killed else SESSION_EXIT_SECONDS)
+            except subprocess.TimeoutExpired:
+                killed = abnormal = True
+                proc.kill()
+                proc.wait()
+            for reader in self._readers:
+                reader.join(timeout=5)
+            abnormal = abnormal or proc.returncode not in (0, 1)
+            cleanup_recorded_office(
+                job / "office.pid",
+                0.0 if killed else EXIT_GRACE_SECONDS,
+                orphan_wait=ORPHAN_WAIT_SECONDS if abnormal else 0.0,
+            )
+        finally:
+            for stream in (proc.stdin, proc.stdout, proc.stderr):
+                try:
+                    if stream is not None:
+                        stream.close()
+                except OSError:
+                    pass
+            shutil.rmtree(job, ignore_errors=True)
+
+    def request(self, request: Dict[str, Any], timeout: float) -> Dict[str, Any]:
+        """在会话的 Word 中执行一个请求；语义与 :func:`run_worker` 相同。"""
+        import queue
+
+        label = request.get("app_label", "Microsoft Word")
+        if self._proc is None:
+            self._start()
+        self._next_id += 1
+        request_id = self._next_id
+        try:
+            self._send(dict(request, id=request_id, timeout=timeout))
+        except OSError:
+            pass  # worker 已退出：下面读到 EOF 后按异常退出处理
+        deadline = time.monotonic() + timeout
+        result: Optional[Dict[str, Any]] = None
+        while result is None:
+            remaining = deadline - time.monotonic()
+            try:
+                if remaining <= 0:
+                    raise queue.Empty
+                line = self._lines.get(timeout=remaining)
+            except queue.Empty:
+                # 与单次模式相同：结束 worker，立即按 pid 文件结束 Word，并等待启动阶段的孤儿进程。
+                self._finish(killed=True, abnormal=True)
+                raise _timeout_error(request, timeout, self._stderr_text()) from None
+            if line is None:
+                proc = self._proc
+                self._finish(killed=False, abnormal=True)
+                raise _crash_error(label, proc.returncode if proc else None, self._stderr_text())
+            try:
+                candidate = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(candidate, dict) and candidate.get("id") in (request_id, None):
+                result = candidate
+        if result.get("restart"):
+            # worker 已判定实例不可信，正在退出 Word；回收后下一个请求启动新的 worker。
+            self._finish(killed=False, abnormal=False)
+        return _checked_result(result, label)
+
+    def close(self) -> None:
+        """通知 worker 退出 Word 并结束；Word 关闭阶段卡住时按 pid 文件结束它。"""
+        if self._proc is None:
+            return
+        try:
+            self._send({"op": "close"})
+            self._proc.stdin.close()
+        except (OSError, ValueError):
+            pass
+        self._finish(killed=False, abnormal=False)
+
+
 def last_worker_step(stderr: str) -> Optional[str]:
-    """从 worker 的 stderr 中取出最后一条步骤记录（不含时间戳）。"""
-    from .win_com_worker import STEP_PREFIX
+    """从 worker 的 stderr 中取出最后一条步骤记录（不含时间戳）。
+
+    会话模式下只看最后一个请求分隔行之后的步骤，不把上一个请求的步骤当成挂起点。
+    """
+    from .win_com_worker import REQUEST_PREFIX, STEP_PREFIX
 
     for line in reversed(stderr.splitlines()):
         if line.startswith(STEP_PREFIX):
             return line[len(STEP_PREFIX):].rsplit(" @ ", 1)[0].strip() or None
+        if line.startswith(REQUEST_PREFIX):
+            return None
     return None
 
 
@@ -550,6 +737,18 @@ def _replace_with_retry(source: Path, target: Path) -> None:
             pass
 
 
+#: 会话中执行的操作（使用 Word）；``convert_pptx`` 启动 PowerPoint，始终是单次模式。
+_SESSION_OPS = ("probe", "convert_doc", "export_pdf", "inspect")
+_WORD_DETAIL_KEYS = ("word_version", "word_build", "word_bitness", "click_to_run")
+
+
+def _word_summary(details: Dict[str, Any]) -> str:
+    version = details.get("word_version") or "未知版本"
+    build = details.get("word_build")
+    bitness = details.get("word_bitness")
+    return f"Microsoft Word {version}" + (f" (build {build})" if build else "") + (f", {bitness} 位" if bitness else "")
+
+
 class WinComBackend:
     """Windows 平台 Microsoft Word / PowerPoint COM 自动化后端。"""
     name: str = "win-word"
@@ -558,8 +757,44 @@ class WinComBackend:
     def __init__(
         self,
         runner: Optional[Callable[[Dict[str, Any], float, Path], Dict[str, Any]]] = None,
+        session_factory: Optional[Callable[[], Any]] = None,
     ) -> None:
         self._runner = runner or run_worker
+        # 注入了 runner 而没有注入会话工厂时（离线测试），会话不生效，请求仍交给 runner。
+        if session_factory is None and runner is None:
+            session_factory = WordSession
+        self._session_factory = session_factory
+        self._session: Optional[Any] = None
+        self._word_details: Dict[str, Any] = {}
+
+    # -- 会话 -------------------------------------------------------------
+
+    @contextmanager
+    def session(self) -> Iterator["WinComBackend"]:
+        """在 ``with`` 块内复用同一个 worker 与 Word 实例；离开时退出 Word。
+
+        Word 在第一个 Word 操作时才启动；PowerPoint 转换仍是单次模式。
+        ``DOCUMENT_SYNTHESIS_WORD_SESSION=0`` 时不复用（每个操作单独启动 Word）。
+        嵌套调用复用外层会话。
+        """
+        enabled = os.environ.get("DOCUMENT_SYNTHESIS_WORD_SESSION", "1").strip() != "0"
+        if self._session is not None or self._session_factory is None or not enabled:
+            yield self
+            return
+        self._session = self._session_factory()
+        try:
+            yield self
+        finally:
+            session, self._session = self._session, None
+            session.close()
+
+    def session_status(self) -> Optional[BackendStatus]:
+        """本后端实例已经实际启动并调用过的 Word；尚未启动过时返回 None。不启动 Word。"""
+        if not self._word_details:
+            return None
+        details = dict(self.static_status().details)
+        details.update(self._word_details)
+        return BackendStatus(True, f"Automation 会话成功: {_word_summary(self._word_details)}。", "exact", details)
 
     # -- 工作目录 ---------------------------------------------------------
 
@@ -572,7 +807,17 @@ class WinComBackend:
         return job
 
     def _run(self, request: Dict[str, Any], job: Path, timeout: float) -> Dict[str, Any]:
-        return self._runner(request, timeout, job / "office.pid")
+        if self._session is not None and request.get("op") in _SESSION_OPS:
+            result = self._session.request(request, timeout)
+        else:
+            result = self._runner(request, timeout, job / "office.pid")
+        details = result.get("word") if isinstance(result.get("word"), dict) else (
+            result if request.get("op") == "probe" else {}
+        )
+        recorded = {key: details[key] for key in _WORD_DETAIL_KEYS if key in details}
+        if recorded:
+            self._word_details = recorded
+        return result
 
     # -- 状态 -------------------------------------------------------------
 
@@ -613,12 +858,8 @@ class WinComBackend:
         finally:
             shutil.rmtree(job, ignore_errors=True)
         details = dict(stat.details)
-        details.update({key: result[key] for key in ("word_version", "word_build", "word_bitness", "click_to_run") if key in result})
-        version = result.get("word_version") or "未知版本"
-        build = result.get("word_build")
-        bitness = result.get("word_bitness")
-        summary = f"Microsoft Word {version}" + (f" (build {build})" if build else "") + (f", {bitness} 位" if bitness else "")
-        return BackendStatus(True, f"Automation 探针成功: {summary}。", "exact", details)
+        details.update({key: result[key] for key in _WORD_DETAIL_KEYS if key in result})
+        return BackendStatus(True, f"Automation 探针成功: {_word_summary(result)}。", "exact", details)
 
     # -- 转换与导出 ------------------------------------------------------
 
@@ -748,6 +989,7 @@ class WinComBackend:
 
 __all__: List[str] = [
     "WinComBackend",
+    "WordSession",
     "com_failure_message",
     "cleanup_recorded_office",
     "process_identity",

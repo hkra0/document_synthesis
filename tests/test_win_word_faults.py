@@ -72,6 +72,10 @@ def build_sample(path: Path, filler_pages: int = 0) -> None:
     doc.save(path)
 
 
+#: 会话结束（close 同步等待 worker 退出）后再观察的时间，确认移交的 Word 没有被迟到的清理结束（秒）。
+EXIT_SETTLE_SECONDS = 5
+
+
 def _word_pids() -> Set[int]:
     return set(win_com.list_process_ids(win_com.WORD_IMAGE))
 
@@ -191,18 +195,116 @@ class WindowsWordFaultTests(unittest.TestCase):
         self.assertFalse(pdf.exists())
         self.assertNoWordLeft()
 
+    def _session_pid(self) -> int:
+        records = [win_com.read_pid_record(path) for path in self.work.glob("job-session-*/office.pid")]
+        records = [record for record in records if record]
+        self.assertEqual(len(records), 1, "会话应恰好记录一个本次启动的 Word")
+        return records[0]["pid"]
+
+    def test_session_reuses_one_word_for_several_requests(self) -> None:
+        docx = self.dir / "sample.docx"
+        build_sample(docx)
+        seen = set()
+        with self.backend.session():
+            for index in range(3):
+                report = self.backend.inspect_bookmarks(docx, self.dir / f"s{index}.pdf", ["cover", "body", "later"])
+                self.assertEqual(report.bookmarks["later"], {"physical_page": 4, "printed_page": 2})
+                seen.add(self._session_pid())
+                self.assertEqual(_word_pids() - self.before, seen, "会话期间只有一个本次启动的 Word")
+            self.backend.export_pdf(docx, self.dir / "export.pdf")
+            self.assertEqual(self.backend.session_status().details["word_version"][:2], "16")
+        self.assertEqual(len(seen), 1)
+        self.assertNoWordLeft()
+
+    def test_session_recovers_after_timeout_and_killed_word(self) -> None:
+        small, big = self.dir / "small.docx", self.dir / "big.docx"
+        build_sample(small)
+        build_sample(big, filler_pages=150)
+        with self.backend.session():
+            self.backend.inspect_bookmarks(small, self.dir / "a.pdf", ["cover"])
+            first = self._session_pid()
+            # 处理阶段超时：只结束会话中的 Word，下一个请求启动新的 worker 与 Word。
+            with patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT": "8"}):
+                with self.assertRaises(OfficeTimeoutError) as ctx:
+                    self.backend.inspect_bookmarks(big, self.dir / "big.pdf", ["cover", "body", "later"])
+            self.assertIn("超时", str(ctx.exception))
+            self.assertIsNone(win_com.process_identity(first), "超时后会话中的 Word 已被结束")
+            self.assertFalse((self.dir / "big.pdf").exists())
+            report = self.backend.inspect_bookmarks(small, self.dir / "b.pdf", ["cover", "body", "later"])
+            self.assertEqual(report.total_pages, 4)
+            second = self._session_pid()
+            self.assertNotEqual(second, first)
+            # 两个请求之间 Word 被外部结束：下一个请求换用新实例并成功。
+            win_com.terminate_process(second)
+            report = self.backend.inspect_bookmarks(small, self.dir / "c.pdf", ["cover", "body", "later"])
+            self.assertEqual(report.total_pages, 4)
+            self.assertNotEqual(self._session_pid(), second)
+        self.assertNoWordLeft(settle=10)
+
+    def test_document_opened_during_session_is_handed_over(self) -> None:
+        """会话期间用户双击打开的文档会被系统路由进隐藏的自动化实例：会话结束时移交给用户，不退出。"""
+        if self.before:
+            self.skipTest("BLOCKED: 已有其他 Word 在运行，系统可能把文档路由给它，无法验证移交")
+        marker = "【构建期间的未保存修改】"
+        sample = self.dir / "sample.docx"
+        build_sample(sample)
+        late_path = self.dir / "构建期间打开.docx"
+        late = Document()
+        late.add_paragraph("构建期间打开的文档")
+        late.save(late_path)
+        late_bytes = late_path.read_bytes()
+        late_pid = None
+        try:
+            with self.backend.session():
+                self.backend.inspect_bookmarks(sample, self.dir / "a.pdf", ["cover"])
+                session_pid = self._session_pid()
+                os.startfile(str(late_path))
+                document = None
+                deadline = time.monotonic() + 90
+                while document is None and time.monotonic() < deadline:
+                    document = _find_open_document(late_path)
+                    if document is None:
+                        time.sleep(0.5)
+                self.assertIsNotNone(document, "无法打开构建期间的用户文档")
+                late_pid = win32process_pid(document)
+                self.assertEqual(late_pid, session_pid, "文档没有被路由进自动化实例，本测试的前提不成立")
+                document.Content.InsertAfter(marker)
+                del document
+                report = self.backend.inspect_bookmarks(sample, self.dir / "b.pdf", ["cover", "body", "later"])
+                self.assertEqual(report.total_pages, 4)
+            time.sleep(EXIT_SETTLE_SECONDS)
+            self.assertIsNotNone(win_com.process_identity(late_pid), "移交给用户的 Word 被结束了")
+            document = _find_open_document(late_path)
+            self.assertIsNotNone(document, "会话结束后构建期间打开的文档不再打开")
+            self.assertIn(marker, document.Content.Text, "构建期间打开的文档的未保存修改丢失")
+            self.assertFalse(document.Saved)
+            self.assertTrue(document.Application.Visible, "移交的 Word 应对用户可见")
+            self.assertEqual(late_path.read_bytes(), late_bytes)
+            del document
+        finally:
+            document = _find_open_document(late_path)
+            if document is not None:
+                application = document.Application
+                document.Close(0)
+                if application.Documents.Count == 0:
+                    application.Quit(0)
+                del application, document
+        self.assertNoWordLeft()
+
     def test_build_timeout_publishes_nothing(self) -> None:
         from lib.engine import BuildError, UnifiedSynthesizer
         from lib.qa import OfficeExportError
 
         output_dir = self.dir / "output"
-        with patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT": "3"}):
+        # 构建共用一个 Word 会话后，后续分页请求不再包含 Word 启动时间，3 秒已足够完成；
+        # 用 1 秒确保在启动阶段超时（与 test_timeout_during_launch_and_processing 相同）。
+        with patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT": "1"}):
             with self.assertRaises((BuildError, OfficeExportError)) as ctx:
                 demo = ROOT / "examples" / "minimal-demo"
                 UnifiedSynthesizer.synthesize(demo / "source", output_dir, demo / "manifest.json")
         self.assertIn("超时", str(ctx.exception))
         self.assertFalse((output_dir / "demo_complete.docx").exists())
-        self.assertNoWordLeft()
+        self.assertNoWordLeft(settle=15)
 
 
 def _find_open_document(path: Path):
@@ -354,6 +456,13 @@ class UserWordIsolationTests(unittest.TestCase):
         self.assertIsNotNone(killed)
         self.assertIsInstance(outcome.get("error"), OfficeBackendError)
         self.assertUserWordUntouched("Word 被强制结束")
+
+
+def win32process_pid(document) -> int:
+    """打开该文档的 Word 窗口所属进程。"""
+    import win32process
+
+    return int(win32process.GetWindowThreadProcessId(int(document.Windows(1).Hwnd))[1])
 
 
 if __name__ == "__main__":

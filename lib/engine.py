@@ -714,8 +714,21 @@ class UnifiedSynthesizer:
         cls, source_dir: Path, output_dir: Optional[Path] = None,
         manifest_path: Optional[Path] = None, override_paths=None, keep_work: bool = False,
     ) -> Dict[str, Path]:
-        """Normalize the source once, assemble declared documents, verify, then publish."""
-        prepared = cls.prepare_build(source_dir, manifest_path, override_paths=override_paths)
+        """Normalize the source once, assemble declared documents, verify, then publish.
+
+        整个构建共用一个 Office 会话：Windows 上转换、各轮分页核验只启动一次 Word。
+        """
+        from .office import office_session
+
+        with office_session():
+            return cls._synthesize(source_dir, output_dir, manifest_path, override_paths, keep_work)
+
+    @classmethod
+    def _synthesize(
+        cls, source_dir: Path, output_dir: Optional[Path] = None,
+        manifest_path: Optional[Path] = None, override_paths=None, keep_work: bool = False,
+    ) -> Dict[str, Path]:
+        prepared =cls.prepare_build(source_dir, manifest_path, override_paths=override_paths)
         cls.verify_build_plan_hashes(prepared)
         source_path = prepared.source_path
         config = prepared.config
@@ -1043,11 +1056,12 @@ def generate_build_metadata(
                 delivery_info["field_cache"] = evidence["field_cache"]
             deliveries_info[doc_id] = delivery_info
 
-    from .qa import word_automation_status
+    # 不为记录可用性再启动一次 Word：复用本次构建实际调用 Word 的结果，或静态检查。
+    from .qa import word_build_status
     word_available = False
     word_reason = "未执行 Word Automation 探针。"
     try:
-        word_available, word_reason = word_automation_status()
+        word_available, word_reason = word_build_status()
     except Exception:
         pass
 

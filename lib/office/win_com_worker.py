@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 """Windows Office COM worker 子进程入口：``python -m lib.office.win_com_worker``。
 
-从 stdin 读取一行 JSON 请求，在 stdout 只输出一行结果 JSON，日志写到 stderr。
-请求字段 ``op`` 取值：``probe``、``convert_doc``、``convert_pptx``、``export_pdf``、
-``inspect``。所有路径都是父进程准备好的工作目录中的绝对路径。
+两种模式，日志都写到 stderr：
 
-worker 启动 Office 后立即把进程 PID 与创建时间写入 ``pid_file``，父进程据此在
-超时或异常时只结束这一个进程。COM 对象工厂可以注入，离线测试用假对象驱动。
+- 单次模式：从 stdin 读取一行 JSON 请求，启动 Office、执行、退出 Office，在 stdout
+  只输出一行结果 JSON。请求字段 ``op`` 取值：``probe``、``convert_doc``、
+  ``convert_pptx``、``export_pdf``、``inspect``。
+- 会话模式：第一行为 ``{"op": "session", "pid_file": ...}``，之后每行一个带 ``id`` 的
+  Word 请求，每个请求输出一行带同一 ``id`` 的结果；Word 在第一个请求时启动，
+  在 ``{"op": "close"}`` 或 stdin 结束时退出。一次构建内的全部 Word 操作共用这个实例。
+
+所有路径都是父进程准备好的工作目录中的绝对路径。worker 启动 Office 后立即把进程
+PID 与创建时间写入 ``pid_file``，父进程据此在超时或异常时只结束这一个进程。
+COM 对象工厂可以注入，离线测试用假对象驱动。
 """
 
 from __future__ import annotations
@@ -38,6 +44,7 @@ from .win_com import (
 
 # Word / PowerPoint 数值常量（不依赖 gencache）。
 WD_ALERTS_NONE = 0
+WD_ALERTS_ALL = -1
 WD_DO_NOT_SAVE_CHANGES = 0
 WD_FORMAT_DOCUMENT_DEFAULT = 16
 WD_EXPORT_FORMAT_PDF = 17
@@ -47,8 +54,12 @@ WD_EXPORT_DOCUMENT_CONTENT = 0
 WD_EXPORT_CREATE_HEADING_BOOKMARKS = 1
 WD_ACTIVE_END_ADJUSTED_PAGE_NUMBER = 1   # 打印页码（受起始页码设置影响）
 WD_ACTIVE_END_PAGE_NUMBER = 3            # 物理页（从文档开头计数）
+MSO_AUTOMATION_SECURITY_BY_UI = 2
 MSO_AUTOMATION_SECURITY_FORCE_DISABLE = 3
 PP_SAVE_AS_PDF = 32
+
+#: 使用 Word 的操作；``convert_pptx`` 启动的是 PowerPoint，始终走单次模式。
+WORD_OPS = ("probe", "convert_doc", "export_pdf", "inspect")
 
 
 #: 调用 Quit 之后 worker 仍未退出的最长等待（秒）。第三方 COM 加载项可能让 Word 在关闭阶段卡住，
@@ -125,6 +136,8 @@ def _log(message: str) -> None:
 
 #: stderr 中步骤行的前缀；父进程据此在超时报错里给出最后一次 COM 调用。
 STEP_PREFIX = "[win_com_worker] step: "
+#: 会话模式中每个请求开始时的分隔行；父进程只在最后一个请求的步骤中查找挂起点。
+REQUEST_PREFIX = "[win_com_worker] request: "
 
 
 def _step(name: str) -> None:
@@ -194,6 +207,18 @@ def _write_pid_record(pid_file: Optional[str], pid: int, image: str) -> None:
     Path(pid_file).write_text(json.dumps(record), encoding="utf-8")
 
 
+def _release_pid_record(pid_file: Optional[str]) -> None:
+    """Word 已移交给用户（其中有用户的文档）：撤销 pid 记录，父进程不再结束它。"""
+    if not pid_file:
+        return
+    try:
+        record = json.loads(Path(pid_file).read_text(encoding="utf-8"))
+        released = {"released_pid": record.get("pid") if isinstance(record, dict) else None}
+        Path(pid_file).write_text(json.dumps(released), encoding="utf-8")
+    except (OSError, ValueError) as exc:
+        _log(f"无法撤销 pid 记录: {exc!r}")
+
+
 def _word_pid(app: Any) -> int:
     """通过唯一窗口标题找到本实例的主窗口，再取其进程 ID。"""
     import win32gui
@@ -237,13 +262,21 @@ def _default_dispatch(progid: str) -> Any:
     return win32com.client.DispatchEx(progid)
 
 
-@contextmanager
-def word_application(
+#: 本 worker 交给 Word 打开过的文件（规范化路径）。Word 退出前据此区分本次的文档与
+#: 用户经资源管理器打开、被系统路由进这个隐藏实例的文档。
+_opened_paths: set = set()
+
+
+def _normalized(path: str) -> str:
+    return os.path.normcase(os.path.abspath(str(path)))
+
+
+def launch_word(
     pid_file: Optional[str],
     dispatch: Callable[[str], Any] = _default_dispatch,
     pid_of: Callable[[Any], int] = _word_pid,
-) -> Iterator[Any]:
-    """启动独立、隐藏、禁用宏与提示的 Word 实例，退出时一定 ``Quit``。"""
+) -> Any:
+    """启动独立、隐藏、禁用宏与提示的 Word 实例并记录其 PID；配置失败时退出该实例。"""
     _write_pending_record(pid_file, WORD_IMAGE)
     _step("DispatchEx(Word.Application)")
     app = dispatch(WORD_PROGID)
@@ -262,19 +295,82 @@ def word_application(
             app.AutomationSecurity = MSO_AUTOMATION_SECURITY_FORCE_DISABLE
         except Exception as exc:
             _log(f"无法设置 Word 选项: {exc!r}")
+    except BaseException:
+        shutdown_word(app, pid_file)
+        raise
+    return app
+
+
+def _foreign_document_count(app: Any) -> int:
+    """关闭本 worker 遗留的文档，返回仍打开的其他（用户的）文档数。"""
+    documents = app.Documents
+    foreign = 0
+    for index in range(int(documents.Count), 0, -1):
+        doc = documents(index)
+        if _normalized(doc.FullName) in _opened_paths:
+            try:
+                doc.Close(SaveChanges=WD_DO_NOT_SAVE_CHANGES)
+            except Exception as exc:
+                _log(f"关闭遗留文档失败: {exc!r}")
+                foreign += 1
+        else:
+            foreign += 1
+        del doc
+    return foreign
+
+
+def _hand_over_to_user(app: Any, pid_file: Optional[str]) -> None:
+    """把装有用户文档的实例交还给用户：恢复可见与提示，撤销 pid 记录，不退出。"""
+    _release_pid_record(pid_file)
+    for name, value in (
+        ("ScreenUpdating", True),
+        ("DisplayAlerts", WD_ALERTS_ALL),
+        ("AutomationSecurity", MSO_AUTOMATION_SECURITY_BY_UI),
+        ("Visible", True),
+    ):
+        try:
+            setattr(app, name, value)
+        except Exception as exc:
+            _log(f"无法恢复 Word 选项 {name}: {exc!r}")
+
+
+def shutdown_word(app: Any, pid_file: Optional[str]) -> None:
+    """退出本次启动的 Word；若其中有用户的文档，则移交给用户而不退出。"""
+    _step("Application.Quit")
+    _arm_quit_watchdog()
+    try:
+        foreign = _foreign_document_count(app)
+    except Exception as exc:
+        _log(f"无法检查 Word 中打开的文档: {exc!r}")
+        foreign = 0
+    if foreign:
+        _log(f"Word 中有 {foreign} 份不是本次打开的文档（用户在构建期间打开），保留并显示 Word，不退出。")
+        _hand_over_to_user(app, pid_file)
+        return
+    try:
+        app.Quit(WD_DO_NOT_SAVE_CHANGES)
+    except Exception as exc:
+        _log(f"Word Quit 失败: {exc!r}")
+
+
+@contextmanager
+def word_application(
+    pid_file: Optional[str],
+    dispatch: Callable[[str], Any] = _default_dispatch,
+    pid_of: Callable[[Any], int] = _word_pid,
+) -> Iterator[Any]:
+    """单次操作用的 Word 实例，退出时一定 ``Quit``（或移交给用户）。"""
+    app = launch_word(pid_file, dispatch, pid_of)
+    try:
         yield app
     finally:
-        _step("Application.Quit")
-        _arm_quit_watchdog()
-        try:
-            app.Quit(WD_DO_NOT_SAVE_CHANGES)
-        except Exception as exc:
-            _log(f"Word Quit 失败: {exc!r}")
+        shutdown_word(app, pid_file)
         del app
 
 
 @contextmanager
 def word_document(app: Any, path: str) -> Iterator[Any]:
+    _opened_paths.add(_normalized(path))
     doc = call_with_busy_retry("Documents.Open", lambda: app.Documents.Open(
         FileName=path,
         ConfirmConversions=False,
@@ -362,43 +458,159 @@ def _word_details(app: Any) -> Dict[str, Any]:
 
 def handle(request: Dict[str, Any], dispatch: Callable[[str], Any] = _default_dispatch,
            word_pid_of: Callable[[Any], int] = _word_pid) -> Dict[str, Any]:
+    """单次模式：为一个请求启动 Office，执行后退出。"""
     op = request.get("op")
-    pid_file = request.get("pid_file")
+    if op == "convert_pptx":
+        return convert_pptx(request, dispatch)
+    if op not in WORD_OPS:
+        raise WorkerFailure(f"未知的 worker 操作: {op!r}")
+    with word_application(request.get("pid_file"), dispatch, word_pid_of) as app:
+        return run_word_op(app, request)
+
+
+def run_word_op(app: Any, request: Dict[str, Any]) -> Dict[str, Any]:
+    """在已启动的 Word 实例上执行一个操作；文档在返回前一定关闭。"""
+    op = request.get("op")
 
     if op == "probe":
-        with word_application(pid_file, dispatch, word_pid_of) as app:
-            return _ready(dict(ok=True, **_word_details(app)))
+        return _ready(dict(ok=True, **_word_details(app)))
 
     if op == "convert_doc":
-        with word_application(pid_file, dispatch, word_pid_of) as app:
-            with word_document(app, request["src"]) as doc:
-                call_with_busy_retry("Document.SaveAs2", lambda: doc.SaveAs2(
-                    FileName=request["dst"], FileFormat=WD_FORMAT_DOCUMENT_DEFAULT, AddToRecentFiles=False
-                ))
-                _ready({"ok": True})
+        _opened_paths.add(_normalized(request["dst"]))  # SaveAs2 之后文档以新路径打开
+        with word_document(app, request["src"]) as doc:
+            call_with_busy_retry("Document.SaveAs2", lambda: doc.SaveAs2(
+                FileName=request["dst"], FileFormat=WD_FORMAT_DOCUMENT_DEFAULT, AddToRecentFiles=False
+            ))
+            _ready({"ok": True})
         return {"ok": True}
 
     if op == "export_pdf":
-        with word_application(pid_file, dispatch, word_pid_of) as app:
-            with word_document(app, request["docx"]) as doc:
-                export_document_pdf(doc, request["pdf"])
-                _ready({"ok": True})
+        with word_document(app, request["docx"]) as doc:
+            export_document_pdf(doc, request["pdf"])
+            _ready({"ok": True})
         return {"ok": True}
 
     if op == "inspect":
         names = [str(name) for name in request.get("names", [])]
-        with word_application(pid_file, dispatch, word_pid_of) as app:
-            with word_document(app, request["docx"]) as doc:
-                call_with_busy_retry("Document.Repaginate", doc.Repaginate)
-                page_map = measure_bookmarks(doc, names)
-                export_document_pdf(doc, request["pdf"])
-                _ready({"ok": True, "page_map": page_map})
+        with word_document(app, request["docx"]) as doc:
+            call_with_busy_retry("Document.Repaginate", doc.Repaginate)
+            page_map = measure_bookmarks(doc, names)
+            export_document_pdf(doc, request["pdf"])
+            _ready({"ok": True, "page_map": page_map})
         return {"ok": True, "page_map": page_map}
 
-    if op == "convert_pptx":
-        return convert_pptx(request, dispatch)
-
     raise WorkerFailure(f"未知的 worker 操作: {op!r}")
+
+
+# ---------------------------------------------------------------------------
+# 会话模式
+# ---------------------------------------------------------------------------
+
+def _recorded_instance_alive(pid_file: Optional[str]) -> bool:
+    """pid 文件记录的 Word 是否仍在运行（PID、映像名、创建时间都一致）。"""
+    if not pid_file:
+        return False
+    try:
+        record = json.loads(Path(pid_file).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(record, dict) or not isinstance(record.get("pid"), int):
+        return False
+    return process_identity(record["pid"]) == (record.get("image"), record.get("created"))
+
+
+def _session_app_usable(app: Any, pid_file: Optional[str],
+                        alive: Callable[[Optional[str]], bool]) -> bool:
+    """复用前确认上一个请求留下的 Word 仍可调用。
+
+    返回 False 表示该实例已经退出（例如被用户或其他程序结束），可以直接启动新实例；
+    实例仍在运行却无法调用时抛出异常，由调用方结束会话，父进程按 pid 文件回收它。
+    """
+    try:
+        call_with_busy_retry("Application.Version（会话复用前检查）", lambda: app.Version)
+        return True
+    except Exception:
+        if alive(pid_file):
+            raise
+        _log("会话中的 Word 已经退出，启动新的实例。")
+        return False
+
+
+def serve_session(
+    start: Dict[str, Any],
+    read_line: Callable[[], str],
+    write_line: Callable[[str], None],
+    dispatch: Callable[[str], Any] = _default_dispatch,
+    word_pid_of: Callable[[Any], int] = _word_pid,
+    *,
+    arm_stack_dump: Callable[[float], None] = lambda seconds: None,
+    cancel_stack_dump: Callable[[], None] = lambda: None,
+    instance_alive: Callable[[Optional[str]], bool] = _recorded_instance_alive,
+) -> int:
+    """会话模式主循环：同一个 Word 实例依次处理多个请求。
+
+    - 每个请求输出一行带同一 ``id`` 的结果；``timeout`` 秒前导出调用栈，超时由父进程处理。
+    - 请求内的校验失败（:class:`WorkerFailure`，如书签缺失）不影响实例，会话继续。
+    - 其他异常（COM 错误、Word 崩溃、对话框阻塞等）之后实例状态不可信：结果中带
+      ``"restart": true``，随后退出 Word 并结束 worker；父进程在下一个请求时启动新 worker。
+    """
+    pid_file = start.get("pid_file")
+    app: Any = None
+    code = 0
+    try:
+        while True:
+            line = read_line()
+            if not line:
+                break
+            try:
+                request = json.loads(line)
+            except ValueError as exc:
+                write_line(json.dumps({"ok": False, "kind": "error", "error": f"无效的 worker 请求: {exc}"},
+                                      ensure_ascii=False))
+                continue
+            op = request.get("op")
+            if op == "close":
+                break
+            request_id = request.get("id")
+            app_label = request.get("app_label", "Microsoft Word")
+            print(f"{REQUEST_PREFIX}{op} #{request_id} @ {time.strftime('%H:%M:%S')}", file=sys.stderr, flush=True)
+            timeout = request.get("timeout")
+            if isinstance(timeout, (int, float)) and timeout > 0:
+                arm_stack_dump(max(float(timeout) - 3.0, 0.5))
+            restart = False
+            try:
+                if op not in WORD_OPS:
+                    raise WorkerFailure(f"会话不支持的 worker 操作: {op!r}")
+                details: Dict[str, Any] = {}
+                if app is not None and not _session_app_usable(app, pid_file, instance_alive):
+                    app = None
+                if app is None:
+                    app = launch_word(pid_file, dispatch, word_pid_of)
+                    details = _word_details(app)
+                result = dict(run_word_op(app, request))
+                if details:
+                    result["word"] = details
+            except WorkerFailure as exc:
+                result = {"ok": False, "kind": exc.kind, "error": str(exc)}
+            except Exception as exc:
+                _log(f"{type(exc).__name__}: {exc!r}")
+                result = {"ok": False, "kind": "error", "error": translate_exception(exc, app_label), "restart": True}
+                restart = True
+            finally:
+                cancel_stack_dump()
+            result["id"] = request_id
+            write_line(json.dumps(result, ensure_ascii=False))
+            if restart:
+                code = 1
+                break
+    finally:
+        # 所有结果都已输出：Quit 卡住时看门狗只需结束 worker。
+        _completion.result = {"ok": code == 0}
+        _completion.emitted = True
+        if app is not None:
+            shutdown_word(app, pid_file)
+            del app
+    return code
 
 
 def convert_pptx(request: Dict[str, Any], dispatch: Callable[[str], Any] = _default_dispatch,
@@ -498,6 +710,7 @@ def main() -> int:
         return 1
 
     app_label = request.get("app_label", "Microsoft Word")
+    session = request.get("op") == "session"
     try:
         import pythoncom
     except ImportError:
@@ -505,15 +718,34 @@ def main() -> int:
             "ok": False,
             "kind": "unsupported",
             "error": "缺少 Python 依赖 pywin32；请运行 pip install -r requirements.txt。",
+            **({"restart": True} if session else {}),
         }, ensure_ascii=False))
         return 1
 
-    # 超时前导出全部线程的 Python 调用栈；父进程超时后会保存 stderr 作为诊断日志。
-    timeout = request.get("timeout")
-    if isinstance(timeout, (int, float)) and timeout > 0:
-        faulthandler.dump_traceback_later(max(float(timeout) - 3.0, 0.5), exit=False, file=sys.stderr)
+    def arm_stack_dump(seconds: float) -> None:
+        # 超时前导出全部线程的 Python 调用栈；父进程超时后会保存 stderr 作为诊断日志。
+        faulthandler.dump_traceback_later(seconds, exit=False, file=sys.stderr)
 
     _completion.watchdog_enabled = True
+    if session:
+        def write_line(text: str) -> None:
+            print(text, flush=True)
+
+        pythoncom.CoInitialize()
+        try:
+            return serve_session(
+                request, sys.stdin.readline, write_line,
+                arm_stack_dump=arm_stack_dump, cancel_stack_dump=faulthandler.cancel_dump_traceback_later,
+            )
+        finally:
+            pythoncom.CoUninitialize()
+            if _completion.timer is not None:
+                _completion.timer.cancel()
+
+    timeout = request.get("timeout")
+    if isinstance(timeout, (int, float)) and timeout > 0:
+        arm_stack_dump(max(float(timeout) - 3.0, 0.5))
+
     pythoncom.CoInitialize()
     try:
         try:
