@@ -166,5 +166,25 @@ class SmokeOutputsTest(unittest.TestCase):
                 self.assertTrue(test_project(source, structure_only=True))
 
 
+    def test_docx_document_source_in_subdirectory_resolves_like_build(self):
+        """docx_document 的 source.file 位于子目录时，smoke 必须按配置解析（P4 发现）。"""
+        from types import SimpleNamespace
+        import smoke_test
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "source").mkdir()
+            source_file = root / "source" / "thesis-source.docx"
+            Document().save(source_file)
+            nodes = [
+                {"type": "docx_document", "file": "thesis-source.docx"},
+                {"type": "embedded_heading", "file": "thesis-source.docx"},
+            ]
+            cfg = SimpleNamespace(source={"strategy": "docx_document", "file": "source/thesis-source.docx"})
+            self.assertEqual(smoke_test._source_docx_paths(root, nodes, cfg), [source_file.resolve()])
+            with self.assertRaises(ValueError):
+                smoke_test._source_docx_paths(root, nodes)
+
+
 if __name__ == "__main__":
     unittest.main()

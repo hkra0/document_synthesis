@@ -37,9 +37,14 @@ def declared_delivery_paths(plan, output_dir):
     return paths
 
 
-def _source_docx_paths(source, nodes):
+def _source_docx_paths(source, nodes, cfg=None):
     if source.is_file():
         return [source] if source.suffix.lower() == ".docx" else []
+    if cfg is not None and (getattr(cfg, "source", None) or {}).get("strategy") == "docx_document":
+        # docx_document 的节点（含其中的标题节点）只记录文件名，而 source.file
+        # 可以位于子目录；必须与构建使用同一个解析函数，不能按“来源目录 + 文件名”拼接。
+        from lib.source_strategies import resolve_docx_document_path
+        return [resolve_docx_document_path(source, cfg)]
     paths = set()
     for node in nodes:
         if not node.get("file"):
@@ -168,7 +173,6 @@ def test_project(
 
         paths = declared_delivery_paths(plan, out_dir)
         nodes = plan["nodes"]
-        source_docx = _source_docx_paths(source, nodes)
         maps = {}
         cfg = None
         prepared_for_verification = None
@@ -188,6 +192,7 @@ def test_project(
         except Exception:
             if cfg is not None and getattr(cfg, "schema_version", 0) >= 3:
                 raise
+        source_docx = _source_docx_paths(source, nodes, cfg)
 
         if metadata is not None:
             violations = _metadata_contract_violations(
@@ -245,6 +250,8 @@ def test_project(
                         path, spec, nodes, Path(temporary) / f"delivery-{index}.pdf",
                         reference_map=reference_map,
                         parts_registry=parts_registry,
+                        # 与构建（lib/delivery.build_deliveries）使用同一组页码序列定义。
+                        page_sequences=getattr(cfg, "page_sequences", None) or {},
                     )
 
         # 格式有效性核验 (针对 v3 或配置了 resolved_format 的项目)。v3

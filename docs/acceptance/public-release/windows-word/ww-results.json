@@ -1,0 +1,1179 @@
+{
+  "schema_version": 1,
+  "label": "windows-word",
+  "generated_at": "2026-10-11T08:43:05+00:00",
+  "git_commit": "561c9de77fc06e037d57ae169ad59a330cccbdc8",
+  "office_backend": "auto",
+  "note": "Word COM 插件（iSlide Tools、Acrobat PDFMaker）按用户设置加载",
+  "summary": {
+    "verified": 12,
+    "failed": 0,
+    "blocked": 0
+  },
+  "cases": [
+    {
+      "id": "WW01",
+      "mirrors": "NW01",
+      "title": "无目录 PAGEREF 测量与缓存回填",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "交付文档:\n  - main: m2.docx (body)\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx_document] pageref-source  (pageref-source.docx)\n- [embedded_heading] Chapter 1 Anonymous Study  (pageref-source.docx)\n- [embedded_heading] Chapter 2 Anonymous Study  (pageref-source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.2,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (75 字符 <= 240)\n[通过] 输入材料: 15 个内容块, 2 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 13.8,
+          "tail": "[1/3] 合成可复用正文: AnonymousM2Probe\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 6 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 5.2,
+          "tail": "《AnonymousM2Probe》交付检查: <work>\\out\n  检查 main: m2.docx (body)\n  正文文字核验: 15 段\n  [通过] 逐页断言全部通过（共 6 页），无空白页、单标题页或孤行。\n  交付格式核验: 15 个块符合格式包规格 (body, heading.1)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "存在 PAGEREF 目标",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "PAGEREF 目标有最终页码",
+          "passed": true,
+          "detail": "_Toc_0002_b71faf"
+        },
+        {
+          "name": "PAGEREF 缓存已回填（不是占位值 1）",
+          "passed": true,
+          "detail": "4"
+        }
+      ],
+      "delivered_sha256": "609e4da8e68fbd5a7ad2b3a138c74d9e32db70fc5b1ac8ab1ddee5da81bd1177",
+      "page_map": {
+        "_Synth_body": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0001_a2257c": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0002_b71faf": {
+          "physical_page": 4,
+          "printed_page": 4,
+          "observed_label": "4",
+          "label_required": true,
+          "expected_label": "4",
+          "label_verified": true,
+          "verification_status": "verified"
+        }
+      },
+      "export": {
+        "page_count": 6,
+        "page_labels": {
+          "1": "1",
+          "2": "2",
+          "3": "3",
+          "4": "4",
+          "5": "5",
+          "6": "6"
+        }
+      },
+      "status": "verified",
+      "seconds": 28.5
+    },
+    {
+      "id": "WW02",
+      "mirrors": "NW02",
+      "title": "目录与引用使用最终页码标签",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "  - main: m2.docx (toc + body)\n    目录页码引用: main；链接: internal\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx_document] numbering-source  (numbering-source.docx)\n- [embedded_heading] Chapter 1 Anonymous Study  (numbering-source.docx)\n- [embedded_heading] Chapter 2 Anonymous Study  (numbering-source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.1,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (77 字符 <= 240)\n[通过] 输入材料: 14 个内容块, 2 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 14.0,
+          "tail": "[1/3] 合成可复用正文: AnonymousM2Probe\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 8 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 5.5,
+          "tail": "《AnonymousM2Probe》交付检查: <work>\\out\n  检查 main: m2.docx (toc + body)\n  正文文字核验: 14 段\n  [通过] 逐页断言全部通过（共 8 页），无空白页、单标题页或孤行。\n  交付格式核验: 14 个块符合格式包规格 (body, heading.1)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "PDF 页码标签含罗马数字 i",
+          "passed": true,
+          "detail": "1,2,3,4,5,6,i,ii"
+        },
+        {
+          "name": "PDF 页码标签含阿拉伯数字 1",
+          "passed": true,
+          "detail": ""
+        }
+      ],
+      "delivered_sha256": "08afec41df433ca84c6786fe226aaee1611a6476530f8901bb2708e603651f75",
+      "page_map": {
+        "_Synth_toc": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "i",
+          "label_required": true,
+          "expected_label": "i",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Synth_body": {
+          "physical_page": 3,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0001_a2257c": {
+          "physical_page": 3,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0002_b71faf": {
+          "physical_page": 6,
+          "printed_page": 4,
+          "observed_label": "4",
+          "label_required": true,
+          "expected_label": "4",
+          "label_verified": true,
+          "verification_status": "verified"
+        }
+      },
+      "export": {
+        "page_count": 8,
+        "page_labels": {
+          "1": "i",
+          "2": "ii",
+          "3": "1",
+          "4": "2",
+          "5": "3",
+          "6": "4",
+          "7": "5",
+          "8": "6"
+        }
+      },
+      "status": "verified",
+      "seconds": 28.8
+    },
+    {
+      "id": "WW03",
+      "mirrors": "NW03",
+      "title": "v3 默认封面不引用旧模板",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "交付文档:\n  - main: cover.docx (cover + body)\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx_document] source  (source.docx)\n- [embedded_heading] 第一章 匿名研究  (source.docx)\n- [embedded_heading] 第二章 匿名结果  (source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.7,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (59 字符 <= 240)\n[通过] 输入材料: 7 个内容块, 2 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 11.2,
+          "tail": "[1/3] 合成可复用正文: 匿名封面\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 3 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 5.4,
+          "tail": "《匿名封面》交付检查: <work>\\out\n  检查 main: cover.docx (cover + body)\n  正文文字核验: 7 段\n  [通过] 逐页断言全部通过（共 3 页），无空白页、单标题页或孤行。\n  交付格式核验: 7 个块符合格式包规格 (body, heading.1)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "封面使用 v3 新标题",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "不引用旧封面模板",
+          "passed": true,
+          "detail": ""
+        }
+      ],
+      "delivered_sha256": "5f1412c1b82ce48ab54387f7b3fffc0357f03fe0ae9abb85b4ff18aa256cc5ee",
+      "page_map": {
+        "_Synth_cover": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        },
+        "_Synth_body": {
+          "physical_page": 2,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        },
+        "_Toc_0001_a2257c": {
+          "physical_page": 2,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0002_594c0e": {
+          "physical_page": 3,
+          "printed_page": 2,
+          "observed_label": "2",
+          "label_required": true,
+          "expected_label": "2",
+          "label_verified": true,
+          "verification_status": "verified"
+        }
+      },
+      "export": {
+        "page_count": 3,
+        "page_labels": {
+          "2": "1",
+          "3": "2"
+        }
+      },
+      "status": "verified",
+      "seconds": 26.3
+    },
+    {
+      "id": "WW04",
+      "mirrors": "NW04",
+      "title": "preserve 保留页面几何与行内强调",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "需隔离转换: DOC 0 个；PPTX 0 个\n\n交付文档:\n  - main: preserve.docx (body)\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx_document] source  (source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.7,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (59 字符 <= 240)\n[通过] 输入材料: 1 个内容块, 0 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 9.2,
+          "tail": "[1/3] 合成可复用正文: WW04\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 5.2,
+          "tail": "《WW04》交付检查: <work>\\out\n  检查 main: preserve.docx (body)\n  正文文字核验: 1 段\n  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。\n  交付格式核验: 1 个块符合格式包规格 (body)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "DOCX 页宽保持 180 mm",
+          "passed": true,
+          "detail": "180.00"
+        },
+        {
+          "name": "加粗保留",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "Word 导出 PDF 页宽 180 mm",
+          "passed": true,
+          "detail": "180.00"
+        }
+      ],
+      "delivered_sha256": "59669c943503fc6c802e4aa78904bf1cbc97174c39c6a1f3dc5a0d909ff35f3b",
+      "page_map": {
+        "_Synth_body": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        }
+      },
+      "export": {
+        "page_count": 1,
+        "page_labels": {}
+      },
+      "status": "verified",
+      "seconds": 23.8
+    },
+    {
+      "id": "WW05",
+      "mirrors": "NW05",
+      "title": "mixed 模式托管与保护范围区分",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "需隔离转换: DOC 0 个；PPTX 0 个\n\n交付文档:\n  - main: mixed.docx (body)\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx_document] source  (source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.7,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (59 字符 <= 240)\n[通过] 输入材料: 2 个内容块, 0 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 9.6,
+          "tail": "[1/3] 合成可复用正文: WW05\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 5.1,
+          "tail": "《WW05》交付检查: <work>\\out\n  检查 main: mixed.docx (body)\n  正文文字核验: 2 段\n  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。\n  交付格式核验: 2 个块符合格式包规格 (body)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "托管段落使用 Synth 样式",
+          "passed": true,
+          "detail": "SynthBody"
+        },
+        {
+          "name": "保护段落保留加粗",
+          "passed": true,
+          "detail": ""
+        }
+      ],
+      "delivered_sha256": "d899b86a7c8f9382e428d74c8e2aa927d57ce1bf5ae0619767352fa53db9f11d",
+      "page_map": {
+        "_Synth_body": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        }
+      },
+      "export": {
+        "page_count": 1,
+        "page_labels": {
+          "1": "1"
+        }
+      },
+      "status": "verified",
+      "seconds": 24.3
+    },
+    {
+      "id": "WW06",
+      "mirrors": "NW06",
+      "title": "完整匿名论文含全部声明对象",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "- [docx_document] thesis-source  (thesis-source.docx)\n- [embedded_heading] 声明  (thesis-source.docx)\n- [embedded_heading] 中文摘要  (thesis-source.docx)\n- [embedded_heading] Abstract  (thesis-source.docx)\n- [embedded_heading] 第一章 绪论与研究背景  (thesis-source.docx)\n- [embedded_heading] 第二章 算法设计与实验评估  (thesis-source.docx)\n- [embedded_heading] 参考文献  (thesis-source.docx)\n- [embedded_heading] 附录 A 匿名数据说明  (thesis-source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.7,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (54 字符 <= 240)\n[通过] 输入材料: 48 个内容块, 7 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 17.5,
+          "tail": "[1/3] 合成可复用正文: Anonymous Complete Thesis\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 12 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 6.9,
+          "tail": "《Anonymous Complete Thesis》交付检查: <work>\\out\n  检查 main: thesis-complete.docx (cover + toc + body)\n  正文文字核验: 43 段\n  [通过] 逐页断言全部通过（共 12 页），无空白页、单标题页或孤行。\n  交付格式核验: 48 个块符合格式包规格 (body, heading.1, table.body)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "含脚注部件",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "含尾注部件",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "正文含 PAGEREF",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "正文含 SEQ Figure",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "正文含 SEQ Table",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "正文含 w:drawing",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "正文含 w:tbl",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "正文含 oMath",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "封面含论文标题",
+          "passed": true,
+          "detail": ""
+        }
+      ],
+      "delivered_sha256": "4f7310dfbed114b6cfbb951fe1c8fe3a486f93b520f7810259dca2d634c7e8f6",
+      "page_map": {
+        "_Synth_cover": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        },
+        "_Synth_toc": {
+          "physical_page": 2,
+          "printed_page": 1,
+          "observed_label": "i",
+          "label_required": true,
+          "expected_label": "i",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Synth_body": {
+          "physical_page": 3,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0001_a2257c": {
+          "physical_page": 3,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0002_594c0e": {
+          "physical_page": 5,
+          "printed_page": 3,
+          "observed_label": "3",
+          "label_required": true,
+          "expected_label": "3",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0003_d4137f": {
+          "physical_page": 7,
+          "printed_page": 5,
+          "observed_label": "5",
+          "label_required": true,
+          "expected_label": "5",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0004_70d4e7": {
+          "physical_page": 9,
+          "printed_page": 7,
+          "observed_label": "7",
+          "label_required": true,
+          "expected_label": "7",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0005_a6f140": {
+          "physical_page": 10,
+          "printed_page": 8,
+          "observed_label": "8",
+          "label_required": true,
+          "expected_label": "8",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0006_e6d719": {
+          "physical_page": 11,
+          "printed_page": 9,
+          "observed_label": "9",
+          "label_required": true,
+          "expected_label": "9",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0007_cfc906": {
+          "physical_page": 12,
+          "printed_page": 10,
+          "observed_label": "10",
+          "label_required": true,
+          "expected_label": "10",
+          "label_verified": true,
+          "verification_status": "verified"
+        }
+      },
+      "export": {
+        "page_count": 12,
+        "page_labels": {
+          "2": "i",
+          "3": "1",
+          "4": "2",
+          "5": "3",
+          "6": "4",
+          "7": "5",
+          "8": "6",
+          "9": "7",
+          "10": "8",
+          "11": "9",
+          "12": "10"
+        }
+      },
+      "status": "verified",
+      "seconds": 36.5
+    },
+    {
+      "id": "WW07",
+      "mirrors": "NW07",
+      "title": "罗马数字前置页码与奇数页正文起始",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "  - main: m2.docx (toc + body)\n    目录页码引用: main；链接: internal\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx_document] numbering-source  (numbering-source.docx)\n- [embedded_heading] Chapter 1 Anonymous Study  (numbering-source.docx)\n- [embedded_heading] Chapter 2 Anonymous Study  (numbering-source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.7,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (77 字符 <= 240)\n[通过] 输入材料: 14 个内容块, 2 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 20.2,
+          "tail": "[1/3] 合成可复用正文: AnonymousM2Probe\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 8 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 5.4,
+          "tail": "《AnonymousM2Probe》交付检查: <work>\\out\n  检查 main: m2.docx (toc + body)\n  正文文字核验: 14 段\n  [通过] 逐页断言全部通过（共 8 页），无空白页、单标题页或孤行。\n  交付格式核验: 14 个块符合格式包规格 (body, heading.1)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "前置部分使用罗马页码 i",
+          "passed": true,
+          "detail": "1,2,3,4,5,6,i,ii"
+        },
+        {
+          "name": "正文起始书签有页码记录",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "正文从物理奇数页开始",
+          "passed": true,
+          "detail": "3"
+        }
+      ],
+      "delivered_sha256": "219a5a7c298d3c5d843dcc1cb6a310ee23b488165914aa7f50f9bc30710887c3",
+      "page_map": {
+        "_Synth_toc": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "i",
+          "label_required": true,
+          "expected_label": "i",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Synth_body": {
+          "physical_page": 3,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0001_a2257c": {
+          "physical_page": 3,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0002_b71faf": {
+          "physical_page": 6,
+          "printed_page": 4,
+          "observed_label": "4",
+          "label_required": true,
+          "expected_label": "4",
+          "label_verified": true,
+          "verification_status": "verified"
+        }
+      },
+      "export": {
+        "page_count": 8,
+        "page_labels": {
+          "1": "i",
+          "2": "ii",
+          "3": "1",
+          "4": "2",
+          "5": "3",
+          "6": "4",
+          "7": "5",
+          "8": "6"
+        }
+      },
+      "status": "verified",
+      "seconds": 35.4
+    },
+    {
+      "id": "WW08",
+      "mirrors": "NW08",
+      "title": "preserve 横向节与页眉变体",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "需隔离转换: DOC 0 个；PPTX 0 个\n\n交付文档:\n  - main: sections.docx (body)\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx_document] source  (source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.8,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (59 字符 <= 240)\n[通过] 输入材料: 3 个内容块, 0 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 9.6,
+          "tail": "[1/3] 合成可复用正文: WW08\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 2 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 5.3,
+          "tail": "《WW08》交付检查: <work>\\out\n  检查 main: sections.docx (body)\n  正文文字核验: 2 段\n  [通过] 逐页断言全部通过（共 2 页），无空白页、单标题页或孤行。\n  交付格式核验: 3 个块符合格式包规格 (body)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "至少两个节",
+          "passed": true,
+          "detail": "2"
+        },
+        {
+          "name": "第二节为横向 297 mm",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "第二节页眉保留",
+          "passed": true,
+          "detail": ""
+        }
+      ],
+      "delivered_sha256": "1d9af789111bcce337f092cb6a900d0b5aceb07c49670a3658ec2f9d5ff8e456",
+      "page_map": {
+        "_Synth_body": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        }
+      },
+      "export": {
+        "page_count": 2,
+        "page_labels": {}
+      },
+      "status": "verified",
+      "seconds": 24.5
+    },
+    {
+      "id": "WW09",
+      "mirrors": "NW09",
+      "title": "两个来源同号脚注保持关联",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "\n交付文档:\n  - main: notes.docx (body)\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx] 一、one  (one.docx)\n- [docx] 二、two  (two.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.7,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (55 字符 <= 240)\n[通过] 输入材料: 2 个内容块, 2 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 17.7,
+          "tail": "[1/3] 合成可复用正文: WW09\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 20 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 6.8,
+          "tail": "《WW09》交付检查: <work>\\out\n  检查 main: notes.docx (body)\n  正文文字核验: 86 段\n  [通过] 逐页断言全部通过（共 20 页），无空白页、单标题页或孤行。\n  交付格式核验: 96 个块符合格式包规格 (body, heading.1, table.body)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "含脚注部件",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "两个来源的同号脚注都保留",
+          "passed": true,
+          "detail": "2"
+        }
+      ],
+      "delivered_sha256": "bf4ebf980a0db024fa5ba1f8355b2918ab99bd3c70a6212bbe7a51d935f85de0",
+      "page_map": {
+        "_Synth_body": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        },
+        "_Toc_auto_001": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_auto_002": {
+          "physical_page": 11,
+          "printed_page": 11,
+          "observed_label": "11",
+          "label_required": true,
+          "expected_label": "11",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0005_a6f140": {
+          "physical_page": 8,
+          "printed_page": 8,
+          "observed_label": "8",
+          "label_required": true,
+          "expected_label": "8",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_SynthBm_769248f6d3_06": {
+          "physical_page": 18,
+          "printed_page": 18,
+          "observed_label": "18",
+          "label_required": true,
+          "expected_label": "18",
+          "label_verified": true,
+          "verification_status": "verified"
+        }
+      },
+      "export": {
+        "page_count": 20,
+        "page_labels": {
+          "1": "1",
+          "2": "2",
+          "3": "3",
+          "4": "4",
+          "5": "5",
+          "6": "6",
+          "7": "7",
+          "8": "8",
+          "9": "9",
+          "10": "10",
+          "11": "11",
+          "12": "12",
+          "13": "13",
+          "14": "14",
+          "15": "15",
+          "16": "16",
+          "17": "17",
+          "18": "18",
+          "19": "19",
+          "20": "20"
+        }
+      },
+      "status": "verified",
+      "seconds": 35.3
+    },
+    {
+      "id": "WW10",
+      "mirrors": "NW10",
+      "title": "对象与域指令经生产 CLI 保留",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "- [docx_document] thesis-source  (thesis-source.docx)\n- [embedded_heading] 声明  (thesis-source.docx)\n- [embedded_heading] 中文摘要  (thesis-source.docx)\n- [embedded_heading] Abstract  (thesis-source.docx)\n- [embedded_heading] 第一章 绪论与研究背景  (thesis-source.docx)\n- [embedded_heading] 第二章 算法设计与实验评估  (thesis-source.docx)\n- [embedded_heading] 参考文献  (thesis-source.docx)\n- [embedded_heading] 附录 A 匿名数据说明  (thesis-source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.3,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (54 字符 <= 240)\n[通过] 输入材料: 48 个内容块, 7 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 17.7,
+          "tail": "[1/3] 合成可复用正文: Anonymous Complete Thesis\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 12 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 6.7,
+          "tail": "《Anonymous Complete Thesis》交付检查: <work>\\out\n  检查 main: thesis-complete.docx (cover + toc + body)\n  正文文字核验: 43 段\n  [通过] 逐页断言全部通过（共 12 页），无空白页、单标题页或孤行。\n  交付格式核验: 48 个块符合格式包规格 (body, heading.1, table.body)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "保留 PAGEREF 域",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "保留 SEQ 域",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "保留 w:drawing",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "保留 w:tbl",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "保留 oMath",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "保留 w:numPr",
+          "passed": true,
+          "detail": ""
+        }
+      ],
+      "delivered_sha256": "b8f7c625fe92c2320fc23a08276a3d75edae5b5dcff896c031cff12df871678c",
+      "page_map": {
+        "_Synth_cover": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        },
+        "_Synth_toc": {
+          "physical_page": 2,
+          "printed_page": 1,
+          "observed_label": "i",
+          "label_required": true,
+          "expected_label": "i",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Synth_body": {
+          "physical_page": 3,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0001_a2257c": {
+          "physical_page": 3,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0002_594c0e": {
+          "physical_page": 5,
+          "printed_page": 3,
+          "observed_label": "3",
+          "label_required": true,
+          "expected_label": "3",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0003_d4137f": {
+          "physical_page": 7,
+          "printed_page": 5,
+          "observed_label": "5",
+          "label_required": true,
+          "expected_label": "5",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0004_70d4e7": {
+          "physical_page": 9,
+          "printed_page": 7,
+          "observed_label": "7",
+          "label_required": true,
+          "expected_label": "7",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0005_a6f140": {
+          "physical_page": 10,
+          "printed_page": 8,
+          "observed_label": "8",
+          "label_required": true,
+          "expected_label": "8",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0006_e6d719": {
+          "physical_page": 11,
+          "printed_page": 9,
+          "observed_label": "9",
+          "label_required": true,
+          "expected_label": "9",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0007_cfc906": {
+          "physical_page": 12,
+          "printed_page": 10,
+          "observed_label": "10",
+          "label_required": true,
+          "expected_label": "10",
+          "label_verified": true,
+          "verification_status": "verified"
+        }
+      },
+      "export": {
+        "page_count": 12,
+        "page_labels": {
+          "2": "i",
+          "3": "1",
+          "4": "2",
+          "5": "3",
+          "6": "4",
+          "7": "5",
+          "8": "6",
+          "9": "7",
+          "10": "8",
+          "11": "9",
+          "12": "10"
+        }
+      },
+      "status": "verified",
+      "seconds": 34.7
+    },
+    {
+      "id": "WW11",
+      "mirrors": "NW11",
+      "title": "样例纠正、格式包、角色映射与目标构建",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "交付文档:\n  - main: ww11.docx (body)\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx_document] manuscript  (manuscript.docx)\n- [embedded_heading] 第一章 引言  (manuscript.docx)\n  - [embedded_heading] 1.1 课题来源  (manuscript.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 5.0,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (63 字符 <= 240)\n[通过] 输入材料: 3 个内容块, 2 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 10.8,
+          "tail": "[1/3] 合成可复用正文: WW11\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 5.2,
+          "tail": "《WW11》交付检查: <work>\\out\n  检查 main: ww11.docx (body)\n  正文文字核验: 3 段\n  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。\n  交付格式核验: 3 个块符合格式包规格 (body, heading.1, heading.2)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "按纠正后的格式包与角色映射完成构建",
+          "passed": true,
+          "detail": ""
+        }
+      ],
+      "delivered_sha256": "e4e255f09ecd9e3c72375a9026281ab2497ca0f7dd351c3bd5340f191824b4a9",
+      "page_map": {
+        "_Synth_body": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        },
+        "_Toc_0001_a2257c": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0002_f722f1": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        }
+      },
+      "export": {
+        "page_count": 1,
+        "page_labels": {
+          "1": "1"
+        }
+      },
+      "status": "verified",
+      "seconds": 28.1
+    },
+    {
+      "id": "WW12",
+      "mirrors": "NW12",
+      "title": "篡改注入 fail closed，已发布哈希不变",
+      "steps": {
+        "plan": {
+          "returncode": 0,
+          "seconds": 0.6,
+          "tail": "交付文档:\n  - main: published.docx (body)\n    正文页码从 1 开始；封面与目录不显示页码\n\n目录预览:\n- [docx_document] source  (source.docx)\n- [embedded_heading] 第一章 匿名研究  (source.docx)\n- [embedded_heading] 第二章 匿名结果  (source.docx)"
+        },
+        "doctor": {
+          "returncode": 0,
+          "seconds": 4.2,
+          "tail": "[通过] Python 依赖: pypdf\n[通过] Python 依赖: lxml\n[通过] Windows 长路径支持 (LongPathsEnabled 已启用)\n[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。\n[通过] 输入路径长度安全 (59 字符 <= 240)\n[通过] 输入材料: 15 个内容块, 2 个标题\n[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）\n[信息] PowerPoint: 已安装，可转换 .pptx"
+        },
+        "build": {
+          "returncode": 0,
+          "seconds": 9.5,
+          "tail": "[1/3] 合成可复用正文: WW12\n[2/3] 装配并核验 1 份交付物\n  [通过] 逐页断言全部通过（共 4 页），无空白页、单标题页或孤行。\n[3/3] 所有交付物已通过检查，发布本次成果"
+        },
+        "smoke": {
+          "returncode": 0,
+          "seconds": 5.4,
+          "tail": "《WW12》交付检查: <work>\\out\n  检查 main: published.docx (body)\n  正文文字核验: 15 段\n  [通过] 逐页断言全部通过（共 4 页），无空白页、单标题页或孤行。\n  交付格式核验: 15 个块符合格式包规格 (body, heading.1)\n[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+        }
+      },
+      "checks": [
+        {
+          "name": "篡改格式后核验失败（fail closed）",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "已发布交付物哈希不变",
+          "passed": true,
+          "detail": ""
+        }
+      ],
+      "delivered_sha256": "d1bcc3b0f9176c2570648e53a03d8746033ac79b836acd643c1e920c6598441b",
+      "page_map": {
+        "_Synth_body": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": false,
+          "expected_label": "",
+          "label_verified": false,
+          "verification_status": "unverified"
+        },
+        "_Toc_0001_a2257c": {
+          "physical_page": 1,
+          "printed_page": 1,
+          "observed_label": "1",
+          "label_required": true,
+          "expected_label": "1",
+          "label_verified": true,
+          "verification_status": "verified"
+        },
+        "_Toc_0002_38e9db": {
+          "physical_page": 4,
+          "printed_page": 4,
+          "observed_label": "4",
+          "label_required": true,
+          "expected_label": "4",
+          "label_verified": true,
+          "verification_status": "verified"
+        }
+      },
+      "export": {
+        "page_count": 4,
+        "page_labels": {
+          "1": "1",
+          "2": "2",
+          "3": "3",
+          "4": "4"
+        }
+      },
+      "status": "verified",
+      "seconds": 24.3
+    }
+  ]
+}

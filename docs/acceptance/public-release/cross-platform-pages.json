@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "left": {
+    "label": "macos-word",
+    "git_commit": "8f53ecaf10e646fb38397ac28c2ffc15329871bc",
+    "generated_at": "2026-10-11T09:03:31+00:00"
+  },
+  "right": {
+    "label": "windows-word",
+    "git_commit": "561c9de77fc06e037d57ae169ad59a330cccbdc8",
+    "generated_at": "2026-10-11T08:43:05+00:00"
+  },
+  "summary": {
+    "cases": 12,
+    "comparable": 12,
+    "identical": 12,
+    "with_differences": 0
+  },
+  "cases": [
+    {
+      "id": "WW01",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 3
+    },
+    {
+      "id": "WW02",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 4
+    },
+    {
+      "id": "WW03",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 4
+    },
+    {
+      "id": "WW04",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 1
+    },
+    {
+      "id": "WW05",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 1
+    },
+    {
+      "id": "WW06",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 10
+    },
+    {
+      "id": "WW07",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 4
+    },
+    {
+      "id": "WW08",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 1
+    },
+    {
+      "id": "WW09",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 5
+    },
+    {
+      "id": "WW10",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 10
+    },
+    {
+      "id": "WW11",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 3
+    },
+    {
+      "id": "WW12",
+      "differences": [],
+      "comparable": true,
+      "bookmarks_compared": 3
+    }
+  ]
+}

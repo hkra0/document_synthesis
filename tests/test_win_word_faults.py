@@ -100,13 +100,18 @@ class WindowsWordFaultTests(unittest.TestCase):
         set_backend(None)
         self.tmp.cleanup()
 
-    def assertNoWordLeft(self) -> None:  # noqa: N802
+    def assertNoWordLeft(self, settle: float = 0.0) -> None:  # noqa: N802
+        """没有残留本次启动的 Word；``settle`` 秒内也不能有迟到启动的 Word 出现。"""
         deadline = time.monotonic() + 30
         leftover = _word_pids() - self.before
         while leftover and time.monotonic() < deadline:
             time.sleep(0.5)
             leftover = _word_pids() - self.before
         self.assertEqual(leftover, set(), "本次启动的 WINWORD.EXE 未被回收")
+        settle_until = time.monotonic() + settle
+        while time.monotonic() < settle_until:
+            time.sleep(0.5)
+            self.assertEqual(_word_pids() - self.before, set(), "超时后出现了迟到启动、未被回收的 WINWORD.EXE")
         self.assertEqual(list(self.work.glob("job-*")), [], "工作目录未清理")
 
     def test_measures_physical_and_printed_pages(self) -> None:
@@ -153,7 +158,7 @@ class WindowsWordFaultTests(unittest.TestCase):
                     self.backend.inspect_bookmarks(docx, pdf, ["cover", "body", "later"])
                 self.assertIn("超时", str(ctx.exception))
                 self.assertFalse(pdf.exists())
-                self.assertNoWordLeft()
+                self.assertNoWordLeft(settle=15)
 
     def test_word_killed_during_operation(self) -> None:
         docx, pdf = self.dir / "big.docx", self.dir / "big.pdf"
@@ -316,6 +321,12 @@ class UserWordIsolationTests(unittest.TestCase):
                 with self.assertRaises(OfficeTimeoutError):
                     self.backend.inspect_bookmarks(big, self.dir / "timeout.pdf", ["cover"])
             self.assertUserWordUntouched(f"{seconds} 秒超时")
+            # 启动阶段被结束的 Word 可能稍后才由 DCOM 拉起，观察一段时间确认没有迟到的残留。
+            settle_until = time.monotonic() + 15
+            while time.monotonic() < settle_until:
+                time.sleep(0.5)
+                self.assertEqual(_word_pids() - self.word_before - {self.user_pid}, set(),
+                                 f"{seconds} 秒超时: 出现了迟到启动、未被回收的 WINWORD.EXE")
 
         # 3. 操作进行中强制结束本次启动的 Word
         outcome = {}

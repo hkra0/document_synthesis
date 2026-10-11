@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "label": "windows-word",
+  "recorded_at": "2026-10-11T08:37:11+00:00",
+  "python": "3.14.4",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "packages": {
+    "python-docx": "1.2.0",
+    "pymupdf": "1.28.2",
+    "pypdf": "6.20.0",
+    "Pillow": "12.3.0",
+    "lxml": "6.1.3",
+    "jsonschema": "4.26.0",
+    "numpy": "2.5.4",
+    "pywin32": "312"
+  },
+  "os": {
+    "system": "Windows",
+    "release": "11",
+    "version": "10.0.26300",
+    "build": 26300,
+    "edition": "Professional",
+    "display_version": "26H2",
+    "long_paths_enabled": true
+  },
+  "word": {
+    "probe_available": true,
+    "version": "16.0",
+    "build": "16.0.20430",
+    "bitness": 64,
+    "click_to_run": true,
+    "version_to_report": "16.0.20430.20146",
+    "channel": "Current Channel",
+    "platform": "x64",
+    "powerpoint_registered": true
+  },
+  "word_com_addins_load_behavior": {
+    "iSlideTools.Public": {
+      "HKCU": 3,
+      "HKLM": 3
+    },
+    "PDFMaker.OfficeAddin": {
+      "HKCU": 3,
+      "HKLM": 3
+    }
+  },
+  "default_printer": "Microsoft Print to PDF",
+  "fonts": {
+    "method": "Windows 字体注册表",
+    "families": {
+      "宋体": {
+        "installed": true,
+        "matched_names": [
+          "SimSun & NSimSun (TrueType)",
+          "SimSun-ExtB (TrueType)",
+          "SimSun-ExtG (TrueType)"
+        ]
+      },
+      "黑体": {
+        "installed": true,
+        "matched_names": [
+          "SimHei (TrueType)"
+        ]
+      },
+      "仿宋": {
+        "installed": true,
+        "matched_names": [
+          "FZFangSong-Z02 (TrueType)",
+          "FangSong (TrueType)",
+          "FangSong_GB2312 (TrueType)",
+          "STFangsong (TrueType)"
+        ]
+      },
+      "楷体": {
+        "installed": true,
+        "matched_names": [
+          "KaiTi (TrueType)",
+          "KaiTi_GB2312 (TrueType)",
+          "STKaiti (TrueType)"
+        ]
+      },
+      "仿宋_GB2312": {
+        "installed": true,
+        "matched_names": [
+          "FangSong_GB2312 (TrueType)"
+        ]
+      },
+      "楷体_GB2312": {
+        "installed": true,
+        "matched_names": [
+          "KaiTi_GB2312 (TrueType)"
+        ]
+      },
+      "方正小标宋简体": {
+        "installed": true,
+        "matched_names": [
+          "FZXiaoBiaoSong-B05S (TrueType)"
+        ]
+      },
+      "Times New Roman": {
+        "installed": true,
+        "matched_names": [
+          "Times New Roman (TrueType)",
+          "Times New Roman Bold (TrueType)",
+          "Times New Roman Bold Italic (TrueType)",
+          "Times New Roman Italic (TrueType)"
+        ]
+      }
+    }
+  }
+}
