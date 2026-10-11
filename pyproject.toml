@@ -28,6 +28,7 @@ dependencies = [
     "numpy>=1.24.0",
     "lxml>=4.9.0",
     "jsonschema>=4.18.0,<5.0.0",
+    "pywin32>=306; sys_platform == 'win32'",
 ]
 
 # 代码通过仓库相对路径读取 schemas/、formats/ 等资源，目前只支持从仓库克隆中

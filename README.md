@@ -76,8 +76,10 @@ document_synthesis/
 ### 1. 运行环境
 
 - Python 3.10 以上版本
-- 只有在 macOS 上通过 Microsoft Word 完成导出和页级检查，页码才可视为准确
-- Windows 与 Linux 可用于其他处理，但不能把 LibreOffice 的版面当作 Word 的等价结果
+- macOS + Microsoft Word：通过 AppleScript 完成导出和页级检查，页码已核验
+- Windows + Microsoft Word：通过 COM（pywin32，随 `requirements.txt` 在 Windows 上自动安装）完成导出和页级检查。该后端已在 Windows 11 + Microsoft 365 Word（64 位）上跑通三个示例的完整构建；Windows 真实 Word 验收矩阵（P4）完成之前，视为预览支持，页码只对生成它的 Word 环境有效
+- 没有 Word 的 Windows 与 Linux 可用于其他处理，但不能把 LibreOffice 的版面当作 Word 的等价结果
+- Windows 上把文中的 `python3` 换成 `python`（或 `py`）
 
 ### 2. 安装依赖
 
@@ -109,10 +111,12 @@ python3 synthesize.py --project 示例项目 --plan
 
 `--doctor` 返回标准退出码：
 - `0`：环境完全就绪，支持 `exact` 精确构建（Python 依赖齐全、输入合法、Office 探针通过）。
-- `2`：Python 依赖就绪，但无可用精确 Office 自动化（例如 Linux、Windows，或没有 Word 的 macOS）；可运行 `--plan`、格式分析类命令和 `smoke_test.py --structure-only`，不能构建带目录页码的交付物。
+- `2`：Python 依赖就绪，但无可用精确 Office 自动化（例如 Linux，或没有 Word 的 Windows / macOS）；可运行 `--plan`、格式分析类命令和 `smoke_test.py --structure-only`，不能构建带目录页码的交付物。
 - `1`：缺少 Python 核心依赖（`docx`、`pymupdf` 等）、输入无效，或 Office 后端配置无效。
 
-可用 `--office-backend {auto,word,none}` 或环境变量 `DOCUMENT_SYNTHESIS_OFFICE_BACKEND` 指定后端；命令行参数优先。
+可用 `--office-backend {auto,word,none}` 或环境变量 `DOCUMENT_SYNTHESIS_OFFICE_BACKEND` 指定后端；命令行参数优先。在 Windows 上，`--doctor` 还会报告 Word 版本与位数、安装方式，以及 PowerPoint 是否可用；没有 PowerPoint 时只有 `.pptx` 转换不可用。
+
+Windows 上每次 Office 操作都在独立子进程中启动隐藏的 Word 实例，默认 600 秒超时（可用环境变量 `DOCUMENT_SYNTHESIS_OFFICE_TIMEOUT` 调整）。超时或失败时只结束本次启动的 Word 进程，不影响你自己打开的 Word 文档。
 
 ### 4. 合成
 

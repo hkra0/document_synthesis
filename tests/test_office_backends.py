@@ -289,6 +289,26 @@ class OfficeBackendContractTests(unittest.TestCase):
             f"以下生产代码文件中发现了未被隔离的 darwin 平台检查: {darwin_violations}",
         )
 
+        # Windows COM 调用同样只能出现在 Windows 后端内。
+        allowed_com = {
+            lib_dir / "office" / "win_com.py",
+            lib_dir / "office" / "win_com_worker.py",
+        }
+        com_markers = ("win32com", "pythoncom", "DispatchEx", "WINWORD", "taskkill")
+        com_violations = sorted(
+            str(py_path.relative_to(ROOT))
+            for py_path in py_files
+            if py_path not in allowed_com
+            and any(marker in py_path.read_text(encoding="utf-8") for marker in com_markers)
+        )
+        self.assertEqual(com_violations, [], f"以下生产代码文件中发现了未被隔离的 Windows COM 调用: {com_violations}")
+
+        # 绝不能按映像名结束 Office：用户自己打开的 Word 会被一并关掉。
+        for path in allowed_com:
+            content = path.read_text(encoding="utf-8")
+            self.assertNotIn("taskkill", content)
+            self.assertNotIn("/IM", content)
+
 
 if __name__ == "__main__":
     unittest.main()
