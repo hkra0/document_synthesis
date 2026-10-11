@@ -77,7 +77,7 @@ document_synthesis/
 
 - Python 3.10 以上版本
 - macOS + Microsoft Word：通过 AppleScript 完成导出和页级检查，页码已核验
-- Windows + Microsoft Word：通过 COM（pywin32，随 `requirements.txt` 在 Windows 上自动安装）完成导出和页级检查。该后端已在 Windows 11 + Microsoft 365 Word（64 位）上跑通三个示例的完整构建；Windows 真实 Word 验收矩阵（P4）完成之前，视为预览支持，页码只对生成它的 Word 环境有效
+- Windows + Microsoft Word：通过 COM（pywin32，随 `requirements.txt` 在 Windows 上自动安装）完成导出和页级检查。该后端已在 Windows 11 + Microsoft 365 Word（64 位，Current Channel）上跑通三个示例与 WW01–WW12 验收矩阵；仅验证过 Microsoft 365，Office 2019/2021 等较旧版本未验证。与 macOS 的跨平台页码对照完成之前，视为预览支持，页码只对生成它的 Word 环境有效
 - 没有 Word 的 Windows 与 Linux 可用于其他处理，但不能把 LibreOffice 的版面当作 Word 的等价结果
 - Windows 上把文中的 `python3` 换成 `python`（或 `py`）
 

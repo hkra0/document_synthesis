@@ -53,6 +53,9 @@ DEFAULT_TIMEOUT = 600
 PROBE_TIMEOUT = 120
 #: worker 退出后等待其启动的 Office 进程自行退出的宽限时间（秒）。
 EXIT_GRACE_SECONDS = 15.0
+#: Office 卡在启动阶段时，DCOM 可能在 worker 被结束之后才把进程拉起；
+#: 父进程在此时间内持续寻找本次启动的孤儿进程（秒）。
+ORPHAN_WAIT_SECONDS = 30.0
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -330,6 +333,8 @@ def cleanup_recorded_office(
     identity: Callable[[int], Optional[Tuple[str, int]]] = process_identity,
     terminate: Callable[[int], bool] = terminate_process,
     sleep: Callable[[float], None] = time.sleep,
+    orphan_wait: float = 0.0,
+    find_orphan: Optional[Callable[[Dict[str, Any]], Optional[int]]] = None,
 ) -> Optional[int]:
     """结束 worker 自己启动且仍在运行的 Office 进程，返回被结束的 PID。
 
@@ -338,13 +343,21 @@ def cleanup_recorded_office(
 
     如果 Office 卡在启动阶段（例如首次运行或许可证对话框），worker 来不及记录 PID，
     pid 文件里只有启动前的快照，此时改用 :func:`find_orphan_office` 查找。
+    worker 在 ``DispatchEx`` 尚未返回时被结束，Office 进程可能稍后才由 DCOM 启动，
+    所以在 ``orphan_wait`` 秒内持续寻找。
     """
     record = read_pending_record(pid_file)
     if record is not None:
-        orphan = find_orphan_office(record, identity=identity)
-        if orphan is not None:
-            terminate(orphan)
-        return orphan
+        find = find_orphan or (lambda pending: find_orphan_office(pending, identity=identity))
+        deadline = time.monotonic() + max(orphan_wait, 0.0)
+        while True:
+            orphan = find(record)
+            if orphan is not None:
+                terminate(orphan)
+                return orphan
+            if time.monotonic() >= deadline:
+                return None
+            sleep(0.5)
     record = read_pid_record(pid_file)
     if record is None:
         return None
@@ -398,7 +411,7 @@ def run_worker(
     command: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
     """在独立子进程中执行一次 Office 操作，并保证其启动的 Office 进程被回收。"""
-    payload = dict(request, pid_file=str(pid_file))
+    payload = dict(request, pid_file=str(pid_file), timeout=timeout)
     creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     try:
         proc = subprocess.Popen(
@@ -425,14 +438,25 @@ def run_worker(
             stdout, stderr = proc.communicate()
     finally:
         # 超时时 worker 已被结束，Word 不会再收到 Quit，直接清理；
-        # 正常退出时给 Word 一段宽限时间自行退出。
-        cleanup_recorded_office(pid_file, 0.0 if timed_out else EXIT_GRACE_SECONDS)
+        # 正常退出时给 Word 一段宽限时间自行退出。超时或 worker 异常退出时，
+        # 若 Word 仍在启动阶段，还要等待 DCOM 稍后拉起的孤儿进程。
+        abnormal = timed_out or proc.returncode not in (0, 1)
+        cleanup_recorded_office(
+            pid_file,
+            0.0 if timed_out else EXIT_GRACE_SECONDS,
+            orphan_wait=ORPHAN_WAIT_SECONDS if abnormal else 0.0,
+        )
 
     label = request.get("app_label", "Microsoft Word")
     if timed_out:
+        step = last_worker_step(stderr or "")
+        log_path = save_timeout_diagnostics(request, stderr or "")
         raise OfficeTimeoutError(
             f"等待 {label} 响应超时（{int(timeout)} 秒），已结束本次启动的 Office 进程。"
-            f"请检查文档是否会触发 {label} 的对话框（密码、修复、宏或许可证提示）。"
+            f"请检查文档是否会触发 {label} 的对话框（密码、修复、宏或许可证提示），"
+            f"或在 {label} 中禁用第三方 COM 加载项后重试。"
+            + (f"最后一次 COM 调用: {step}。" if step else "")
+            + (f"诊断日志: {log_path}" if log_path else "")
         )
 
     result = None
@@ -455,6 +479,34 @@ def run_worker(
             raise OfficeUnsupportedError(message)
         raise OfficeBackendError(message)
     return result
+
+
+def last_worker_step(stderr: str) -> Optional[str]:
+    """从 worker 的 stderr 中取出最后一条步骤记录（不含时间戳）。"""
+    from .win_com_worker import STEP_PREFIX
+
+    for line in reversed(stderr.splitlines()):
+        if line.startswith(STEP_PREFIX):
+            return line[len(STEP_PREFIX):].rsplit(" @ ", 1)[0].strip() or None
+    return None
+
+
+def save_timeout_diagnostics(request: Dict[str, Any], stderr: str) -> Optional[Path]:
+    """把超时 worker 的 stderr（步骤记录与超时前导出的调用栈）保存到工作目录下的 diagnostics。
+
+    作业目录在操作结束后会被删除，诊断日志另存，便于事后定位挂起点。
+    日志只含操作名、步骤与 Python 调用栈，不含文档内容。
+    """
+    if not stderr.strip():
+        return None
+    try:
+        directory = _work_root() / "diagnostics"
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / f"timeout-{time.strftime('%Y%m%d-%H%M%S')}-{request.get('op', 'unknown')}-{uuid.uuid4().hex[:6]}.log"
+        path.write_text(stderr, encoding="utf-8")
+        return path
+    except OSError:
+        return None
 
 
 def _work_root() -> Path:

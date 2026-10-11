@@ -238,7 +238,7 @@ def validate_delivery_structure(path, spec, nodes, reference_map=None, parts_reg
 def _enrich_page_map_labels(page_map, spec, nodes, config_or_parts=None, page_sequences=None, pdf_path=None):
     from .pagination_types import format_page_number
     parts_reg = getattr(config_or_parts, "parts", config_or_parts) if config_or_parts else {}
-    seqs = getattr(config_or_parts, "page_sequences", page_sequences) if config_or_parts else (page_sequences or {})
+    seqs = (getattr(config_or_parts, "page_sequences", page_sequences) if config_or_parts else page_sequences) or {}
 
     part_fmt = {}
     for pid in spec.get("parts", []):

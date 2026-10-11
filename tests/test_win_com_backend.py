@@ -293,6 +293,40 @@ class WorkerComSequenceTests(unittest.TestCase):
         self.assertEqual(result["word_bitness"], 64)
         self.assertTrue(result["click_to_run"])
 
+    def test_busy_office_is_retried_then_succeeds(self) -> None:
+        """Word 正忙（RETRYLATER / CALL_REJECTED）时退避重试；其他错误不重试。"""
+        attempts = []
+        sleeps = []
+
+        def flaky():
+            attempts.append(1)
+            if len(attempts) == 1:
+                raise FakeComError(-2147417846, "Call was rejected by callee.", None, None)  # 0x8001010A
+            if len(attempts) == 2:
+                excepinfo = (0, "Microsoft Word", "busy", None, 0, -2147418111)  # scode 0x80010001
+                raise FakeComError(-2147352567, "Exception occurred.", excepinfo, None)
+            return "done"
+
+        self.assertEqual(win_com_worker.call_with_busy_retry("测试步骤", flaky, sleep=sleeps.append), "done")
+        self.assertEqual(len(attempts), 3)
+        self.assertEqual(sleeps, [0.25, 0.5])
+
+        other = FakeComError(-2147023174, "The RPC server is unavailable.", None, None)
+        with self.assertRaises(FakeComError):
+            win_com_worker.call_with_busy_retry("测试步骤", lambda: (_ for _ in ()).throw(other), sleep=self.fail)
+
+    def test_busy_retry_gives_up_after_limit(self) -> None:
+        clock = iter([0.0, 10.0, 70.0])
+        busy = FakeComError(-2147417846, "Call was rejected by callee.", None, None)
+
+        def always_busy():
+            raise busy
+
+        with self.assertRaises(FakeComError):
+            win_com_worker.call_with_busy_retry(
+                "测试步骤", always_busy, limit=60, sleep=lambda s: None, clock=lambda: next(clock)
+            )
+
     def test_unknown_operation_rejected(self) -> None:
         with self.assertRaises(WorkerFailure):
             handle({"op": "format_c"})
@@ -507,6 +541,28 @@ class RecordedProcessCleanupTests(unittest.TestCase):
                 self.assertEqual(cleanup_recorded_office(pid_file, 0, terminate=killed.append), 777)
         self.assertEqual(killed, [777])
 
+    def test_late_launched_orphan_is_still_terminated(self) -> None:
+        """worker 在 DispatchEx 返回前被结束，Word 稍后才由 DCOM 拉起：在等待期内找到即结束。"""
+        killed = []
+        polls = iter([None, None, 888])
+        with tempfile.TemporaryDirectory() as tmp:
+            pid_file = self._pid_file(tmp, {"pending": True, "image": "winword.exe", "before": [], "started": 1})
+            result = cleanup_recorded_office(
+                pid_file, 0, terminate=killed.append, sleep=lambda s: None,
+                orphan_wait=30, find_orphan=lambda record: next(polls),
+            )
+        self.assertEqual(result, 888)
+        self.assertEqual(killed, [888])
+
+    def test_pending_record_without_wait_checks_once(self) -> None:
+        calls = []
+        with tempfile.TemporaryDirectory() as tmp:
+            pid_file = self._pid_file(tmp, {"pending": True, "image": "winword.exe", "before": [], "started": 1})
+            self.assertIsNone(cleanup_recorded_office(
+                pid_file, 0, terminate=self.fail, sleep=self.fail, find_orphan=lambda record: calls.append(1),
+            ))
+        self.assertEqual(calls, [1])
+
     def test_no_pid_file_does_nothing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             self.assertIsNone(cleanup_recorded_office(Path(tmp) / "missing.pid", 0, terminate=self.fail))
@@ -545,6 +601,74 @@ class RunWorkerProcessTests(unittest.TestCase):
             self._run("import time; time.sleep(60)", timeout=2)
         self.assertLess(time.monotonic() - started, 30)
         self.assertIn("超时", str(ctx.exception))
+
+    def test_timeout_reports_last_step_and_saves_diagnostics(self) -> None:
+        """超时报错给出最后一次 COM 调用，并把 worker 的 stderr 另存为诊断日志。"""
+        code = (
+            "import sys, time; sys.stdin.readline(); "
+            "print('[win_com_worker] step: Documents.Open @ 10:00:00', file=sys.stderr, flush=True); "
+            "print('[win_com_worker] step: Document.Repaginate @ 10:00:01', file=sys.stderr, flush=True); "
+            "time.sleep(60)"
+        )
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR": tmp}):
+            with self.assertRaises(OfficeTimeoutError) as ctx:
+                run_worker({"op": "inspect"}, 2, Path(tmp) / "office.pid", command=[sys.executable, "-c", code])
+            message = str(ctx.exception)
+            self.assertIn("最后一次 COM 调用: Document.Repaginate", message)
+            logs = list((Path(tmp) / "diagnostics").glob("timeout-*-inspect-*.log"))
+            self.assertEqual(len(logs), 1)
+            self.assertIn(str(logs[0]), message)
+            self.assertIn("Documents.Open", logs[0].read_text(encoding="utf-8"))
+
+    def test_worker_receives_timeout_and_dumps_stack_before_it(self) -> None:
+        """worker 收到超时秒数，并在超时前把调用栈写到 stderr。"""
+        code = (
+            "import faulthandler, json, sys, time; request = json.loads(sys.stdin.readline()); "
+            "faulthandler.dump_traceback_later(max(request['timeout'] - 3.0, 0.5), file=sys.stderr); "
+            "time.sleep(60)"
+        )
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"DOCUMENT_SYNTHESIS_WORD_ACCESS_DIR": tmp}):
+            with self.assertRaises(OfficeTimeoutError) as ctx:
+                run_worker({"op": "probe"}, 4, Path(tmp) / "office.pid", command=[sys.executable, "-c", code])
+            logs = list((Path(tmp) / "diagnostics").glob("timeout-*.log"))
+            self.assertEqual(len(logs), 1, str(ctx.exception))
+            self.assertIn("Timeout", logs[0].read_text(encoding="utf-8"))
+
+    def test_worker_stuck_after_quit_still_returns_completed_result(self) -> None:
+        """Word 关闭阶段卡住、worker 无法退出时，看门狗输出已完成的结果并结束 worker。"""
+        code = (
+            "import time; import lib.office.win_com_worker as w; "
+            "w.QUIT_GRACE_SECONDS = 1; w._completion.watchdog_enabled = True; "
+            "w._ready({'ok': True, 'page_map': 'completed-before-quit'}); "
+            "w._arm_quit_watchdog(); time.sleep(60)"
+        )
+        started = time.monotonic()
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {"PYTHONPATH": str(ROOT)}
+            with patch.dict(os.environ, env):
+                result = run_worker({"op": "inspect"}, 30, Path(tmp) / "office.pid",
+                                    command=[sys.executable, "-c", code])
+        self.assertEqual(result["page_map"], "completed-before-quit")
+        self.assertLess(time.monotonic() - started, 20)
+
+    def test_quit_watchdog_without_result_reports_failure(self) -> None:
+        emitted, exits = [], []
+        completion = win_com_worker._Completion()
+        with patch.object(win_com_worker, "_completion", completion),                 patch.object(win_com_worker, "_hard_exit", exits.append),                 patch("builtins.print", lambda *a, **k: emitted.append(a[0]) if a else None):
+            win_com_worker._on_quit_stalled()
+        self.assertEqual(exits, [1])
+        self.assertIn("退出时无响应", json.loads(emitted[-1])["error"])
+
+    def test_quit_watchdog_is_inactive_outside_worker_main(self) -> None:
+        completion = win_com_worker._Completion()
+        with patch.object(win_com_worker, "_completion", completion):
+            win_com_worker._arm_quit_watchdog(0.01)
+            self.assertIsNone(completion.timer)
+
+    def test_last_worker_step_parsing(self) -> None:
+        self.assertIsNone(win_com.last_worker_step(""))
+        stderr = "noise\n[win_com_worker] step: Documents.Open @ 10:00:00\n[win_com_worker] other\n"
+        self.assertEqual(win_com.last_worker_step(stderr), "Documents.Open")
 
     @unittest.skipUnless(sys.platform == "win32", "按 PID 结束进程只在 Windows 上实现")
     def test_timeout_terminates_only_the_recorded_process(self) -> None:

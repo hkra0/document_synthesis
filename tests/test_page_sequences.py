@@ -108,6 +108,19 @@ class NumeralFormattingTest(unittest.TestCase):
             require_observed_labels=True,
         )
 
+    def test_missing_sequence_registry_falls_back_to_decimal(self):
+        """部件声明了 page_sequence 但调用方未传序列表（P4 中 smoke_test 曾如此）时不能崩溃。"""
+        spec = {"parts": ["body"]}
+        parts = {"body": SimpleNamespace(page_sequence="main", kind="content")}
+        page_map = {"_Synth_body": {"physical_page": 1, "printed_page": 1, "observed_label": "1"}}
+        _enrich_page_map_labels(page_map, spec, [], parts, None)
+        self.assertEqual(page_map["_Synth_body"]["expected_label"], "1")
+
+    def test_smoke_passes_configured_page_sequences(self):
+        """smoke_test 必须与构建使用同一组页码序列定义。"""
+        source = (Path(__file__).resolve().parents[1] / "smoke_test.py").read_text(encoding="utf-8")
+        self.assertIn('page_sequences=getattr(cfg, "page_sequences", None) or {}', source)
+
     def test_pdf_page_labels_support_letter_sequences(self):
         with tempfile.TemporaryDirectory() as td:
             pdf_path = Path(td) / "letters.pdf"
