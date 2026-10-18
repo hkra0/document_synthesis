@@ -9,12 +9,14 @@
 5. required_fonts：格式样式、fonts 配置、代码直接写入的字体，去重并保留来源
 """
 
+import os
 import struct
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -196,7 +198,10 @@ class WindowsSourcesTest(TmpDirTestCase):
 
     def test_without_user_fonts_dir(self):
         self.write("Windows/Fonts/a.ttf", build_font([FANGSONG_GB2312]))
-        files = fonts.windows_font_files([], windir=self.tmp / "Windows", local_appdata=None)
+        # local_appdata=None 时会回落到 LOCALAPPDATA，本机用户字体目录不能混进来
+        with mock.patch.dict(os.environ):
+            os.environ.pop("LOCALAPPDATA", None)
+            files = fonts.windows_font_files([], windir=self.tmp / "Windows", local_appdata=None)
         self.assertEqual([source for _path, source in files], ["unregistered:system_fonts_dir"])
 
 
