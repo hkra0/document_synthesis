@@ -268,3 +268,37 @@ python docs/acceptance/public-release/font_probe.py --word --output font-probe-w
 - **测试**：离线全量 512 项通过、19 项跳过；含真实 Word 用例 539 项通过、13 项跳过（第 11 节）。
 
 F4 完成。剩余：F5 在 Windows 上验证第 1 节第 2–6 条（含 `font_names` 读取 Word 字体列表、`--doctor` 交叉核对、WW 矩阵回归），以及可选的“另一个 Windows 账户”真实缺字体验证（第 5 节第 4 项）；F6 文档。
+
+## 13. F5 执行说明：Windows 验证
+
+脚本：[`docs/acceptance/public-release/p6_font_check.py`](acceptance/public-release/p6_font_check.py)。按第 1 节退出条件串行运行生产 CLI；“缺字体”用 [`p6-fonts/`](acceptance/public-release/p6-fonts/) 中的覆写文件构造（哨兵名 `P6缺失测试字体`）。结果写入 `docs/acceptance/public-release/<label>/p6-font-check.json`，路径已脱敏；构建产物放在临时目录，结束后删除。
+
+| 步骤 | 内容 | 对应条件 |
+| --- | --- | --- |
+| F01 | 离线全量 | 6 |
+| F02 | `--doctor`（默认配置）：6 个默认字体都已安装；Windows 上读取到 Word 字体列表 | 2 |
+| F03 | `--plan` 中文示例：示例中的英文字体名全部识别为已安装 | 2 |
+| F04 | `--doctor` 中文示例 + 哨兵字体：报告缺失，退出码 0 | 3 |
+| F05 | 中文示例 + 哨兵字体，不启用回退：精确构建与 smoke 通过，终端记录缺失，正文样式保留请求的字体名 | 3 |
+| F06 | 中文示例 + 哨兵字体，`--font-fallbacks`（候选 `P6另一个缺失字体`、`仿宋`）：构建与 smoke 通过，正文样式为 `仿宋`，文档中没有哨兵名 | 4 |
+| F07 | 回退候选全部缺失：`--plan --font-fallbacks` 退出码 1 | 5 |
+| F08 | `custom-format-demo`（v3）+ 哨兵字体回退到 `宋体`：构建与 smoke 通过，元数据记录替换；smoke 不加 `--font-fallbacks` 时因配置契约不一致失败 | 4 |
+| F09 | 三个示例在不加与加 `--font-fallbacks` 时都通过，DOCX 部件相同（不计 `core.xml` 与 rsid） | 6 |
+| F10 | WW01–WW12 两次（不加与加 `DOCUMENT_SYNTHESIS_FONT_FALLBACKS=1`），各自与入库的 `<label>/ww-results.json` 页码对照，差异须为 0；结果写入 `ww-results-p6.json`、`ww-results-p6-fallbacks.json` | 6 |
+| F11 | 含真实 Word 用例的全量（`DOCUMENT_SYNTHESIS_WORD_TEST=1`） | 6 |
+
+macOS 试运行（`--skip-tests --skip-matrix --skip-word-tests`，`p6-font-check.json` 未入库，F01/F10/F11 已在 F4 单独完成）：F02–F09 全部 `passed`，约 70 秒。
+
+Windows 上的运行方式（项目环境的 Python，需已安装 pywin32）：
+
+```
+git fetch origin
+git checkout p6-font-portability
+git pull
+python -m pip install -r requirements.txt
+python docs/acceptance/public-release/p6_font_check.py
+```
+
+只想先跑快的部分时加 `--skip-matrix --skip-word-tests`；只重跑个别步骤用 `--only F06,F08`。完成后把 `docs/acceptance/public-release/windows-word/` 下新生成的 `p6-font-check.json`、`ww-results-p6.json`、`ww-results-p6-fallbacks.json` 提交到本分支，或把文件发回整理。
+
+可选（第 5 节第 4 项）：在另一个本地账户中重复 F02–F06（公文字体只装在当前账户），观察真正缺少 `仿宋_GB2312` 时 `--doctor` 的结果，以及默认配置 `--font-fallbacks` 构建的回退与页码。这一步需要该账户中 Word 已登录激活，脚本没有自动化。
