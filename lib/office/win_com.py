@@ -862,6 +862,20 @@ class WinComBackend:
         details.update({key: result[key] for key in _WORD_DETAIL_KEYS if key in result})
         return BackendStatus(True, f"Automation 探针成功: {_word_summary(result)}。", "exact", details)
 
+    def font_names(self) -> Optional[List[str]]:
+        """启动独立 Word 实例读取 ``Application.FontNames`` 后退出（``--doctor`` 用）；失败时返回 None。"""
+        if not self.static_status().available:
+            return None
+        job = self._new_job_dir()
+        try:
+            result = self._run({"op": "font_names"}, job, _timeout_seconds(PROBE_TIMEOUT))
+        except OfficeBackendError:
+            return None
+        finally:
+            shutil.rmtree(job, ignore_errors=True)
+        names = result.get("font_names")
+        return [str(name) for name in names] if isinstance(names, list) else None
+
     # -- 转换与导出 ------------------------------------------------------
 
     def _require_word(self) -> None:

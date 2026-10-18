@@ -4,8 +4,8 @@
 两种模式，日志都写到 stderr：
 
 - 单次模式：从 stdin 读取一行 JSON 请求，启动 Office、执行、退出 Office，在 stdout
-  只输出一行结果 JSON。请求字段 ``op`` 取值：``probe``、``convert_doc``、
-  ``convert_pptx``、``export_pdf``、``inspect``。
+  只输出一行结果 JSON。请求字段 ``op`` 取值：``probe``、``font_names``、
+  ``convert_doc``、``convert_pptx``、``export_pdf``、``inspect``。
 - 会话模式：第一行为 ``{"op": "session", "pid_file": ...}``，之后每行一个带 ``id`` 的
   Word 请求，每个请求输出一行带同一 ``id`` 的结果；Word 在第一个请求时启动，
   在 ``{"op": "close"}`` 或 stdin 结束时退出。一次构建内的全部 Word 操作共用这个实例。
@@ -59,7 +59,7 @@ MSO_AUTOMATION_SECURITY_FORCE_DISABLE = 3
 PP_SAVE_AS_PDF = 32
 
 #: 使用 Word 的操作；``convert_pptx`` 启动的是 PowerPoint，始终走单次模式。
-WORD_OPS = ("probe", "convert_doc", "export_pdf", "inspect")
+WORD_OPS = ("probe", "font_names", "convert_doc", "export_pdf", "inspect")
 
 
 #: 调用 Quit 之后 worker 仍未退出的最长等待（秒）。第三方 COM 加载项可能让 Word 在关闭阶段卡住，
@@ -474,6 +474,11 @@ def run_word_op(app: Any, request: Dict[str, Any]) -> Dict[str, Any]:
 
     if op == "probe":
         return _ready(dict(ok=True, **_word_details(app)))
+
+    if op == "font_names":
+        # Word 对每个字体只列一个名字（中文界面下中文字体为中文名），并包含云字体（P6 F0）
+        names = call_with_busy_retry("Application.FontNames", lambda: [str(name) for name in app.FontNames])
+        return _ready({"ok": True, "font_names": names})
 
     if op == "convert_doc":
         _opened_paths.add(_normalized(request["dst"]))  # SaveAs2 之后文档以新路径打开

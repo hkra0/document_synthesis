@@ -145,6 +145,7 @@ class FakeWordApp:
     Version = "16.0"
     Build = "16.0.99999"
     Path = r"C:\Program Files\Microsoft Office\root\Office16"
+    FontNames = ("仿宋_GB2312", "@仿宋_GB2312", "Times New Roman")
 
     def __init__(self, bookmark_starts=None, pages_by_start=None, fail_export=None, on_repaginate=None) -> None:
         self.bookmark_starts = bookmark_starts or {}
@@ -324,6 +325,12 @@ class WorkerComSequenceTests(unittest.TestCase):
         self.assertEqual(result["word_bitness"], 64)
         self.assertTrue(result["click_to_run"])
 
+    def test_font_names_lists_word_fonts_and_quits(self) -> None:
+        app = FakeWordApp()
+        result = handle({"op": "font_names"}, dispatch=self._dispatch(app), word_pid_of=_no_pid)
+        self.assertEqual(result, {"ok": True, "font_names": ["仿宋_GB2312", "@仿宋_GB2312", "Times New Roman"]})
+        self.assertEqual(app.quit_count, 1)
+
     def test_busy_office_is_retried_then_succeeds(self) -> None:
         """Word 正忙（RETRYLATER / CALL_REJECTED）时退避重试；其他错误不重试。"""
         attempts = []
@@ -406,6 +413,8 @@ class FakeRunner:
             doc.close()
         if request["op"] in ("convert_doc", "convert_pptx"):
             Path(request["dst"]).write_bytes(b"converted")
+        if request["op"] == "font_names":
+            return {"ok": True, "font_names": ["仿宋_GB2312", "Aptos"]}
         return {"ok": True, "page_map": self.page_map}
 
 
@@ -505,6 +514,21 @@ class WinComBackendParentTests(unittest.TestCase):
             status = WinComBackend().static_status()
             self.assertFalse(status.available)
             self.assertIn("pywin32", status.reason)
+
+    def test_font_names_runs_single_request_and_cleans_job(self) -> None:
+        runner = FakeRunner()
+        self.assertEqual(WinComBackend(runner=runner).font_names(), ["仿宋_GB2312", "Aptos"])
+        self.assertEqual([request["op"] for request in runner.requests], ["font_names"])
+        self.assertEqual(self._leftover_jobs(), [])
+
+    def test_font_names_failure_returns_none(self) -> None:
+        runner = FakeRunner(error=OfficeBackendError("无法启动 Microsoft Word。"))
+        self.assertIsNone(WinComBackend(runner=runner).font_names())
+        self.assertEqual(self._leftover_jobs(), [])
+        with patch.object(win_com, "progid_registered", lambda progid: False):
+            unused = FakeRunner()
+            self.assertIsNone(WinComBackend(runner=unused).font_names())
+            self.assertEqual(unused.requests, [])
 
     def test_probe_failure_is_reported_not_raised(self) -> None:
         status = WinComBackend(runner=FakeRunner(error=OfficeBackendError("无法启动 Microsoft Word。"))).probe()

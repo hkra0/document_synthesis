@@ -576,8 +576,12 @@ class UnifiedSynthesizer:
         source_dir: Path,
         manifest_path: Optional[Path] = None,
         override_paths=None,
+        word_font_names=None,
     ) -> Dict[str, Any]:
-        """只读准备输入并返回兼容旧调用方的可审阅计划。"""
+        """只读准备输入并返回兼容旧调用方的可审阅计划。
+
+        ``word_font_names`` 为 Word 字体列表，只由 ``--doctor`` 提供，用于交叉核对字体。
+        """
         prepared = cls.prepare_build(source_dir, manifest_path, override_paths=override_paths)
         selected = {spec["filename"] for spec in prepared.deliveries}
         existing = Path("output") / prepared.config.project_name
@@ -585,12 +589,14 @@ class UnifiedSynthesizer:
             p.name for p in existing.iterdir()
             if p.is_file() and p.suffix.lower() == ".docx" and p.name not in selected
         ) if existing.is_dir() else []
+        # 不修改 PreparedBuild；只在公共计划中附加环境提示与字体检查。
+        public = prepared.to_public_dict()
         if unselected:
-            # 不修改 PreparedBuild；只在公共计划中附加环境提示。
-            public = prepared.to_public_dict()
             public["warnings"].append("默认输出目录中有不属于本次交付的 DOCX（保留不删除）: " + ", ".join(unselected))
-            return public
-        return prepared.to_public_dict()
+        from .fonts import font_report
+
+        public["fonts"] = font_report(prepared.config, word_font_names=word_font_names)
+        return public
 
     @classmethod
     def render_body(cls, prepared: PreparedBuild, run_dir: Path) -> RenderedBody:

@@ -396,3 +396,52 @@ def check_fonts(required: Sequence[RequiredFont], index: FontIndex,
         else:
             results.append(FontCheck(item.name, MISSING, item.sources))
     return results
+
+
+STATUS_LABELS = {INSTALLED: "已安装", MISSING: "缺失", UNKNOWN: "无法判断", WORD_ONLY: "仅 Word 可用"}
+FONT_ENVIRONMENT_NOTICE = (
+    "Word 会用其他字体替换缺失的字体，分页可能与预期不同；"
+    "精确构建的页码只对当前字体环境有效。"
+)
+
+
+def font_report(config, index: Optional[FontIndex] = None,
+                word_font_names: Optional[Iterable[str]] = None) -> Dict[str, object]:
+    """``--plan``/``--doctor`` 使用的字体检查结果（可序列化为 JSON）。"""
+    index = installed_fonts() if index is None else index
+    checks = check_fonts(required_fonts(config), index, word_font_names)
+    return {
+        "index_complete": index.complete,
+        "index_error": index.error,
+        "word_cross_checked": word_font_names is not None,
+        "fonts": [
+            {"name": item.name, "status": item.status, "sources": list(item.sources),
+             "files": [str(path) for path in item.files]}
+            for item in checks
+        ],
+    }
+
+
+def describe_sources(sources: Sequence[str], limit: int = 3) -> str:
+    shown = "、".join(sources[:limit])
+    return shown + (f" 等 {len(sources)} 处" if len(sources) > limit else "")
+
+
+def report_lines(report: Dict[str, object]) -> List[Tuple[str, str]]:
+    """把 ``font_report`` 转成 ``(标签, 文本)`` 行，供终端输出。"""
+    lines: List[Tuple[str, str]] = []
+    if not report["index_complete"]:
+        lines.append(("警告", f"无法完整列出本机字体，未找到的字体记为“无法判断”: {report['index_error']}"))
+    problems = 0
+    for item in report["fonts"]:
+        status = item["status"]
+        label = STATUS_LABELS.get(status, status)
+        text = f"{item['name']}  ← {describe_sources(item['sources'])}"
+        if status == WORD_ONLY:
+            text += "（本机没有字体文件，可能是 Microsoft 365 云字体；换一台电脑结果可能不同）"
+        if status in (MISSING, UNKNOWN):
+            problems += 1
+        lines.append((label, text))
+    if problems:
+        lines.append(("提示", FONT_ENVIRONMENT_NOTICE))
+    return lines

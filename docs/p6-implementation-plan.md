@@ -1,6 +1,6 @@
 # P6 实施计划：字体可移植性
 
-> **文档状态**：实施中；F0（Windows 字体探针）、F1（`lib/fonts.py`）已完成（第 8、9 节），F2 起未实施  
+> **文档状态**：实施中；F0–F2 已完成（第 8–10 节），F3 起未实施  
 > **基线依赖**：P5 与封面模板修复（`main` = `0227f37`）  
 > **核心目标**：按[执行计划](windows-and-public-release-plan.md)第 11 节，让构建在开始前就知道格式要求的字体本机是否具备；缺字体时明确报告，并允许在格式包中声明、经显式启用后使用的回退字体。默认不替换任何字体，不悄悄改变公文格式。  
 > **环境约束**：开发用的 macOS 与 Windows 都已安装公文字体（`仿宋_GB2312`、`楷体_GB2312`、`方正小标宋简体` 等）。“缺字体”场景不靠卸载字体获得，验证方法见第 5 节。
@@ -192,3 +192,24 @@ python docs/acceptance/public-release/font_probe.py --word --output font-probe-w
 - 本机：665 个字体文件，全部解析成功，建索引 0.11 秒。`仿宋_GB2312`、`楷体_GB2312`、`方正小标宋简体`、`仿宋`、`楷体`、`黑体`、`宋体`、`微软雅黑`、`Times New Roman`、`Cambria` 都识别为已安装；`Segoe UI` 与哨兵名为缺失（本机确实没有 `Segoe UI`）。默认旧配置需要的 6 个字体都识别为已安装。
 - 离线全量 478 项通过，19 项跳过（与 P5 相同的 Windows 专属与需手动开启的真实 Word 用例）。
 - 未在 Windows 上运行 `lib/fonts.py`；Windows 来源的逻辑与 F0 探针相同，F5 时实测。
+
+## 10. F2 结果：`--plan` 与 `--doctor` 字体检查（2026-10-18）
+
+| 位置 | 改动 |
+| --- | --- |
+| `lib/fonts.py` | `font_report(config, index=None, word_font_names=None)` 返回可序列化的检查结果；`report_lines()` 转成终端行：`[已安装]`/`[缺失]`/`[无法判断]`/`[仅 Word 可用]`，来源超过 3 处时缩写为“等 N 处”。有缺失或无法判断的字体时追加一行提示：Word 会替换字体、分页可能不同、精确页码只对当前字体环境有效 |
+| `lib/engine.py` | `UnifiedSynthesizer.plan()` 的结果增加 `fonts`；新增可选参数 `word_font_names`，只由 `--doctor` 传入 |
+| `synthesize.py` | `--plan` 在“交付文档”之后、“目录预览”之前输出“字体”一节。`--doctor` 在检查项之后输出“字体”一节：指定 `--source`/`--project` 时检查该项目，否则检查默认配置。缺失字体不改变退出码 |
+| `lib/office/win_com_worker.py`、`lib/office/win_com.py` | worker 新增单次操作 `font_names`（读取 `Application.FontNames`，经忙碌重试）；`WinComBackend.font_names()` 启动独立 Word 实例读取后退出，失败时返回 `None`。没有加入 `probe`，构建时调用的 `probe` 不受影响 |
+
+`--doctor` 只在后端能精确分页且提供 `font_names()` 时读取 Word 字体列表，目前只有 Windows Word 后端提供；读取失败时输出“未能读取 Word 字体列表，字体只按本机字体文件判断”。macOS Word 未实现读取字体列表，只按本机字体文件判断。
+
+未实现：第 3.1 节中“系统登记了替代字体”（`FontSubstitutes`）的提示，留到 F3 与回退字体一起处理。
+
+验证（macOS，Python 3.14.0，Word 16.113.4）：
+
+- 中文示例 `--plan`：示例配置使用英文字体名（`FangSong_GB2312`、`SimHei`、`KaiTi_GB2312`、`FZXiaoBiaoSong-B05S`），通过 `name` 表中的英文名全部识别为已安装。用覆写把正文字体改为 `P6缺失测试字体` 后，该字体报告为缺失并出现替换提示。
+- `--doctor`（无参数，真实 Word）：默认配置的 6 个字体都已安装，退出码 0。`--doctor` 检查 `custom-format-demo`：5 个字体都已安装。
+- 新增测试：`tests/test_font_reporting.py` 11 项（用合成字体代替本机字体，结果与运行环境无关）；`tests/test_win_com_backend.py` 新增 3 项（worker `font_names`、后端成功/失败/Word 不可用）。
+- 离线全量 492 项通过，19 项跳过；`DOCUMENT_SYNTHESIS_OFFICE_BACKEND=none` 下字体相关 33 项通过。
+- 未在 Windows 上运行：`font_names` 的真实 Word 读取与 `--doctor` 输出留到 F5；F0 探针已在同一台 Windows 上用同样的 COM 调用读到 1490 个名字。
