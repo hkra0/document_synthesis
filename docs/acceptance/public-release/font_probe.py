@@ -148,6 +148,9 @@ def read_font_names(path: Path) -> List[Dict[str, Any]]:
     """返回字体文件中每个子字体的名字；TTC 有多个子字体。"""
     with open(path, "rb") as handle:
         tag = _read(handle, 0, 4)
+        if tag[:2] == b"MZ":
+            # .fon 位图字体是 NE 可执行文件，没有 name 表；公文排版不会用到
+            return [{"index": 0, "unsupported": "Windows 位图字体（.fon）"}]
         if tag == b"ttcf":
             _version, num_fonts = struct.unpack(">II", _read(handle, 4, 8))
             offsets = struct.unpack(f">{num_fonts}I", _read(handle, 12, 4 * num_fonts))
