@@ -63,7 +63,9 @@ document_synthesis/
 ├── output/                          # 合成成果输出目录
 ├── examples/custom-format-demo/     # 自定义格式提取与规范排版完整示例
 ├── examples/minimal-demo/           # 可公开查看的匿名演示
-├── .codex/skills/document-synthesis/ # 项目内操作 Skill
+├── skills/document-synthesis/       # 项目 Skill 源文件（唯一修改处）
+├── .claude/skills/、.agents/skills/ # Skill 副本，由 scripts/sync_skills.py 生成
+├── AGENTS.md、CLAUDE.md             # 给 agent 的最低限度指引
 ├── DEVELOPMENT.md                   # 开发者手册与架构说明
 ├── DEVELOPMENT_LOG.md               # 排版实现与技术说明
 └── README.md                        # 项目使用说明
@@ -95,7 +97,7 @@ pip install -r requirements.txt
 python3 synthesize.py --source examples/minimal-demo/source --manifest examples/minimal-demo/manifest.json --plan
 ```
 
-中文展示示例见 [examples/chinese-demo/README.md](examples/chinese-demo/README.md)，包含可编辑的 3∶4 竖版封面、A4 中文正文及自动目录。最小匿名测试示例见 [examples/minimal-demo/README.md](examples/minimal-demo/README.md)。项目内 Skill 位于 [.codex/skills/document-synthesis/SKILL.md](.codex/skills/document-synthesis/SKILL.md)，用于引导后续项目采用统一入口、profile/manifest 和安全验证路径。使用封面模板时，可放置 `{{HEADER_TITLE}}`、`{{SUB_TITLE}}`、`{{MAIN_TITLE}}` 占位符替换内容，也可保留固定文案。
+中文展示示例见 [examples/chinese-demo/README.md](examples/chinese-demo/README.md)，包含可编辑的 3∶4 竖版封面、A4 中文正文及自动目录。最小匿名测试示例见 [examples/minimal-demo/README.md](examples/minimal-demo/README.md)。项目 Skill 源文件位于 [skills/document-synthesis/SKILL.md](skills/document-synthesis/SKILL.md)，用于引导 agent 采用统一入口、profile/manifest 和安全验证路径；副本放在 `.claude/skills/`（Claude Code）和 `.agents/skills/`（Codex），GitHub Copilot 和 Cursor 也会读取这两处。不读 Skill 的 agent 可参考 [AGENTS.md](AGENTS.md)。使用封面模板时，可放置 `{{HEADER_TITLE}}`、`{{SUB_TITLE}}`、`{{MAIN_TITLE}}` 占位符替换内容，也可保留固定文案。
 
 ### 3. 检查与预览
 

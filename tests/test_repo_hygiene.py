@@ -8,6 +8,7 @@ Verifies:
 3. Required exclusion rules in .gitignore exist.
 4. Evidence-hashes.json records match: tracked files strictly; ignored raw
    evidence (logs, DOCX/PDF exports kept only locally) when present.
+5. Agent skill copies are byte-identical to skills/<name>/SKILL.md (P7).
 """
 
 from __future__ import annotations
@@ -165,6 +166,29 @@ class RepoHygieneTest(unittest.TestCase):
             "Evidence hashes do not match current disk files:\n" + "\n".join(mismatches),
         )
         self.assertGreater(checked_tracked, 0, "No tracked evidence file was verified.")
+
+
+class SkillDistributionTest(unittest.TestCase):
+    def test_skill_copies_match_source(self):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "sync_skills", REPO_ROOT / "scripts" / "sync_skills.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        pairs = module.skill_pairs()
+        self.assertTrue(pairs, "skills/*/SKILL.md not found")
+        stale = [path.relative_to(REPO_ROOT).as_posix() for path in module.out_of_sync()]
+        self.assertEqual(stale, [], "run: python scripts/sync_skills.py")
+
+    def test_skill_frontmatter_has_name_and_description(self):
+        for source in sorted((REPO_ROOT / "skills").glob("*/SKILL.md")):
+            text = source.read_text(encoding="utf-8")
+            self.assertTrue(text.startswith("---\n"), source)
+            header = text.split("---\n", 2)[1]
+            self.assertIn(f"name: {source.parent.name}\n", header)
+            self.assertRegex(header, r"(?m)^description: \S")
 
 
 if __name__ == "__main__":
