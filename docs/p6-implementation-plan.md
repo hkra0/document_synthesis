@@ -1,6 +1,6 @@
 # P6 实施计划：字体可移植性
 
-> **文档状态**：计划中；F0（Windows 字体探针）已完成（第 8 节），F1 起未实施  
+> **文档状态**：实施中；F0（Windows 字体探针）、F1（`lib/fonts.py`）已完成（第 8、9 节），F2 起未实施  
 > **基线依赖**：P5 与封面模板修复（`main` = `0227f37`）  
 > **核心目标**：按[执行计划](windows-and-public-release-plan.md)第 11 节，让构建在开始前就知道格式要求的字体本机是否具备；缺字体时明确报告，并允许在格式包中声明、经显式启用后使用的回退字体。默认不替换任何字体，不悄悄改变公文格式。  
 > **环境约束**：开发用的 macOS 与 Windows 都已安装公文字体（`仿宋_GB2312`、`楷体_GB2312`、`方正小标宋简体` 等）。“缺字体”场景不靠卸载字体获得，验证方法见第 5 节。
@@ -171,3 +171,24 @@ python docs/acceptance/public-release/font_probe.py --word --output font-probe-w
 - 差异只出现在本机没有文件的字体上：Word 可能通过云字体使用它们。第 3.2 节为此增加 `word_only` 状态。
 - 第 5 节第 2、3 项使用的哨兵名已确认在 Word 中也不存在，可以用于缺失与回退测试。
 - F0 完成，可以开始 F1。
+
+## 9. F1 结果：`lib/fonts.py`（2026-10-18）
+
+| 接口 | 实现 |
+| --- | --- |
+| `read_font_file(path, source)` | 由探针的解析器移入。返回 `FontFile`：`status` 为 `ok`/`unsupported`（`.fon`）/`error`，不抛出；TTC 中个别子字体损坏时保留其余子字体并在 `detail` 中说明 |
+| `windows_font_files` / `directory_font_files` / `platform_font_files` | Windows：`HKLM` 与 `HKCU` 注册表（相对文件名按 `%WINDIR%\Fonts` 解析，登记了但文件不存在的项跳过），加两个字体目录中未登记的文件；macOS：系统、用户与 Word `DFonts` 目录；Linux：`fc-list`，没有时扫常见目录 |
+| `FontIndex.build` / `installed_fonts()` | 按 `family`、`typographic_family`、`full` 三种名字的所有语言建立索引，PostScript 名不参与。一个字体文件都没找到、或列出字体文件时出错，索引记为不完整；个别文件解析失败不影响完整性。`installed_fonts()` 进程内缓存 |
+| `required_fonts(config)` | 解析后格式各样式的 `east_asia`/`latin`/`complex_script`，旧配置 `fonts`，以及代码直接写入的 `宋体`（页脚页码，`styles.setup_footer`）。按名字去重，保留全部来源 |
+| `check_fonts(required, index, word_font_names=None)` | `installed` / `missing` / `unknown`（索引不完整时查不到）/ `word_only`（只有提供 Word 字体列表时才会出现） |
+
+核查代码直接写入的字体时发现：目录条目字体取自 `fonts` 配置，`styles.build_toc_sdt` 中写死的 `黑体` 当前没有调用方，因此未列入。
+
+`tests/test_office_backends.py` 禁止 `lib/` 中出现 `darwin` 判断（P2 的 Office 隔离约束）。字体位置本来就因平台而异，与 Office 调用无关，因此把 `lib/fonts.py` 加入允许名单，并注明原因。
+
+验证（macOS，Python 3.14.0）：
+
+- `tests/test_fonts.py` 22 项：用合成的最小 TTF/OTF/TTC 字节测解析，用临时目录与注入的注册表项测 Windows 来源（含 F0 中的乱码文件名）。
+- 本机：665 个字体文件，全部解析成功，建索引 0.11 秒。`仿宋_GB2312`、`楷体_GB2312`、`方正小标宋简体`、`仿宋`、`楷体`、`黑体`、`宋体`、`微软雅黑`、`Times New Roman`、`Cambria` 都识别为已安装；`Segoe UI` 与哨兵名为缺失（本机确实没有 `Segoe UI`）。默认旧配置需要的 6 个字体都识别为已安装。
+- 离线全量 478 项通过，19 项跳过（与 P5 相同的 Windows 专属与需手动开启的真实 Word 用例）。
+- 未在 Windows 上运行 `lib/fonts.py`；Windows 来源的逻辑与 F0 探针相同，F5 时实测。
