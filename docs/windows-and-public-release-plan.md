@@ -2,7 +2,7 @@
 
 日期：2026-10-09；状态：**计划中，尚未实施**。本轮批次编号为 **P0–P9**，不覆盖历史 R/N/S/NW 批次记录。下文的新模块、函数、参数、测试和证据文件均为实施设计，在对应批次验证之前，不能写成已经具备的能力。
 
-依据：当前 `main`（`c2c1a30`）的生产代码、[README](../README.md)、[DEVELOPMENT.md](../DEVELOPMENT.md)、项目 Skill [SKILL.md](../.codex/skills/document-synthesis/SKILL.md)。2026-10-09 在 macOS、Python 3.14 下运行离线全套，结果为 325 项通过、6 项条件跳过；尚未在 Windows 上实际运行。
+依据：当前 `main`（`c2c1a30`）的生产代码、[README](../README.md)、[DEVELOPMENT.md](../DEVELOPMENT.md)、项目 Skill `.codex/skills/document-synthesis/SKILL.md`（P7 后源文件移到 [`skills/document-synthesis/SKILL.md`](../skills/document-synthesis/SKILL.md)）。2026-10-09 在 macOS、Python 3.14 下运行离线全套，结果为 325 项通过、6 项条件跳过；尚未在 Windows 上实际运行。
 
 ## 1. 目标与验收口径
 
@@ -171,7 +171,7 @@ class OfficeBackend(Protocol):
 | P5 | 草稿模式与可选 LibreOffice 后端 | P2 | `--allow-draft`、`libreoffice.py`、标注规则 |
 | P6 | 字体可移植性 | P2；验收依赖 P4 | 字体检查、回退映射、doctor 提示 |
 | P7 | 多 agent Skill 分发 | P1；内容依赖 P3/P5 | 平台感知 SKILL.md、多目录分发、AGENTS.md |
-| P8 | 公开发布文档与仓库治理 | P0–P7 | 英文 README、CHANGELOG、SECURITY、CONTRIBUTING、版本号 |
+| P8 | 公开发布文档与仓库治理 | P0–P7 | README 重构（1.0 只做中文）、CHANGELOG、SECURITY、CONTRIBUTING、版本号 |
 | P9 | 发布候选全量回归与发布 | 全部 | 三平台证据、`v1.0.0` 标签与 Release |
 
 建议顺序：P0 → P1 → P2 → (P3 → P4) ∥ P5 → P6 → P7 → P8 → P9。P5 只依赖 P2，可以与 P3/P4 并行。
@@ -311,11 +311,15 @@ Linux CI 用最小示例和中文示例跑通 `--allow-draft` 构建与 `smoke_t
    - `description` 加上触发词：Word、目录、页码、公文、合并 docx/PDF，以及对应英文，方便自动触发。
 5. 用 Codex 和 Claude Code 各在 macOS 与 Windows 上做一次端到端试用：只给出“用示例材料生成带目录的文档”这样的自然语言请求，记录 agent 是否找到 Skill、是否先运行 plan/doctor、是否如实报告支持级别。
 
+**2026-10-18 实施说明**：按官方文档核对后，Codex 的仓库级目录是 `.agents/skills`（文档不再提 `.codex/skills`），Claude Code 是 `.claude/skills`，GitHub Copilot 与 Cursor 两处都读取。因此只分发到 `.claude/skills/` 与 `.agents/skills/` 两处，删除 `.codex/skills/`（Cursor 还会读取它，保留会造成第三份重复）。实施记录见 [P7 实施记录](p7-implementation-plan.md)。
+
 ### 退出条件
 
 `sync_skills.py --check` 通过；四次 agent 试用记录写入 `docs/acceptance/public-release/agent-trials.md`；每次都先运行了 plan/doctor，且没有越级声称页码已核验。
 
 ## 13. P8：公开发布文档与仓库治理
+
+**2026-10-18 决定**：1.0 面向中文用户，暂无海外计划。P8 不新增 `README.en.md`，新增的治理文档（CHANGELOG、SECURITY、CONTRIBUTING、THIRD_PARTY_NOTICES）和 issue/PR 模板都用中文；以后需要海外发布时再补英文版。下文第 1 项中与英文 README 相关的要求不再执行。
 
 ### 执行动作
 
