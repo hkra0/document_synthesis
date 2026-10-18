@@ -1,0 +1,8 @@
+{
+  "format": {
+    "overrides": {
+      "styles": {"body": {"run": {"east_asia": "P6缺失测试字体"}}},
+      "font_fallbacks": {"P6缺失测试字体": ["宋体"]}
+    }
+  }
+}

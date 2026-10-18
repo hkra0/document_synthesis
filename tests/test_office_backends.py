@@ -267,6 +267,8 @@ class OfficeBackendContractTests(unittest.TestCase):
         allowed_darwin = {
             lib_dir / "office" / "mac_applescript.py",
             lib_dir / "office" / "__init__.py",
+            # 字体文件的位置因平台而异，与 Office 调用无关（P6）
+            lib_dir / "fonts.py",
         }
 
         osascript_violations = []

@@ -1,0 +1,1066 @@
+{
+  "schema_version": 1,
+  "label": "windows-word",
+  "generated_at": "2026-10-18T10:21:24+00:00",
+  "environment": {
+    "git_commit": "95b476c82747f8e48cf7d17705c891f7354ea1ef",
+    "worktree_dirty": false,
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.4",
+    "office_backend": {
+      "name": "win-word",
+      "available": true,
+      "fidelity": "exact",
+      "reason": "Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。"
+    }
+  },
+  "summary": {
+    "failed": 2,
+    "passed": 9
+  },
+  "steps": [
+    {
+      "id": "F01",
+      "title": "离线全量测试",
+      "condition": "6",
+      "status": "failed",
+      "note": null,
+      "commands": [
+        {
+          "label": "unittest",
+          "argv": [
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests"
+          ],
+          "env": {},
+          "exit_code": 1,
+          "seconds": 99.6,
+          "output_tail": [
+            "- ['unregistered:system_fonts_dir',",
+            "?                                 ^",
+            "+ ['unregistered:system_fonts_dir']",
+            "?                                 ^",
+            "-  'unregistered:user_fonts_dir',",
+            "-  'unregistered:user_fonts_dir',",
+            "-  'unregistered:user_fonts_dir',",
+            "-  'unregistered:user_fonts_dir',",
+            "-  'unregistered:user_fonts_dir']",
+            "----------------------------------------------------------------------",
+            "Ran 495 tests in 88.990s",
+            "FAILED (failures=1, errors=1, skipped=9)"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "退出码为 0",
+          "ok": false,
+          "detail": "Ran 495 tests in 88.990s FAILED (failures=1, errors=1, skipped=9)"
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "title": "--doctor（默认配置）：公文字体识别为已安装，Windows 读取 Word 字体列表",
+      "condition": "2",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "doctor",
+          "argv": [
+            "synthesize.py",
+            "--doctor"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 7.9,
+          "output_tail": [
+            "[通过] Windows 长路径支持 (LongPathsEnabled 已启用)",
+            "[通过] Office Automation (win-word): Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。",
+            "[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）",
+            "[信息] PowerPoint: 已安装，可转换 .pptx",
+            "[信息] Word 字体列表: 1490 个，用于交叉核对字体",
+            "字体（默认配置；指定 --source 或 --project 可检查具体项目）:",
+            "  [已安装] 仿宋_GB2312  ← 样式 body（中文）、样式 footer（中文）、样式 header（中文） 等 6 处",
+            "  [已安装] Times New Roman  ← 样式 body（西文）、样式 heading.1（西文）、样式 heading.2（西文） 等 8 处",
+            "  [已安装] 黑体  ← 样式 heading.1（中文）、fonts.h1",
+            "  [已安装] 楷体_GB2312  ← 样式 heading.2（中文）、样式 subtitle（中文）、fonts.h2",
+            "  [已安装] 方正小标宋简体  ← 样式 title（中文）、样式 toc.title（中文）、fonts.title",
+            "  [已安装] 宋体  ← 页脚页码（styles.setup_footer）"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "退出码为 0（精确构建就绪）",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "默认配置字体全部已安装",
+          "ok": true,
+          "detail": "{\"仿宋_GB2312\": \"已安装\", \"Times New Roman\": \"已安装\", \"黑体\": \"已安装\", \"楷体_GB2312\": \"已安装\", \"方正小标宋简体\": \"已安装\", \"宋体\": \"已安装\"}"
+        },
+        {
+          "check": "读取到 Word 字体列表",
+          "ok": true,
+          "detail": "[信息] Word 字体列表: 1490 个"
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "title": "--plan 中文示例：示例使用的英文字体名全部识别为已安装",
+      "condition": "2",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "plan",
+          "argv": [
+            "synthesize.py",
+            "--plan",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 0.7,
+          "output_tail": [
+            "目录预览:",
+            "- [docx_outline] 一、应用场景  (0_应用场景.docx)",
+            "  - [embedded_heading] （一）申报评审材料  ()",
+            "  - [embedded_heading] （二）项目资料归档  ()",
+            "- [docx_outline] 二、材料归集与合成  (1_材料整理.docx)",
+            "  - [embedded_heading] （一）材料顺序与层级  ()",
+            "  - [embedded_heading] （二）多格式内容处理  ()",
+            "  - [embedded_heading] （三）构建前检查  ()",
+            "- [docx_outline] 三、目录编排与交付  (2_目录与交付.docx)",
+            "  - [embedded_heading] （一）自动目录与连续编页  ()",
+            "  - [embedded_heading] （二）按需拆分交付  ()",
+            "  - [embedded_heading] （三）发布前质量核验  ()"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "退出码为 0",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "全部已安装",
+          "ok": true,
+          "detail": "{\"FangSong_GB2312\": \"已安装\", \"Times New Roman\": \"已安装\", \"SimHei\": \"已安装\", \"KaiTi_GB2312\": \"已安装\", \"FZXiaoBiaoSong-B05S\": \"已安装\", \"宋体\": \"已安装\"}"
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "title": "--doctor 中文示例 + 哨兵字体：报告缺失，退出码不变",
+      "condition": "3",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "doctor",
+          "argv": [
+            "synthesize.py",
+            "--doctor",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--override",
+            "docs\\acceptance\\public-release\\p6-fonts\\v2-missing.override.json"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 7.8,
+          "output_tail": [
+            "[信息] Word 安装方式: Click-to-Run（Microsoft 365 / 零售版）",
+            "[信息] PowerPoint: 已安装，可转换 .pptx",
+            "[信息] Word 字体列表: 1490 个，用于交叉核对字体",
+            "字体（本项目配置）:",
+            "  [缺失] P6缺失测试字体  ← 样式 body（中文）、样式 footer（中文）、样式 header（中文） 等 4 处",
+            "  [已安装] Times New Roman  ← 样式 body（西文）、样式 heading.1（西文）、样式 heading.2（西文） 等 8 处",
+            "  [已安装] SimHei  ← 样式 heading.1（中文）、fonts.h1",
+            "  [已安装] KaiTi_GB2312  ← 样式 heading.2（中文）、样式 subtitle（中文）、fonts.h2",
+            "  [已安装] FangSong_GB2312  ← 样式 heading.3（中文）、fonts.h3",
+            "  [已安装] FZXiaoBiaoSong-B05S  ← 样式 title（中文）、样式 toc.title（中文）、fonts.title",
+            "  [已安装] 宋体  ← 页脚页码（styles.setup_footer）",
+            "  [提示] Word 会用其他字体替换缺失的字体，分页可能与预期不同；精确构建的页码只对当前字体环境有效。"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "退出码为 0",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "哨兵字体报告为缺失",
+          "ok": true,
+          "detail": "P6缺失测试字体: 缺失"
+        },
+        {
+          "check": "输出替换提示",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "title": "中文示例 + 哨兵字体，不启用回退：精确构建与 smoke 通过，终端记录缺失",
+      "condition": "3",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "build",
+          "argv": [
+            "synthesize.py",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--override",
+            "docs\\acceptance\\public-release\\p6-fonts\\v2-missing.override.json",
+            "--output-dir",
+            "<work>\\F05"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 8.9,
+          "output_tail": [
+            "[字体] 本机缺少且未替换: P6缺失测试字体。Word 会用其他字体替换缺失的字体，分页可能与预期不同；精确构建的页码只对当前字体环境有效。可用 --font-fallbacks 改用声明的回退字体。",
+            "[1/3] 合成可复用正文: 材料合成中文示例",
+            "[2/3] 装配并核验 1 份交付物",
+            "  [通过] 逐页断言全部通过（共 5 页），无空白页、单标题页或孤行。",
+            "[3/3] 所有交付物已通过检查，发布本次成果"
+          ]
+        },
+        {
+          "label": "smoke",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--override",
+            "docs\\acceptance\\public-release\\p6-fonts\\v2-missing.override.json",
+            "--output-dir",
+            "<work>\\F05"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 5.9,
+          "output_tail": [
+            "《材料合成中文示例》交付检查: <work>\\F05",
+            "  检查 main: 材料合成_中文示例.docx (cover + toc + body)",
+            "  正文文字核验: 19 段",
+            "  [通过] 逐页断言全部通过（共 5 页），无空白页、单标题页或孤行。",
+            "  [提示] 交付格式核验提示: 5 项属性偏差",
+            "[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "构建退出码为 0",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "smoke 退出码为 0",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "终端记录缺失且未替换",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "生成一份交付物",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "正文样式保留请求的字体名",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "title": "中文示例 + 哨兵字体，--font-fallbacks：写入仿宋，构建与 smoke 通过",
+      "condition": "4",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "build",
+          "argv": [
+            "synthesize.py",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--override",
+            "docs\\acceptance\\public-release\\p6-fonts\\v2-fallback.override.json",
+            "--output-dir",
+            "<work>\\F06",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 7.8,
+          "output_tail": [
+            "[字体] 回退: P6缺失测试字体 → 仿宋（本机缺少 P6缺失测试字体）",
+            "[1/3] 合成可复用正文: 材料合成中文示例",
+            "[2/3] 装配并核验 1 份交付物",
+            "  [通过] 逐页断言全部通过（共 5 页），无空白页、单标题页或孤行。",
+            "[3/3] 所有交付物已通过检查，发布本次成果"
+          ]
+        },
+        {
+          "label": "smoke",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--override",
+            "docs\\acceptance\\public-release\\p6-fonts\\v2-fallback.override.json",
+            "--output-dir",
+            "<work>\\F06",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 5.9,
+          "output_tail": [
+            "《材料合成中文示例》交付检查: <work>\\F06",
+            "  检查 main: 材料合成_中文示例.docx (cover + toc + body)",
+            "  正文文字核验: 19 段",
+            "  [通过] 逐页断言全部通过（共 5 页），无空白页、单标题页或孤行。",
+            "  [提示] 交付格式核验提示: 5 项属性偏差",
+            "[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "构建退出码为 0",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "smoke --font-fallbacks 退出码为 0",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "终端记录回退",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "生成一份交付物",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "正文样式写入仿宋",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "文档中没有哨兵字体名",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "title": "回退候选全部缺失：启用回退时失败",
+      "condition": "5",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "plan",
+          "argv": [
+            "synthesize.py",
+            "--plan",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--override",
+            "docs\\acceptance\\public-release\\p6-fonts\\v2-fallback-unavailable.override.json",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 1,
+          "seconds": 0.6,
+          "output_tail": [
+            "[错误] 构建计划无效: 配置 <repo>\\examples\\chinese-demo\\manifest.json + 覆写 <repo>\\docs\\acceptance\\public-release\\p6-fonts\\v2-fallback-unavailable.override.json 无效: 字体 P6缺失测试字体 本机缺失，声明的回退字体也都没有安装: P6另一个缺失字体"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "退出码为 1",
+          "ok": true,
+          "detail": "exit=1"
+        },
+        {
+          "check": "说明回退字体都没有安装",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "title": "custom-format-demo（v3）+ 哨兵字体，--font-fallbacks：元数据记录替换",
+      "condition": "4",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "build",
+          "argv": [
+            "synthesize.py",
+            "--source",
+            "examples\\custom-format-demo",
+            "--manifest",
+            "examples\\custom-format-demo\\manifest.json",
+            "--override",
+            "docs\\acceptance\\public-release\\p6-fonts\\v3-fallback.override.json",
+            "--output-dir",
+            "<work>\\F08",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 6.8,
+          "output_tail": [
+            "[字体] 回退: P6缺失测试字体 → 宋体（本机缺少 P6缺失测试字体）",
+            "[1/3] 合成可复用正文: Custom Format Demo",
+            "[2/3] 装配并核验 1 份交付物",
+            "  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。",
+            "[3/3] 所有交付物已通过检查，发布本次成果"
+          ]
+        },
+        {
+          "label": "smoke",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\custom-format-demo",
+            "--manifest",
+            "examples\\custom-format-demo\\manifest.json",
+            "--override",
+            "docs\\acceptance\\public-release\\p6-fonts\\v3-fallback.override.json",
+            "--output-dir",
+            "<work>\\F08",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 5.3,
+          "output_tail": [
+            "《Custom Format Demo》交付检查: <work>\\F08",
+            "  检查 main: academic_paper.docx (body)",
+            "  正文文字核验: 3 段",
+            "  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。",
+            "  交付格式核验: 3 个块符合格式包规格 (body, heading.1, heading.2)",
+            "[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+          ]
+        },
+        {
+          "label": "smoke（不加 --font-fallbacks）",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\custom-format-demo",
+            "--manifest",
+            "examples\\custom-format-demo\\manifest.json",
+            "--override",
+            "docs\\acceptance\\public-release\\p6-fonts\\v3-fallback.override.json",
+            "--output-dir",
+            "<work>\\F08"
+          ],
+          "env": {},
+          "exit_code": 1,
+          "seconds": 0.7,
+          "output_tail": [
+            "《Custom Format Demo》交付检查: <work>\\F08",
+            "[未通过] 交付元数据契约核验未通过: 配置契约 SHA-256 与当前 PreparedBuild 不一致"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "构建退出码为 0",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "smoke --font-fallbacks 退出码为 0",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "生成 build-metadata.json",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "fallbacks_enabled 为 true",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "记录 哨兵 → 宋体",
+          "ok": true,
+          "detail": "[{\"requested\": \"P6缺失测试字体\", \"used\": \"宋体\", \"reason\": \"missing\"}]"
+        },
+        {
+          "check": "smoke 不加 --font-fallbacks 时失败",
+          "ok": true,
+          "detail": "exit=1"
+        },
+        {
+          "check": "失败原因为配置契约不一致",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "id": "F09",
+      "title": "三个示例在不加与加 --font-fallbacks 时都通过，且交付物相同",
+      "condition": "6",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "build",
+          "argv": [
+            "synthesize.py",
+            "--source",
+            "examples\\minimal-demo\\source",
+            "--manifest",
+            "examples\\minimal-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-minimal-off"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 7.0,
+          "output_tail": [
+            "[1/3] 合成可复用正文: Document Synthesis Demo",
+            "[2/3] 装配并核验 1 份交付物",
+            "  [通过] 逐页断言全部通过（共 4 页），无空白页、单标题页或孤行。",
+            "[3/3] 所有交付物已通过检查，发布本次成果"
+          ]
+        },
+        {
+          "label": "smoke",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\minimal-demo\\source",
+            "--manifest",
+            "examples\\minimal-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-minimal-off"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 6.2,
+          "output_tail": [
+            "《Document Synthesis Demo》交付检查: <work>\\F09-minimal-off",
+            "  检查 main: demo_complete.docx (cover + toc + body)",
+            "  正文文字核验: 20 段",
+            "  [通过] 逐页断言全部通过（共 4 页），无空白页、单标题页或孤行。",
+            "  交付格式核验: 22 个块符合格式包规格 (body, heading.1, subtitle)",
+            "[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+          ]
+        },
+        {
+          "label": "build",
+          "argv": [
+            "synthesize.py",
+            "--source",
+            "examples\\minimal-demo\\source",
+            "--manifest",
+            "examples\\minimal-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-minimal-on",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 7.2,
+          "output_tail": [
+            "[1/3] 合成可复用正文: Document Synthesis Demo",
+            "[2/3] 装配并核验 1 份交付物",
+            "  [通过] 逐页断言全部通过（共 4 页），无空白页、单标题页或孤行。",
+            "[3/3] 所有交付物已通过检查，发布本次成果"
+          ]
+        },
+        {
+          "label": "smoke",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\minimal-demo\\source",
+            "--manifest",
+            "examples\\minimal-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-minimal-on",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 6.0,
+          "output_tail": [
+            "《Document Synthesis Demo》交付检查: <work>\\F09-minimal-on",
+            "  检查 main: demo_complete.docx (cover + toc + body)",
+            "  正文文字核验: 20 段",
+            "  [通过] 逐页断言全部通过（共 4 页），无空白页、单标题页或孤行。",
+            "  交付格式核验: 22 个块符合格式包规格 (body, heading.1, subtitle)",
+            "[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+          ]
+        },
+        {
+          "label": "build",
+          "argv": [
+            "synthesize.py",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-chinese-off"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 7.7,
+          "output_tail": [
+            "[1/3] 合成可复用正文: 材料合成中文示例",
+            "[2/3] 装配并核验 1 份交付物",
+            "  [通过] 逐页断言全部通过（共 5 页），无空白页、单标题页或孤行。",
+            "[3/3] 所有交付物已通过检查，发布本次成果"
+          ]
+        },
+        {
+          "label": "smoke",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-chinese-off"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 5.9,
+          "output_tail": [
+            "《材料合成中文示例》交付检查: <work>\\F09-chinese-off",
+            "  检查 main: 材料合成_中文示例.docx (cover + toc + body)",
+            "  正文文字核验: 19 段",
+            "  [通过] 逐页断言全部通过（共 5 页），无空白页、单标题页或孤行。",
+            "  [提示] 交付格式核验提示: 5 项属性偏差",
+            "[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+          ]
+        },
+        {
+          "label": "build",
+          "argv": [
+            "synthesize.py",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-chinese-on",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 7.7,
+          "output_tail": [
+            "[1/3] 合成可复用正文: 材料合成中文示例",
+            "[2/3] 装配并核验 1 份交付物",
+            "  [通过] 逐页断言全部通过（共 5 页），无空白页、单标题页或孤行。",
+            "[3/3] 所有交付物已通过检查，发布本次成果"
+          ]
+        },
+        {
+          "label": "smoke",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\chinese-demo\\source",
+            "--manifest",
+            "examples\\chinese-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-chinese-on",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 5.9,
+          "output_tail": [
+            "《材料合成中文示例》交付检查: <work>\\F09-chinese-on",
+            "  检查 main: 材料合成_中文示例.docx (cover + toc + body)",
+            "  正文文字核验: 19 段",
+            "  [通过] 逐页断言全部通过（共 5 页），无空白页、单标题页或孤行。",
+            "  [提示] 交付格式核验提示: 5 项属性偏差",
+            "[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+          ]
+        },
+        {
+          "label": "build",
+          "argv": [
+            "synthesize.py",
+            "--source",
+            "examples\\custom-format-demo",
+            "--manifest",
+            "examples\\custom-format-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-custom-off"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 5.5,
+          "output_tail": [
+            "[1/3] 合成可复用正文: Custom Format Demo",
+            "[2/3] 装配并核验 1 份交付物",
+            "  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。",
+            "[3/3] 所有交付物已通过检查，发布本次成果"
+          ]
+        },
+        {
+          "label": "smoke",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\custom-format-demo",
+            "--manifest",
+            "examples\\custom-format-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-custom-off"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 5.2,
+          "output_tail": [
+            "《Custom Format Demo》交付检查: <work>\\F09-custom-off",
+            "  检查 main: academic_paper.docx (body)",
+            "  正文文字核验: 3 段",
+            "  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。",
+            "  交付格式核验: 3 个块符合格式包规格 (body, heading.1, heading.2)",
+            "[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+          ]
+        },
+        {
+          "label": "build",
+          "argv": [
+            "synthesize.py",
+            "--source",
+            "examples\\custom-format-demo",
+            "--manifest",
+            "examples\\custom-format-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-custom-on",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 5.5,
+          "output_tail": [
+            "[1/3] 合成可复用正文: Custom Format Demo",
+            "[2/3] 装配并核验 1 份交付物",
+            "  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。",
+            "[3/3] 所有交付物已通过检查，发布本次成果"
+          ]
+        },
+        {
+          "label": "smoke",
+          "argv": [
+            "smoke_test.py",
+            "--source",
+            "examples\\custom-format-demo",
+            "--manifest",
+            "examples\\custom-format-demo\\manifest.json",
+            "--output-dir",
+            "<work>\\F09-custom-on",
+            "--font-fallbacks"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 5.1,
+          "output_tail": [
+            "《Custom Format Demo》交付检查: <work>\\F09-custom-on",
+            "  检查 main: academic_paper.docx (body)",
+            "  正文文字核验: 3 段",
+            "  [通过] 逐页断言全部通过（共 1 页），无空白页、单标题页或孤行。",
+            "  交付格式核验: 3 个块符合格式包规格 (body, heading.1, heading.2)",
+            "[通过] 所有声明交付物的结构、Word 页码与版式检查完成。"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "minimal 不加 --font-fallbacks 构建与 smoke 通过",
+          "ok": true,
+          "detail": "build=0 smoke=0"
+        },
+        {
+          "check": "minimal 不加 --font-fallbacks 没有字体提示",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "minimal 加 --font-fallbacks 构建与 smoke 通过",
+          "ok": true,
+          "detail": "build=0 smoke=0"
+        },
+        {
+          "check": "minimal 加 --font-fallbacks 没有字体提示",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "minimal 两种方式的 DOCX 部件相同（不计 core.xml 与 rsid）",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "chinese 不加 --font-fallbacks 构建与 smoke 通过",
+          "ok": true,
+          "detail": "build=0 smoke=0"
+        },
+        {
+          "check": "chinese 不加 --font-fallbacks 没有字体提示",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "chinese 加 --font-fallbacks 构建与 smoke 通过",
+          "ok": true,
+          "detail": "build=0 smoke=0"
+        },
+        {
+          "check": "chinese 加 --font-fallbacks 没有字体提示",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "chinese 两种方式的 DOCX 部件相同（不计 core.xml 与 rsid）",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "custom 不加 --font-fallbacks 构建与 smoke 通过",
+          "ok": true,
+          "detail": "build=0 smoke=0"
+        },
+        {
+          "check": "custom 不加 --font-fallbacks 没有字体提示",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "custom 加 --font-fallbacks 构建与 smoke 通过",
+          "ok": true,
+          "detail": "build=0 smoke=0"
+        },
+        {
+          "check": "custom 加 --font-fallbacks 没有字体提示",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "check": "custom 两种方式的 DOCX 部件相同（不计 core.xml 与 rsid）",
+          "ok": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "title": "WW01–WW12：不加与加 DOCUMENT_SYNTHESIS_FONT_FALLBACKS=1，与入库结果页码对照",
+      "condition": "6",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "word_matrix ww-results-p6.json",
+          "argv": [
+            "docs/acceptance/public-release/word_matrix.py",
+            "run",
+            "--label",
+            "windows-word",
+            "--output",
+            "ww-results-p6.json",
+            "--note",
+            "P6 F5 未启用回退"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 310.3,
+          "output_tail": [
+            "[WW07] verified (24.8 秒) ",
+            "[WW08] preserve 横向节与页眉变体 ...",
+            "[WW08] verified (23.4 秒) ",
+            "[WW09] 两个来源同号脚注保持关联 ...",
+            "[WW09] verified (29.0 秒) ",
+            "[WW10] 对象与域指令经生产 CLI 保留 ...",
+            "[WW10] verified (30.1 秒) ",
+            "[WW11] 样例纠正、格式包、角色映射与目标构建 ...",
+            "[WW11] verified (27.2 秒) ",
+            "[WW12] 篡改注入 fail closed，已发布哈希不变 ...",
+            "[WW12] verified (25.5 秒) ",
+            "结果: {'verified': 12, 'failed': 0, 'blocked': 0}，已写入 docs/acceptance/public-release/windows-word/ww-results-p6.json"
+          ]
+        },
+        {
+          "label": "word_matrix ww-results-p6-fallbacks.json",
+          "argv": [
+            "docs/acceptance/public-release/word_matrix.py",
+            "run",
+            "--label",
+            "windows-word",
+            "--output",
+            "ww-results-p6-fallbacks.json",
+            "--note",
+            "P6 F5 {'DOCUMENT_SYNTHESIS_FONT_FALLBACKS': '1'}"
+          ],
+          "env": {
+            "DOCUMENT_SYNTHESIS_FONT_FALLBACKS": "1"
+          },
+          "exit_code": 0,
+          "seconds": 310.8,
+          "output_tail": [
+            "[WW07] verified (25.0 秒) ",
+            "[WW08] preserve 横向节与页眉变体 ...",
+            "[WW08] verified (23.5 秒) ",
+            "[WW09] 两个来源同号脚注保持关联 ...",
+            "[WW09] verified (28.7 秒) ",
+            "[WW10] 对象与域指令经生产 CLI 保留 ...",
+            "[WW10] verified (31.2 秒) ",
+            "[WW11] 样例纠正、格式包、角色映射与目标构建 ...",
+            "[WW11] verified (25.7 秒) ",
+            "[WW12] 篡改注入 fail closed，已发布哈希不变 ...",
+            "[WW12] verified (23.9 秒) ",
+            "结果: {'verified': 12, 'failed': 0, 'blocked': 0}，已写入 docs/acceptance/public-release/windows-word/ww-results-p6-fallbacks.json"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "有入库的基线结果",
+          "ok": true,
+          "detail": "docs\\acceptance\\public-release\\windows-word\\ww-results.json"
+        },
+        {
+          "check": "ww-results-p6.json 已生成",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "ww-results-p6.json 12/12 verified",
+          "ok": true,
+          "detail": "{\"verified\": 12, \"failed\": 0, \"blocked\": 0}"
+        },
+        {
+          "check": "ww-results-p6.json 与基线页码差异为 0",
+          "ok": true,
+          "detail": "{\"cases\": 12, \"comparable\": 12, \"identical\": 12, \"with_differences\": 0}"
+        },
+        {
+          "check": "ww-results-p6-fallbacks.json 已生成",
+          "ok": true,
+          "detail": "exit=0"
+        },
+        {
+          "check": "ww-results-p6-fallbacks.json 12/12 verified",
+          "ok": true,
+          "detail": "{\"verified\": 12, \"failed\": 0, \"blocked\": 0}"
+        },
+        {
+          "check": "ww-results-p6-fallbacks.json 与基线页码差异为 0",
+          "ok": true,
+          "detail": "{\"cases\": 12, \"comparable\": 12, \"identical\": 12, \"with_differences\": 0}"
+        }
+      ]
+    },
+    {
+      "id": "F11",
+      "title": "含真实 Word 用例的全量测试",
+      "condition": "6",
+      "status": "failed",
+      "note": null,
+      "commands": [
+        {
+          "label": "unittest（真实 Word）",
+          "argv": [
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests"
+          ],
+          "env": {
+            "DOCUMENT_SYNTHESIS_WORD_TEST": "1"
+          },
+          "exit_code": 1,
+          "seconds": 735.0,
+          "output_tail": [
+            "- ['unregistered:system_fonts_dir',",
+            "?                                 ^",
+            "+ ['unregistered:system_fonts_dir']",
+            "?                                 ^",
+            "-  'unregistered:user_fonts_dir',",
+            "-  'unregistered:user_fonts_dir',",
+            "-  'unregistered:user_fonts_dir',",
+            "-  'unregistered:user_fonts_dir',",
+            "-  'unregistered:user_fonts_dir']",
+            "----------------------------------------------------------------------",
+            "Ran 532 tests in 732.758s",
+            "FAILED (failures=1, errors=1, skipped=1)"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "退出码为 0",
+          "ok": false,
+          "detail": "Ran 532 tests in 732.758s FAILED (failures=1, errors=1, skipped=1)"
+        }
+      ]
+    }
+  ]
+}

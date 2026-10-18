@@ -7,6 +7,7 @@
 """
 
 import argparse
+import os
 import re
 import tempfile
 from types import SimpleNamespace
@@ -399,7 +400,11 @@ def main():
     parser.add_argument("--override", type=Path, action="append", default=[], help="按顺序应用构建时的覆写文件，可重复")
     parser.add_argument("--structure-only", action="store_true", help="仅检查结构与文字，不验证 Word 页码或版式")
     parser.add_argument("--allow-draft", action="store_true", help="检查 --allow-draft 生成的 *_draft.docx（只做结构与文字核验）")
+    parser.add_argument("--font-fallbacks", action="store_true", help="构建时使用了 --font-fallbacks；按同样的回退字体核验")
     args = parser.parse_args()
+    if args.font_fallbacks:
+        from lib.fonts import FONT_FALLBACKS_ENV
+        os.environ[FONT_FALLBACKS_ENV] = "1"
     if args.all and args.source:
         parser.error("--all 不能与 --source 同用")
     all_projects = args.all or (not args.source and args.project == "all")

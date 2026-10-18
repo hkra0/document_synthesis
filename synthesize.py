@@ -11,7 +11,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from lib.config import ConfigError, load_project_config
 from lib.engine import BuildError, UnifiedSynthesizer
@@ -89,6 +89,13 @@ def run_synthesis(source_dir: Path, output_dir: Optional[Path] = None, manifest_
                                         override_paths=override_paths, keep_work=keep_work)
 
 
+def _print_font_lines(report: Dict[str, Any], indent: str = "") -> None:
+    from lib.fonts import report_lines
+
+    for label, text in report_lines(report):
+        print(f"{indent}[{label}] {text}")
+
+
 def print_plan(source_dir: Path, manifest_path: Optional[Path], override_paths: Optional[List[Path]] = None) -> None:
     plan = UnifiedSynthesizer.plan(source_dir, manifest_path, override_paths=override_paths)
     print("\n" + "=" * 65)
@@ -114,6 +121,9 @@ def print_plan(source_dir: Path, manifest_path: Optional[Path], override_paths: 
             print(f"    目录页码引用: {document['toc']['reference']}；链接: {document['toc']['links']}")
         if "body" in document["parts"]:
             print("    正文页码从 1 开始；封面与目录不显示页码")
+    if "fonts" in plan:
+        print("\n字体（按本机字体文件判断，不启动 Word）:")
+        _print_font_lines(plan["fonts"], indent="  ")
     print("\n目录预览:")
     for node in plan["nodes"]:
         indent = "  " * (node.get("level", 1) - 1)
@@ -174,6 +184,18 @@ def run_doctor(source_dir: Optional[Path] = None, manifest_path: Optional[Path] 
             else "PowerPoint: 未安装；.pptx 需先手动导出同名 PDF，其他功能不受影响"
         )
 
+    # 只有 Windows Word 后端能读取 Word 字体列表；其他后端只按本机字体文件判断
+    word_font_names = None
+    read_font_names = getattr(backend, "font_names", None)
+    if office_exact and callable(read_font_names):
+        word_font_names = read_font_names()
+        infos.append(
+            f"Word 字体列表: {len(word_font_names)} 个，用于交叉核对字体" if word_font_names is not None
+            else "未能读取 Word 字体列表，字体只按本机字体文件判断"
+        )
+
+    fonts_report = None
+    fonts_scope = "本项目配置"
     if source_dir:
         resolved_src = str(source_dir.resolve())
         is_path_safe = len(resolved_src) <= 240
@@ -181,7 +203,9 @@ def run_doctor(source_dir: Optional[Path] = None, manifest_path: Optional[Path] 
         if not is_path_safe:
             input_ok = False
         try:
-            plan = UnifiedSynthesizer.plan(source_dir, manifest_path, override_paths=override_paths)
+            plan = UnifiedSynthesizer.plan(source_dir, manifest_path, override_paths=override_paths,
+                                           word_font_names=word_font_names)
+            fonts_report = plan.get("fonts")
             has_content = plan.get("content_block_count", 0) > 0 or plan.get("node_count", 0) > 0
             detail = f"{plan.get('content_block_count', 0)} 个内容块, {plan.get('heading_count', plan.get('node_count', 0))} 个标题" if "content_block_count" in plan else f"{plan['node_count']} 个大纲节点"
             checks.append((has_content, f"输入材料: {detail}"))
@@ -195,6 +219,17 @@ def run_doctor(source_dir: Optional[Path] = None, manifest_path: Optional[Path] 
         print(f"[{'通过' if passed else '未通过'}] {message}")
     for message in infos:
         print(f"[信息] {message}")
+
+    if not source_dir:
+        from lib.config import ProjectConfig
+        from lib.fonts import font_report
+
+        fonts_report = font_report(ProjectConfig(project_dir=Path("default")), word_font_names=word_font_names)
+        fonts_scope = "默认配置；指定 --source 或 --project 可检查具体项目"
+    if fonts_report is not None:
+        # 缺失字体只是警告，不改变退出码
+        print(f"\n字体（{fonts_scope}）:")
+        _print_font_lines(fonts_report, indent="  ")
 
     if not dep_ok or not input_ok:
         return 1
@@ -239,6 +274,11 @@ def main() -> int:
         help="没有可精确分页的 Word 时生成草稿（*_draft.docx）：目录页码由 Word 打开时更新，不推算；"
              "能精确分页时不起作用",
     )
+    parser.add_argument(
+        "--font-fallbacks", action="store_true",
+        help="本机缺少格式要求的字体时，改用格式包（或 v1/v2 配置）中 font_fallbacks 声明的回退字体；"
+             "只替换确实缺失的字体，替换记录在终端与构建元数据中",
+    )
 
     # B6 格式分析与编译参数
     parser.add_argument("--analyze-format", metavar="DOCX", help="分析参考样本文档，生成样式聚类与 HTML 校正报告")
@@ -268,6 +308,9 @@ def main() -> int:
     if args.allow_draft:
         from lib.drafting import ALLOW_DRAFT_ENV
         os.environ[ALLOW_DRAFT_ENV] = "1"
+    if args.font_fallbacks:
+        from lib.fonts import FONT_FALLBACKS_ENV
+        os.environ[FONT_FALLBACKS_ENV] = "1"
     from lib.office import OfficeUnsupportedError, get_backend
     try:
         get_backend()

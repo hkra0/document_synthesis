@@ -212,6 +212,28 @@ python3 smoke_test.py --allow-draft --source examples/minimal-demo/source --mani
 - 草稿仍执行结构核验与 v3 的内容、格式核验，但跳过分页测量、目录收敛和逐页版式检查。
 - 能精确分页时 `--allow-draft` 不起作用，照常精确构建。
 
+### 字体
+
+公文格式通常要求 `仿宋_GB2312`、`楷体_GB2312`、`方正小标宋简体` 等字体。本仓库**不分发字体文件**，请通过合法途径安装：
+
+- `仿宋`、`楷体`、`黑体`、`宋体` 随 Windows 和 macOS 提供（英文名 `FangSong`、`KaiTi`、`SimHei`、`SimSun`）。
+- `仿宋_GB2312`、`楷体_GB2312`、`方正小标宋简体` 等不随当前系统提供，属于商业字体，使用前需确认授权。单位一般已有正版授权，可以向信息化部门索取；也可以向字体厂商（如方正字库）购买或申请授权。不要从来源不明的网站下载。
+
+`--plan` 和 `--doctor` 会列出格式要求的每个字体是否已安装。字体缺失时 Word 会自动替换，分页可能与预期不同，精确构建的页码只对当前字体环境有效。缺失字体不影响 `--doctor` 的退出码。
+
+需要用替代字体时，构建和检查都加上 `--font-fallbacks`（或设置环境变量 `DOCUMENT_SYNTHESIS_FONT_FALLBACKS=1`）：
+
+```bash
+python3 synthesize.py --project 示例项目 --font-fallbacks
+python3 smoke_test.py --project 示例项目 --font-fallbacks
+```
+
+- 默认不替换；只有显式加上 `--font-fallbacks` 才生效，而且只替换本机确实缺少的字体。
+- v1/v2 配置未声明时使用内置列表：`仿宋_GB2312 → 仿宋`、`楷体_GB2312 → 楷体`、`方正小标宋简体 → 宋体`（对应的英文名同样适用）。也可以在配置顶层用 `font_fallbacks` 自定义，例如 `{"仿宋_GB2312": ["仿宋"]}`，候选按顺序取第一个已安装的。
+- v3 格式包在格式包或 `format.overrides` 中声明 `font_fallbacks`；替换记录写入 `build-metadata.json` 的 `fonts`。
+- 候选字体都没有安装时，构建直接失败，不会悄悄改用别的字体。
+- 用 `--font-fallbacks` 构建的交付物，检查时也要加 `--font-fallbacks`，否则 v3 会因配置契约不一致而失败。
+
 ### 5. 自动化测试
 
 运行测试脚本验证全部源材料完整性、文本保留情况与 Word 原生排版逐页质检（孤行、单标题、空白页）。

@@ -576,8 +576,12 @@ class UnifiedSynthesizer:
         source_dir: Path,
         manifest_path: Optional[Path] = None,
         override_paths=None,
+        word_font_names=None,
     ) -> Dict[str, Any]:
-        """只读准备输入并返回兼容旧调用方的可审阅计划。"""
+        """只读准备输入并返回兼容旧调用方的可审阅计划。
+
+        ``word_font_names`` 为 Word 字体列表，只由 ``--doctor`` 提供，用于交叉核对字体。
+        """
         prepared = cls.prepare_build(source_dir, manifest_path, override_paths=override_paths)
         selected = {spec["filename"] for spec in prepared.deliveries}
         existing = Path("output") / prepared.config.project_name
@@ -585,12 +589,14 @@ class UnifiedSynthesizer:
             p.name for p in existing.iterdir()
             if p.is_file() and p.suffix.lower() == ".docx" and p.name not in selected
         ) if existing.is_dir() else []
+        # 不修改 PreparedBuild；只在公共计划中附加环境提示与字体检查。
+        public = prepared.to_public_dict()
         if unselected:
-            # 不修改 PreparedBuild；只在公共计划中附加环境提示。
-            public = prepared.to_public_dict()
             public["warnings"].append("默认输出目录中有不属于本次交付的 DOCX（保留不删除）: " + ", ".join(unselected))
-            return public
-        return prepared.to_public_dict()
+        from .fonts import font_report
+
+        public["fonts"] = font_report(prepared.config, word_font_names=word_font_names)
+        return public
 
     @classmethod
     def render_body(cls, prepared: PreparedBuild, run_dir: Path) -> RenderedBody:
@@ -738,6 +744,11 @@ class UnifiedSynthesizer:
             raise BuildError("输出目录不能位于输入材料目录内。")
         for warning in plan["warnings"]:
             print(f"[提示] {warning}")
+        from .fonts import build_summary_lines, font_build_record
+
+        font_record = font_build_record(config)
+        for line in build_summary_lines(font_record):
+            print(line)
         selected = {spec["filename"] for spec in config.documents}
         extras = sorted(
             p.name for p in out_base.iterdir()
@@ -972,6 +983,7 @@ class UnifiedSynthesizer:
                     qa_summary=qa_summary,
                     page_evidence=page_evidence,
                     fidelity=fidelity,
+                    font_record=font_record,
                 )
                 with open(metadata_path, "w", encoding="utf-8") as f:
                     json.dump(metadata_dict, f, ensure_ascii=False, indent=2)
@@ -1012,6 +1024,12 @@ class UnifiedSynthesizer:
                     pass
 
 
+def _font_build_record(config: Any) -> Dict[str, Any]:
+    from .fonts import font_build_record
+
+    return font_build_record(config)
+
+
 def generate_build_metadata(
     config: Any,
     staged: Dict[str, Path],
@@ -1019,6 +1037,7 @@ def generate_build_metadata(
     qa_summary: Optional[Dict[str, Any]] = None,
     page_evidence: Optional[Dict[str, Any]] = None,
     fidelity: str = "exact",
+    font_record: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """生成符合 B7 审计规范的构建元数据 build-metadata.json 内容。
 
@@ -1102,6 +1121,7 @@ def generate_build_metadata(
         "build_timestamp": datetime.now(timezone.utc).isoformat(),
         "fidelity": fidelity,
         "format": format_info,
+        "fonts": font_record if font_record is not None else _font_build_record(config),
         "cover": getattr(getattr(config, "cover_spec", None), "to_dict", lambda: {})(),
         "configuration": {
             "manifest_sha256": manifest_hash,

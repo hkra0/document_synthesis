@@ -171,6 +171,15 @@ def load_format_raw(file_path: Path) -> Dict[str, Any]:
     return data
 
 
+def _parse_font_fallbacks(raw: Any) -> Dict[str, Tuple[str, ...]]:
+    from .fonts import FontFallbackError, parse_font_fallbacks
+
+    try:
+        return parse_font_fallbacks(raw, "font_fallbacks")
+    except FontFallbackError as exc:
+        raise ConfigError(str(exc)) from exc
+
+
 def resolve_format_package(
     ref: str,
     overrides: Optional[Dict[str, Any]] = None,
@@ -408,4 +417,5 @@ def resolve_format_package(
             str(path): hashlib.sha256(path.read_bytes()).hexdigest()
             for path, _ in chain
         },
+        font_fallbacks=_parse_font_fallbacks(merged_data.get("font_fallbacks", {})),
     )
