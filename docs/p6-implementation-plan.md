@@ -1,6 +1,6 @@
 # P6 实施计划：字体可移植性
 
-> **文档状态**：实施中；F0–F4 已完成（第 8–12 节），F5（Windows 验证）与 F6 未实施  
+> **文档状态**：实施中；F0–F5 已完成（第 8–12、14 节），F6 未实施  
 > **基线依赖**：P5 与封面模板修复（`main` = `0227f37`）  
 > **核心目标**：按[执行计划](windows-and-public-release-plan.md)第 11 节，让构建在开始前就知道格式要求的字体本机是否具备；缺字体时明确报告，并允许在格式包中声明、经显式启用后使用的回退字体。默认不替换任何字体，不悄悄改变公文格式。  
 > **环境约束**：开发用的 macOS 与 Windows 都已安装公文字体（`仿宋_GB2312`、`楷体_GB2312`、`方正小标宋简体` 等）。“缺字体”场景不靠卸载字体获得，验证方法见第 5 节。
@@ -302,3 +302,29 @@ python docs/acceptance/public-release/p6_font_check.py
 只想先跑快的部分时加 `--skip-matrix --skip-word-tests`；只重跑个别步骤用 `--only F06,F08`。完成后把 `docs/acceptance/public-release/windows-word/` 下新生成的 `p6-font-check.json`、`ww-results-p6.json`、`ww-results-p6-fallbacks.json` 提交到本分支，或把文件发回整理。
 
 可选（第 5 节第 4 项）：在另一个本地账户中重复 F02–F06（公文字体只装在当前账户），观察真正缺少 `仿宋_GB2312` 时 `--doctor` 的结果，以及默认配置 `--font-fallbacks` 构建的回退与页码。这一步需要该账户中 Word 已登录激活，脚本没有自动化。
+
+## 14. F5 结果：Windows 真实 Word 验证与回归（2026-10-18）
+
+环境：Windows 11 Pro（10.0.26300），Python 3.14.4，Microsoft Word 16.0（build 16.0.20430，64 位），后端 `win-word` / `exact`。
+
+### 第一次完整运行（提交 `95b476c`，[`p6-font-check.json`](acceptance/public-release/windows-word/p6-font-check.json)）
+
+F02–F10 全部 `passed`，F01 与 F11 `failed`：
+
+- **F02**：默认配置的 6 个字体都已安装；Word 字体列表读取到 1490 个。
+- **F03**：中文示例中的英文字体名（`FangSong_GB2312`、`KaiTi_GB2312`、`FZXiaoBiaoSong-B05S`、`SimHei` 等）都识别为已安装。
+- **F04–F08**：哨兵字体报告为缺失、退出码不变；不启用回退时构建与 smoke 通过、正文保留请求的字体名；启用回退时正文写入 `仿宋`、文档中没有哨兵名；回退候选全部缺失时退出码 1；v3 元数据记录 `P6缺失测试字体 → 宋体`，smoke 不加 `--font-fallbacks` 时因配置契约不一致失败。
+- **F09**：三个示例在不加与加 `--font-fallbacks` 时都通过，DOCX 部件相同（不计 `core.xml` 与 rsid）。
+- **F10**：WW01–WW12 两次都是 12/12 `verified`，与 P4 入库的 `windows-word/ww-results.json` 对照，12 个用例全部可比、差异为 0。结果入库：[`ww-results-p6.json`](acceptance/public-release/windows-word/ww-results-p6.json)、[`ww-results-p6-fallbacks.json`](acceptance/public-release/windows-word/ww-results-p6-fallbacks.json)。
+- **F01/F11 失败原因**：两次都是同样的两个测试，与本机环境有关，不是 P6 功能问题。
+  1. `test_fonts.WindowsSourcesTest.test_without_user_fonts_dir`：传入 `local_appdata=None` 时函数按设计回落到 `LOCALAPPDATA`，本机用户字体目录中的 5 个公文字体文件混入结果。CI 的 Windows 机器没有用户字体，所以没有暴露。测试改为临时移除 `LOCALAPPDATA`。
+  2. `test_docx_inspector` 导入失败：`tests/` 没有 `__init__.py`，是命名空间包；本机 site-packages 中有第三方包（`ultralytics`）安装的常规包 `tests`，导入时优先于命名空间包，`tests.fixtures` 找不到。新增空的 `tests/__init__.py`。
+
+### 修复后重跑 F01/F11（提交 `597b791`，[`p6-font-check-rerun.json`](acceptance/public-release/windows-word/p6-font-check-rerun.json)）
+
+- **F01**：离线全量 502 项通过、9 项跳过（比第一次多 7 项，即此前没能导入的 `test_docx_inspector`）。
+- **F11**：含真实 Word 用例 539 项通过、1 项跳过。
+
+第 1 节第 2–6 条在 Windows 上满足。未覆盖：真正缺少 `仿宋_GB2312` 时 Word 的替换结果与分页变化（第 5 节第 4 项，另一个 Windows 账户），本批没有做，不写成已验证。
+
+F5 完成。剩余：F6 文档。

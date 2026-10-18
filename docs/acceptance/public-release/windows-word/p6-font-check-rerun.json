@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "label": "windows-word",
+  "generated_at": "2026-10-18T11:01:52+00:00",
+  "environment": {
+    "git_commit": "597b791610856db6b19882ddb9562e9f3ed72760",
+    "worktree_dirty": false,
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.14.4",
+    "office_backend": {
+      "name": "win-word",
+      "available": true,
+      "fidelity": "exact",
+      "reason": "Automation 探针成功: Microsoft Word 16.0 (build 16.0.20430), 64 位。"
+    }
+  },
+  "summary": {
+    "passed": 2,
+    "skipped": 9
+  },
+  "steps": [
+    {
+      "id": "F01",
+      "title": "离线全量测试",
+      "condition": "6",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "unittest",
+          "argv": [
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests"
+          ],
+          "env": {},
+          "exit_code": 0,
+          "seconds": 90.7,
+          "output_tail": [
+            "[win_com_worker] step: Presentations.Open @ 18:49:27",
+            "[win_com_worker] step: Presentation.SaveAs(PDF) @ 18:49:27",
+            ".[win_com_worker] step: DispatchEx(PowerPoint.Application) @ 18:49:27",
+            "[win_com_worker] step: Presentations.Open @ 18:49:27",
+            "[win_com_worker] step: Presentation.SaveAs(PDF) @ 18:49:27",
+            ".[win_com_worker] step: DispatchEx(Word.Application) @ 18:49:27",
+            "[win_com_worker] step: Application 选项（Visible、DisplayAlerts） @ 18:49:27",
+            "[win_com_worker] step: Application.Quit @ 18:49:27",
+            "..sss",
+            "----------------------------------------------------------------------",
+            "Ran 502 tests in 90.036s",
+            "OK (skipped=9)"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "退出码为 0",
+          "ok": true,
+          "detail": "Ran 502 tests in 90.036s OK (skipped=9)"
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "status": "skipped"
+    },
+    {
+      "id": "F03",
+      "status": "skipped"
+    },
+    {
+      "id": "F04",
+      "status": "skipped"
+    },
+    {
+      "id": "F05",
+      "status": "skipped"
+    },
+    {
+      "id": "F06",
+      "status": "skipped"
+    },
+    {
+      "id": "F07",
+      "status": "skipped"
+    },
+    {
+      "id": "F08",
+      "status": "skipped"
+    },
+    {
+      "id": "F09",
+      "status": "skipped"
+    },
+    {
+      "id": "F10",
+      "status": "skipped"
+    },
+    {
+      "id": "F11",
+      "title": "含真实 Word 用例的全量测试",
+      "condition": "6",
+      "status": "passed",
+      "note": null,
+      "commands": [
+        {
+          "label": "unittest（真实 Word）",
+          "argv": [
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests"
+          ],
+          "env": {
+            "DOCUMENT_SYNTHESIS_WORD_TEST": "1"
+          },
+          "exit_code": 0,
+          "seconds": 744.0,
+          "output_tail": [
+            "[win_com_worker] step: Presentations.Open @ 18:58:19",
+            "[win_com_worker] step: Presentation.SaveAs(PDF) @ 18:58:19",
+            ".[win_com_worker] step: DispatchEx(PowerPoint.Application) @ 18:58:19",
+            "[win_com_worker] step: Presentations.Open @ 18:58:19",
+            "[win_com_worker] step: Presentation.SaveAs(PDF) @ 18:58:19",
+            ".[win_com_worker] step: DispatchEx(Word.Application) @ 18:58:19",
+            "[win_com_worker] step: Application 选项（Visible、DisplayAlerts） @ 18:58:19",
+            "[win_com_worker] step: Application.Quit @ 18:58:19",
+            "................",
+            "----------------------------------------------------------------------",
+            "Ran 539 tests in 743.345s",
+            "OK (skipped=1)"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "check": "退出码为 0",
+          "ok": true,
+          "detail": "Ran 539 tests in 743.345s OK (skipped=1)"
+        }
+      ]
+    }
+  ]
+}
