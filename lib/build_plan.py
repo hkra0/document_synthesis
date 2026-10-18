@@ -56,7 +56,7 @@ def _json_safe(value: Any) -> Any:
 def config_contract_snapshot(config: Any) -> Dict[str, Any]:
     """返回构建会消费的配置快照，不依赖外层 dataclass 的浅冻结。"""
     resolved = getattr(config, "resolved_format", None)
-    return _json_safe({
+    snapshot = {
         "schema_version": getattr(config, "schema_version", None),
         "project_name": getattr(config, "project_name", None),
         "raw": getattr(config, "raw", {}),
@@ -78,7 +78,12 @@ def config_contract_snapshot(config: Any) -> Dict[str, Any]:
             "content_hash": getattr(resolved, "content_hash", ""),
             "source_hashes": getattr(resolved, "source_hashes", {}),
         },
-    })
+    }
+    # 启用字体回退时，实际写入的字体取决于本机字体，也属于构建契约；未启用时不加字段，原有哈希不变
+    font_resolution = getattr(config, "font_resolution", None)
+    if font_resolution is not None:
+        snapshot["font_resolution"] = font_resolution.to_dict()
+    return _json_safe(snapshot)
 
 
 def compute_config_contract_hash(config: Any) -> str:

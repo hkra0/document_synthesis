@@ -178,6 +178,15 @@
     "required_capabilities": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "font_fallbacks": {
+      "type": "object",
+      "description": "缺失字体的回退候选，按顺序取第一个已安装的；只在 --font-fallbacks 时生效",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "type": "string", "minLength": 1 }
+      }
     }
   }
 }

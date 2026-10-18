@@ -398,6 +398,24 @@ def check_fonts(required: Sequence[RequiredFont], index: FontIndex,
     return results
 
 
+def font_build_record(config) -> Dict[str, object]:
+    """构建元数据与终端摘要使用的字体记录：启用回退时为回退结果，否则只检查不替换。"""
+    resolution = getattr(config, "font_resolution", None)
+    if resolution is None:
+        resolution = unresolved_font_resolution(required_fonts(config), installed_fonts())
+    return resolution.to_dict()
+
+
+def build_summary_lines(record: Dict[str, object]) -> List[str]:
+    lines = [f"[字体] 回退: {item['requested']} → {item['used']}（本机缺少 {item['requested']}）"
+             for item in record["substitutions"]]
+    missing = record["missing_unreplaced"]
+    if missing:
+        hint = "" if record["fallbacks_enabled"] else "可用 --font-fallbacks 改用声明的回退字体。"
+        lines.append(f"[字体] 本机缺少且未替换: {'、'.join(missing)}。{FONT_ENVIRONMENT_NOTICE}{hint}")
+    return lines
+
+
 STATUS_LABELS = {INSTALLED: "已安装", MISSING: "缺失", UNKNOWN: "无法判断", WORD_ONLY: "仅 Word 可用"}
 FONT_ENVIRONMENT_NOTICE = (
     "Word 会用其他字体替换缺失的字体，分页可能与预期不同；"
@@ -410,10 +428,13 @@ def font_report(config, index: Optional[FontIndex] = None,
     """``--plan``/``--doctor`` 使用的字体检查结果（可序列化为 JSON）。"""
     index = installed_fonts() if index is None else index
     checks = check_fonts(required_fonts(config), index, word_font_names)
+    resolution = getattr(config, "font_resolution", None)
     return {
         "index_complete": index.complete,
         "index_error": index.error,
         "word_cross_checked": word_font_names is not None,
+        "fallbacks_enabled": resolution is not None,
+        "substitutions": resolution.to_dict()["substitutions"] if resolution is not None else [],
         "fonts": [
             {"name": item.name, "status": item.status, "sources": list(item.sources),
              "files": [str(path) for path in item.files]}
@@ -430,6 +451,8 @@ def describe_sources(sources: Sequence[str], limit: int = 3) -> str:
 def report_lines(report: Dict[str, object]) -> List[Tuple[str, str]]:
     """把 ``font_report`` 转成 ``(标签, 文本)`` 行，供终端输出。"""
     lines: List[Tuple[str, str]] = []
+    for item in report.get("substitutions", []):
+        lines.append(("回退", f"{item['requested']} → {item['used']}（本机缺少 {item['requested']}）"))
     if not report["index_complete"]:
         lines.append(("警告", f"无法完整列出本机字体，未找到的字体记为“无法判断”: {report['index_error']}"))
     problems = 0
@@ -445,3 +468,147 @@ def report_lines(report: Dict[str, object]) -> List[Tuple[str, str]]:
     if problems:
         lines.append(("提示", FONT_ENVIRONMENT_NOTICE))
     return lines
+
+
+# -----------------------------------------------------------------------------
+# 回退字体
+# -----------------------------------------------------------------------------
+
+FONT_FALLBACKS_ENV = "DOCUMENT_SYNTHESIS_FONT_FALLBACKS"
+
+# schema_version 1/2 配置未声明 font_fallbacks 时使用。示例配置用英文字体名，因此中英文名都列出；
+# 只有显式 --font-fallbacks 时才生效，且只替换本机确实缺失的字体。
+DEFAULT_LEGACY_FONT_FALLBACKS: Dict[str, Tuple[str, ...]] = {
+    "仿宋_GB2312": ("仿宋",),
+    "FangSong_GB2312": ("仿宋",),
+    "楷体_GB2312": ("楷体",),
+    "KaiTi_GB2312": ("楷体",),
+    "方正小标宋简体": ("宋体",),
+    "FZXiaoBiaoSong-B05S": ("宋体",),
+}
+
+
+class FontFallbackError(ValueError):
+    pass
+
+
+def font_fallbacks_requested() -> bool:
+    return os.environ.get(FONT_FALLBACKS_ENV) == "1"
+
+
+def parse_font_fallbacks(raw, location: str = "font_fallbacks") -> Dict[str, Tuple[str, ...]]:
+    """校验 ``{字体: [候选, ...]}``；候选不能为空，也不能与原字体相同。"""
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise FontFallbackError(f"{location} 必须是对象，键为字体名，值为回退字体名数组。")
+    parsed: Dict[str, Tuple[str, ...]] = {}
+    for name, candidates in raw.items():
+        if isinstance(name, str) and name.startswith("_comment"):
+            continue
+        if not isinstance(name, str) or not name.strip():
+            raise FontFallbackError(f"{location} 的字体名必须是非空字符串。")
+        if (not isinstance(candidates, list) or not candidates
+                or not all(isinstance(item, str) and item.strip() for item in candidates)):
+            raise FontFallbackError(f"{location}.{name} 必须是非空的字体名数组。")
+        cleaned = tuple(item.strip() for item in candidates)
+        if any(normalize_font_name(item) == normalize_font_name(name) for item in cleaned):
+            raise FontFallbackError(f"{location}.{name} 的回退字体不能与原字体相同。")
+        parsed[name.strip()] = cleaned
+    return parsed
+
+
+@dataclass(frozen=True)
+class FontResolution:
+    """一次构建的字体检查与回退结果，写入构建元数据。"""
+    fallbacks_enabled: bool
+    checked: Tuple[Tuple[str, str], ...]  # (字体, 状态)，回退前
+    substitutions: Tuple[Tuple[str, str], ...] = ()  # (请求字体, 实际字体)
+    missing_unreplaced: Tuple[str, ...] = ()
+
+    @property
+    def mapping(self) -> Dict[str, str]:
+        return {normalize_font_name(requested): used for requested, used in self.substitutions}
+
+    def to_dict(self) -> Dict[str, object]:
+        return {
+            "fallbacks_enabled": self.fallbacks_enabled,
+            "checked": [{"name": name, "status": status} for name, status in self.checked],
+            "substitutions": [
+                {"requested": requested, "used": used, "reason": MISSING}
+                for requested, used in self.substitutions
+            ],
+            "missing_unreplaced": list(self.missing_unreplaced),
+        }
+
+
+def resolve_font_fallbacks(required: Sequence[RequiredFont], fallbacks: Dict[str, Tuple[str, ...]],
+                           index: FontIndex) -> FontResolution:
+    """只替换本机缺失且声明了回退的字体，取第一个已安装的候选。
+
+    本机字体列表不完整时无法判断缺失，回退候选全部缺失时也不继续尝试未声明的字体，两者都失败。
+    代码直接写入的字体（``RENDERER_FONTS``）不经过样式，不参与替换。
+    """
+    if not index.complete:
+        raise FontFallbackError(f"无法完整列出本机字体，不能判断哪些字体缺失，因此不能使用回退字体: {index.error}")
+    declared = {normalize_font_name(name): candidates for name, candidates in fallbacks.items()}
+    renderer = {normalize_font_name(name) for name, _source in RENDERER_FONTS}
+    checks = check_fonts(required, index)
+    substitutions = []
+    unreplaced = []
+    for item in checks:
+        if item.status != MISSING:
+            continue
+        key = normalize_font_name(item.name)
+        candidates = declared.get(key)
+        if candidates is None or key in renderer:
+            unreplaced.append(item.name)
+            continue
+        used = next((candidate for candidate in candidates if index.lookup(candidate)), None)
+        if used is None:
+            raise FontFallbackError(
+                f"字体 {item.name} 本机缺失，声明的回退字体也都没有安装: {'、'.join(candidates)}"
+            )
+        substitutions.append((item.name, used))
+    return FontResolution(
+        True,
+        tuple((item.name, item.status) for item in checks),
+        tuple(substitutions),
+        tuple(unreplaced),
+    )
+
+
+def unresolved_font_resolution(required: Sequence[RequiredFont], index: FontIndex) -> FontResolution:
+    """未启用回退时的记录：只检查，不替换。"""
+    checks = check_fonts(required, index)
+    return FontResolution(
+        False,
+        tuple((item.name, item.status) for item in checks),
+        missing_unreplaced=tuple(item.name for item in checks if item.status == MISSING),
+    )
+
+
+def substitute_font_name(name: Optional[str], mapping: Dict[str, str]) -> Optional[str]:
+    if not name:
+        return name
+    return mapping.get(normalize_font_name(name), name)
+
+
+def substitute_format_fonts(resolved, mapping: Dict[str, str]):
+    """返回把样式字体按 ``mapping`` 替换后的 ``ResolvedFormat``；不改动原对象。"""
+    from dataclasses import replace
+
+    if not mapping:
+        return resolved
+    styles = {}
+    for style_name, style in resolved.styles.items():
+        run = style.run
+        if run is not None:
+            run = replace(
+                run,
+                east_asia=substitute_font_name(run.east_asia, mapping),
+                latin=substitute_font_name(run.latin, mapping),
+                complex_script=substitute_font_name(run.complex_script, mapping),
+            )
+        styles[style_name] = replace(style, run=run)
+    return replace(resolved, styles=styles)

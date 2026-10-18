@@ -744,6 +744,11 @@ class UnifiedSynthesizer:
             raise BuildError("输出目录不能位于输入材料目录内。")
         for warning in plan["warnings"]:
             print(f"[提示] {warning}")
+        from .fonts import build_summary_lines, font_build_record
+
+        font_record = font_build_record(config)
+        for line in build_summary_lines(font_record):
+            print(line)
         selected = {spec["filename"] for spec in config.documents}
         extras = sorted(
             p.name for p in out_base.iterdir()
@@ -978,6 +983,7 @@ class UnifiedSynthesizer:
                     qa_summary=qa_summary,
                     page_evidence=page_evidence,
                     fidelity=fidelity,
+                    font_record=font_record,
                 )
                 with open(metadata_path, "w", encoding="utf-8") as f:
                     json.dump(metadata_dict, f, ensure_ascii=False, indent=2)
@@ -1018,6 +1024,12 @@ class UnifiedSynthesizer:
                     pass
 
 
+def _font_build_record(config: Any) -> Dict[str, Any]:
+    from .fonts import font_build_record
+
+    return font_build_record(config)
+
+
 def generate_build_metadata(
     config: Any,
     staged: Dict[str, Path],
@@ -1025,6 +1037,7 @@ def generate_build_metadata(
     qa_summary: Optional[Dict[str, Any]] = None,
     page_evidence: Optional[Dict[str, Any]] = None,
     fidelity: str = "exact",
+    font_record: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """生成符合 B7 审计规范的构建元数据 build-metadata.json 内容。
 
@@ -1108,6 +1121,7 @@ def generate_build_metadata(
         "build_timestamp": datetime.now(timezone.utc).isoformat(),
         "fidelity": fidelity,
         "format": format_info,
+        "fonts": font_record if font_record is not None else _font_build_record(config),
         "cover": getattr(getattr(config, "cover_spec", None), "to_dict", lambda: {})(),
         "configuration": {
             "manifest_sha256": manifest_hash,

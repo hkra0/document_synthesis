@@ -276,3 +276,4 @@ class ResolvedFormat:
     provenance: Dict[str, str]  # 属性 JSON Pointer -> 来源描述
     content_hash: str  # 规范化内容摘要哈希
     source_hashes: Dict[str, str] = field(default_factory=dict)  # 继承链上的格式包文件哈希
+    font_fallbacks: Dict[str, Tuple[str, ...]] = field(default_factory=dict)  # 缺失字体 -> 回退候选

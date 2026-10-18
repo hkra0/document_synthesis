@@ -11,13 +11,19 @@ from copy import deepcopy
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional, Tuple, Union
 
 from .contracts import (
     ContractError,
     merge_dict_with_provenance as _merge_dict_with_provenance,
     provenance_for_value,
     validate_contract,
+)
+from .fonts import (
+    DEFAULT_LEGACY_FONT_FALLBACKS,
+    FontFallbackError,
+    font_fallbacks_requested,
+    parse_font_fallbacks,
 )
 
 
@@ -528,7 +534,7 @@ def _validate_config(raw: Dict[str, Any]) -> None:
         # v1 / v2
         allowed = {
             "schema_version", "project_name", "page_setup", "fonts", "cover", "output",
-            "source", "node_overrides", "tree_order", "ignore_nodes",
+            "source", "node_overrides", "tree_order", "ignore_nodes", "font_fallbacks",
         }
         unknown = [key for key in raw if key not in allowed and not _is_comment_key(key)]
         if unknown:
@@ -853,6 +859,41 @@ class ProjectConfig:
             if not Path(source_file).is_absolute():
                 self.source["file"] = str((source_base / source_file).resolve())
         self.raw = raw
+
+        # 6. 字体回退（P6）：只在 --font-fallbacks 时生效，且只替换本机缺失的字体
+        self.font_fallbacks = self._declared_font_fallbacks(raw)
+        self.font_resolution = None
+        if font_fallbacks_requested():
+            self._apply_font_fallbacks()
+
+    def _declared_font_fallbacks(self, raw: Dict[str, Any]) -> Dict[str, Tuple[str, ...]]:
+        """v3 取自格式包（含继承与 overrides）；v1/v2 取自配置，未声明时使用内置的公文字体列表。"""
+        if self.schema_version >= 3:
+            return dict(getattr(self.resolved_format, "font_fallbacks", {}) or {})
+        if "font_fallbacks" not in raw:
+            return dict(DEFAULT_LEGACY_FONT_FALLBACKS)
+        try:
+            return parse_font_fallbacks(raw["font_fallbacks"])
+        except FontFallbackError as exc:
+            raise ConfigError(str(exc)) from exc
+
+    def _apply_font_fallbacks(self) -> None:
+        from .fonts import (
+            installed_fonts,
+            required_fonts,
+            resolve_font_fallbacks,
+            substitute_font_name,
+            substitute_format_fonts,
+        )
+
+        try:
+            resolution = resolve_font_fallbacks(required_fonts(self), self.font_fallbacks, installed_fonts())
+        except FontFallbackError as exc:
+            raise ConfigError(str(exc)) from exc
+        mapping = resolution.mapping
+        self.resolved_format = substitute_format_fonts(self.resolved_format, mapping)
+        self.fonts = {key: substitute_font_name(value, mapping) for key, value in self.fonts.items()}
+        self.font_resolution = resolution
 
     def get_template_path(self) -> Optional[Path]:
         """解析封面模板；v3 只有显式 template 才允许使用模板。"""

@@ -1,6 +1,6 @@
 # P6 实施计划：字体可移植性
 
-> **文档状态**：实施中；F0–F2 已完成（第 8–10 节），F3 起未实施  
+> **文档状态**：实施中；F0–F3 已完成（第 8–11 节），F4 起未实施  
 > **基线依赖**：P5 与封面模板修复（`main` = `0227f37`）  
 > **核心目标**：按[执行计划](windows-and-public-release-plan.md)第 11 节，让构建在开始前就知道格式要求的字体本机是否具备；缺字体时明确报告，并允许在格式包中声明、经显式启用后使用的回退字体。默认不替换任何字体，不悄悄改变公文格式。  
 > **环境约束**：开发用的 macOS 与 Windows 都已安装公文字体（`仿宋_GB2312`、`楷体_GB2312`、`方正小标宋简体` 等）。“缺字体”场景不靠卸载字体获得，验证方法见第 5 节。
@@ -213,3 +213,40 @@ python docs/acceptance/public-release/font_probe.py --word --output font-probe-w
 - 新增测试：`tests/test_font_reporting.py` 11 项（用合成字体代替本机字体，结果与运行环境无关）；`tests/test_win_com_backend.py` 新增 3 项（worker `font_names`、后端成功/失败/Word 不可用）。
 - 离线全量 492 项通过，19 项跳过；`DOCUMENT_SYNTHESIS_OFFICE_BACKEND=none` 下字体相关 33 项通过。
 - 未在 Windows 上运行：`font_names` 的真实 Word 读取与 `--doctor` 输出留到 F5；F0 探针已在同一台 Windows 上用同样的 COM 调用读到 1490 个名字。
+
+## 11. F3 结果：回退字体与记录（2026-10-18）
+
+### 实现
+
+| 位置 | 改动 |
+| --- | --- |
+| `schemas/format-v1.schema.json`、`lib/format_schema.py`、`lib/format_resolver.py` | 格式包新增可选字段 `font_fallbacks`（`{字体: [候选, ...]}`），随继承链与 `format.overrides` 合并（对象逐键合并，候选数组整体替换），解析为 `ResolvedFormat.font_fallbacks` |
+| `lib/fonts.py` | `parse_font_fallbacks` 校验类型、空列表、回退与原字体相同；`resolve_font_fallbacks` 只替换缺失且声明了回退的字体，按顺序取第一个已安装的候选；`substitute_format_fonts` 返回替换后的新 `ResolvedFormat`；`font_build_record` / `build_summary_lines` 生成记录与终端摘要 |
+| `lib/config.py` | `ProjectConfig` 构造的最后一步：v3 取格式包的 `font_fallbacks`；v1/v2 接受顶层 `font_fallbacks`，未声明时使用内置公文字体列表（中英文名都有，因为示例配置用英文名）。启用时同时替换格式样式与 `fonts`，结果存入 `font_resolution` |
+| `lib/build_plan.py` | 启用回退时把 `font_resolution` 计入配置契约快照；未启用时不加字段，既有配置的契约哈希不变 |
+| `lib/engine.py` | 构建开始时打印 `[字体] 回退: A → B` 或 `[字体] 本机缺少且未替换: ...`；v3 构建元数据新增 `fonts` |
+| `synthesize.py`、`smoke_test.py` | 新增 `--font-fallbacks`（环境变量 `DOCUMENT_SYNTHESIS_FONT_FALLBACKS=1`）；`--plan` 的字体一节在启用时先列出 `[回退]` 行 |
+
+### 与第 3 节设计的差异
+
+1. **替换发生在配置加载时**，而不是写样式时。这样计划、渲染、交付格式核验和 smoke 用的是同一份替换后的配置，不会把回退字体当作格式偏差；替换结果计入配置契约哈希，所以用 `--font-fallbacks` 构建的 v3 交付物，smoke 不加 `--font-fallbacks` 时会因契约哈希不一致而失败（已实测）。
+2. **记录位置**：`build-diagnostics.json` 只在 v3 构建失败时写出，v1/v2 构建不写任何元数据文件。因此字体记录写在 v3 的 `build-metadata.json`（草稿为 `build-metadata_draft.json`）的 `fonts` 中，所有构建都在终端打印摘要；v1/v2 构建只有终端记录。回退字体全部缺失时在加载配置阶段失败，只有终端错误，不生成诊断文件。第 1 节第 4 条据此理解。
+3. **内置预设未改动**：没有给 `legacy-official@1.0.0` 加默认列表，避免修改已发布的预设版本；v1/v2 配置使用内置列表，v3 需要在格式包或 `format.overrides` 中声明。
+4. **代码直接写入的字体**（页脚页码的 `宋体`）不经过样式，不参与替换，缺失时列入“缺少且未替换”。
+5. 本机字体列表不完整时，启用回退直接失败，不猜测哪些字体缺失。
+6. 第 3.1 节“系统登记了替代字体”（`FontSubstitutes`）的提示仍未实现；是否需要，等 F5 在 Windows 上看过真实缺字体时 Word 的表现再定。
+
+### 验证（macOS，Python 3.14.0，Word 16.113.4）
+
+| 场景 | 结果 |
+| --- | --- |
+| 中文示例（v2），覆写正文字体为哨兵名、回退 `["P6另一个缺失字体", "仿宋"]`，`--font-fallbacks` 精确构建 | 终端 `[字体] 回退: P6缺失测试字体 → 仿宋`；构建与精确 smoke（加 `--font-fallbacks`）通过，5 页；交付物 `styles.xml` 正文样式 `w:eastAsia="仿宋"`，全文没有哨兵名 |
+| 同上，`--plan` 不加 `--font-fallbacks` | 哨兵名报告为缺失 |
+| 回退候选全部缺失 | `--plan` 报错“声明的回退字体也都没有安装”，退出码 1 |
+| `custom-format-demo`（v3），`format.overrides` 把正文字体改为哨兵名并回退到 `宋体`，`--font-fallbacks` 精确构建 | 构建与 smoke 通过；`build-metadata.json` 的 `fonts` 记录 6 个字体的检查结果和替换 `P6缺失测试字体 → 宋体`；smoke 不加 `--font-fallbacks` 时报“配置契约 SHA-256 与当前 PreparedBuild 不一致” |
+| 同上，不加 `--font-fallbacks` | 构建通过（Word 自行替换字体）；终端提示缺失并建议 `--font-fallbacks`；元数据 `fallbacks_enabled: false`、`missing_unreplaced: ["P6缺失测试字体"]` |
+
+- `tests/test_font_fallbacks.py` 20 项。
+- 离线全量 512 项通过，19 项跳过；设置 `DOCUMENT_SYNTHESIS_FONT_FALLBACKS=1` 后全量结果相同（本机字体齐全，不发生替换）。
+- 含真实 Word 用例（`DOCUMENT_SYNTHESIS_WORD_TEST=1`）的全量：539 项通过，13 项跳过（Windows 专属用例）。
+- v2 的 smoke 不检查正文字体，不加 `--font-fallbacks` 也能通过；这是 v2 交付格式核验原有的范围，本批未扩大。

@@ -274,6 +274,11 @@ def main() -> int:
         help="没有可精确分页的 Word 时生成草稿（*_draft.docx）：目录页码由 Word 打开时更新，不推算；"
              "能精确分页时不起作用",
     )
+    parser.add_argument(
+        "--font-fallbacks", action="store_true",
+        help="本机缺少格式要求的字体时，改用格式包（或 v1/v2 配置）中 font_fallbacks 声明的回退字体；"
+             "只替换确实缺失的字体，替换记录在终端与构建元数据中",
+    )
 
     # B6 格式分析与编译参数
     parser.add_argument("--analyze-format", metavar="DOCX", help="分析参考样本文档，生成样式聚类与 HTML 校正报告")
@@ -303,6 +308,9 @@ def main() -> int:
     if args.allow_draft:
         from lib.drafting import ALLOW_DRAFT_ENV
         os.environ[ALLOW_DRAFT_ENV] = "1"
+    if args.font_fallbacks:
+        from lib.fonts import FONT_FALLBACKS_ENV
+        os.environ[FONT_FALLBACKS_ENV] = "1"
     from lib.office import OfficeUnsupportedError, get_backend
     try:
         get_backend()
