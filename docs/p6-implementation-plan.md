@@ -1,6 +1,6 @@
 # P6 实施计划：字体可移植性
 
-> **文档状态**：实施中；F0–F3 已完成（第 8–11 节），F4 起未实施  
+> **文档状态**：实施中；F0–F4 已完成（第 8–12 节），F5（Windows 验证）与 F6 未实施  
 > **基线依赖**：P5 与封面模板修复（`main` = `0227f37`）  
 > **核心目标**：按[执行计划](windows-and-public-release-plan.md)第 11 节，让构建在开始前就知道格式要求的字体本机是否具备；缺字体时明确报告，并允许在格式包中声明、经显式启用后使用的回退字体。默认不替换任何字体，不悄悄改变公文格式。  
 > **环境约束**：开发用的 macOS 与 Windows 都已安装公文字体（`仿宋_GB2312`、`楷体_GB2312`、`方正小标宋简体` 等）。“缺字体”场景不靠卸载字体获得，验证方法见第 5 节。
@@ -250,3 +250,21 @@ python docs/acceptance/public-release/font_probe.py --word --output font-probe-w
 - 离线全量 512 项通过，19 项跳过；设置 `DOCUMENT_SYNTHESIS_FONT_FALLBACKS=1` 后全量结果相同（本机字体齐全，不发生替换）。
 - 含真实 Word 用例（`DOCUMENT_SYNTHESIS_WORD_TEST=1`）的全量：539 项通过，13 项跳过（Windows 专属用例）。
 - v2 的 smoke 不检查正文字体，不加 `--font-fallbacks` 也能通过；这是 v2 交付格式核验原有的范围，本批未扩大。
+
+## 12. F4 结果：macOS 真实 Word 验证与回归（2026-10-18）
+
+环境：macOS 27.0（arm64），Python 3.14.0，Word 16.113.4，代码提交 `d19332e`。本机已安装公文字体，因此“缺字体”一律用哨兵名 `P6缺失测试字体` 构造（第 5 节第 2、3 项）。
+
+| 第 1 节退出条件 | 证据 | 结果 |
+| --- | --- | --- |
+| 3. 缺字体时 `--doctor` 报告、构建照常并记录 | 中文示例覆写正文字体为哨兵名后运行 `--doctor`（真实 Word 探针） | 退出码 0，“字体”一节列出 `[缺失] P6缺失测试字体` 及来源与替换提示；加 `--font-fallbacks` 时列出 `[回退] P6缺失测试字体 → 仿宋`。不启用回退的构建结果见第 11 节（v3 元数据 `missing_unreplaced`） |
+| 4. 启用回退后精确构建与 smoke 通过，文档写入回退字体并记录 | 第 11 节验证表（v2 中文示例、v3 `custom-format-demo`） | 通过；代码自那次验证后未改动 |
+| 6. 回归 | 见下 | 无回退 |
+
+回归：
+
+- **WW01–WW12**：`word_matrix.py run --label macos-word --output ww-results-p6.json` 12/12 `verified`；同样的矩阵在 `DOCUMENT_SYNTHESIS_FONT_FALLBACKS=1` 下运行（`ww-results-p6-fallbacks.json`）也是 12/12。两次结果分别用 `word_matrix.compare_results` 与 P4 入库的 `macos-word/ww-results.json`（`8f53eca`）对照：12 个用例全部可比，书签物理页、打印页码、导出页数与页码标签**差异为 0**。两份结果已入库。
+- **示例**：`minimal-demo`、中文示例、`custom-format-demo` 各自在不加与加 `--font-fallbacks` 两种方式下精确构建并运行精确 smoke（对应地加同样的参数），6 次全部通过；本机字体齐全，终端没有字体提示。两种方式生成的交付物，除 `docProps/core.xml` 与 rsid 属性外，DOCX 各部件逐字节相同；v3 元数据的 `page_map` 相同，`config_contract_sha256` 不同（启用回退时 `font_resolution` 计入契约，符合第 11 节设计）。
+- **测试**：离线全量 512 项通过、19 项跳过；含真实 Word 用例 539 项通过、13 项跳过（第 11 节）。
+
+F4 完成。剩余：F5 在 Windows 上验证第 1 节第 2–6 条（含 `font_names` 读取 Word 字体列表、`--doctor` 交叉核对、WW 矩阵回归），以及可选的“另一个 Windows 账户”真实缺字体验证（第 5 节第 4 项）；F6 文档。
